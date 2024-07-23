@@ -1295,13 +1295,15 @@ if (text == "/infoconfig"){
       infoConfig += "minR2: " + String(minR2) + ".\n";
       infoConfig += "maxR2: " + String(maxR2) + ".\n";
       infoConfig += "modoR2: " + String(modoR2) + ".\n";
-      infoConfig += "modoR3: " + String(modoR3) + ".\n";
       infoConfig += "Rele 3: \n";
       infoConfig += "Hora de encendido: " + String(horaOnR3) + ":" + String(minOnR3) + "\n";
       infoConfig += "Hora de apagado: " + String(horaOffR3) + ":" + String(minOffR3) + "\n";
+      infoConfig += "modoR3: " + String(modoR3) + ".\n";
       infoConfig += "Rele 4: \n";
       infoConfig += "Hora de encendido: " + String(horaOnR4) + ":" + String(minOnR4) + "\n";
       infoConfig += "Hora de apagado: " + String(horaOffR4) + ":" + String(minOffR4) + "\n";
+      infoConfig += "modoR4: " + String(modoR4) + ".\n";
+
 
       bot.sendMessage(chat_id, infoConfig, "Markdown");
   
@@ -1485,7 +1487,10 @@ void connectToWiFi(const char* ssid, const char* password) {
       delay(500);
       Serial.print(".");
     }
-      connectToWiFi(ssid, password);
+    if (conPW == 0){
+      WiFi.begin(ssid);
+      else {
+      WiFi.begin(ssid, password); //Modificado
 
   }
 
