@@ -13,6 +13,7 @@ Solucionado, no guardaba bien horarios R3 y R4
 Se agrego la funcion "/resetDruidaBot" para reiniciar a distancia el dispositivo
 Se mejoro sistema anti caida de internet (antes se bugeaba al caerse el internet)
 Envia datos a una hoja de calculo de google
+Corregida la funcion ConnectToWiFi, tiraba bucle infinito
 
 */
 
@@ -203,12 +204,7 @@ void loop() {
       }
       bot_lasttime = millis();
     }
-  } else {
-    if (horaWifi != rtc.now().hour()) {
-      connectToWiFi(ssid.c_str(), password.c_str());
-      horaWifi = rtc.now().hour();
-    }
-  }
+  } 
 
 
   float temperature = dht.readTemperature();
@@ -244,10 +240,7 @@ int serial = Serial.read();
     hour = 24 + hour;
   }
 
-  if (WiFi.status() != WL_CONNECTED && horaWifi != hour){
-    connectToWiFi(ssid.c_str(), password.c_str());
-    horaWifi = hour;
-  }
+  
 if (rtc.now().minute() == 0 && hour != lastHourSent){
   if (WiFi.status() == WL_CONNECTED) {
     sendDataToGoogleSheets();
@@ -1276,10 +1269,7 @@ if (minOffR4 > 0){
 
 }
 
-
-
 //  MOSTRAR PARAMETROS
-
 
 if (text == "/infoconfig"){
 
@@ -1291,18 +1281,22 @@ if (text == "/infoconfig"){
       infoConfig += "maxR1: " + String(maxR1) + ".\n";
       infoConfig += "paramR1: " + String(paramR1) + ".\n";
       infoConfig += "modoR1: " + String(modoR1) + ".\n";
+      infoConfig += "Estado R1: " + String(estadoR1) + "\n";
       infoConfig += "Rele 2: \n";
       infoConfig += "minR2: " + String(minR2) + ".\n";
       infoConfig += "maxR2: " + String(maxR2) + ".\n";
       infoConfig += "modoR2: " + String(modoR2) + ".\n";
+      infoConfig += "Estado R2: " + String(estadoR2) + "\n";
       infoConfig += "Rele 3: \n";
       infoConfig += "Hora de encendido: " + String(horaOnR3) + ":" + String(minOnR3) + "\n";
       infoConfig += "Hora de apagado: " + String(horaOffR3) + ":" + String(minOffR3) + "\n";
       infoConfig += "modoR3: " + String(modoR3) + ".\n";
+      infoConfig += "Estado R3: " + String(estadoR3) + "\n";
       infoConfig += "Rele 4: \n";
       infoConfig += "Hora de encendido: " + String(horaOnR4) + ":" + String(minOnR4) + "\n";
       infoConfig += "Hora de apagado: " + String(horaOffR4) + ":" + String(minOffR4) + "\n";
       infoConfig += "modoR4: " + String(modoR4) + ".\n";
+      infoConfig += "Estado R4: " + String(estadoR4) + "\n";
 
 
       bot.sendMessage(chat_id, infoConfig, "Markdown");
@@ -1334,10 +1328,7 @@ if (text == "/status" || modoMenu == STATUS)
     statusMessage += "Humedad: " + String(humidity, 1) + " %\n";
     statusMessage += "DPV: " + String(DPV, 1) + " kPa\n";
     statusMessage += dateTime; // Agrega la fecha y hora al mensaje
-    //statusMessage += "Rele 1: " + String(estadoR1) + "\n";
-    //statusMessage += "Rele 2: " + String(estadoR2) + "\n";
-    //statusMessage += "Rele 3: " + String(estadoR3) + "\n";
-    //statusMessage += "Rele 4: " + String(estadoR4) + "\n";
+
 
 
     bot.sendMessage(chat_id, statusMessage, "");
