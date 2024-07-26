@@ -13,7 +13,6 @@ Solucionado, no guardaba bien horarios R3 y R4
 Se agrego la funcion "/resetDruidaBot" para reiniciar a distancia el dispositivo
 Se mejoro sistema anti caida de internet (antes se bugeaba al caerse el internet)
 Envia datos a una hoja de calculo de google
-Corregida la funcion ConnectToWiFi, tiraba bucle infinito
 
 */
 
@@ -44,9 +43,9 @@ Corregida la funcion ConnectToWiFi, tiraba bucle infinito
 #define CONFIG 3
 #define STATUS 4
 
-const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba)
+//const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba)
 //const String botToken = "6867697701:AAHtaJ4YC3dDtk1RuFWD-_f72S5MYvlCV4w"; //DRUIDA DOS (rasta)
-//const String botToken = "7273841170:AAHxWF33cIDcIoxgBm3x9tzn9ISJIKoy7X8"; //DRUIDA TRES (matheu)
+const String botToken = "7273841170:AAHxWF33cIDcIoxgBm3x9tzn9ISJIKoy7X8"; //DRUIDA TRES (matheu)
 //const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (prueba)
 
 const unsigned long BOT_MTBS = 1000;
@@ -174,13 +173,12 @@ void setup() {
     Serial.print("Dia de hoy: ");
     Serial.println(days[dayNumber]);
   
-  } else {
-    Serial.println("Menu Serial: ");
-    Serial.println("1. Modificar red WiFi");
-    Serial.println("2. Modificar Chat ID");
-    Serial.println("3. Modificar Script ID (google)");
-    Serial.println("4. Enviar data a Google Sheets");
-  }
+  } 
+
+  Serial.println("Menu Serial: ");
+  Serial.println("1. Modificar Red WiFi");
+  Serial.println("2. Modificar Chat ID");
+  
 }
 
 void loop() {
@@ -204,7 +202,12 @@ void loop() {
       }
       bot_lasttime = millis();
     }
-  } 
+  } else {
+    if (horaWifi != rtc.now().hour()) {
+      connectToWiFi(ssid.c_str(), password.c_str());
+      horaWifi = rtc.now().hour();
+    }
+  }
 
 
   float temperature = dht.readTemperature();
@@ -240,7 +243,10 @@ int serial = Serial.read();
     hour = 24 + hour;
   }
 
-  
+  if (WiFi.status() != WL_CONNECTED && horaWifi != hour){
+    connectToWiFi(ssid.c_str(), password.c_str());
+    horaWifi = hour;
+  }
 if (rtc.now().minute() == 0 && hour != lastHourSent){
   if (WiFi.status() == WL_CONNECTED) {
     sendDataToGoogleSheets();
@@ -271,11 +277,6 @@ if (rtc.now().minute() == 0 && hour != lastHourSent){
 
   if (serial == '2') {
     modificarChatID();
-    serial = 0;
-  }
-
-  if (serial == '3'){
-    modificarScriptId();
     serial = 0;
   }
 
@@ -594,7 +595,7 @@ void Carga_General() {
   horaOffR4 = EEPROM.get(166, horaOffR4);
   minOffR4 = EEPROM.get(170, minOffR4);
   chat_id = EEPROM.get(174, chat_id);
-  //scriptId = EEPROM.get(224, scriptId);
+  scriptId = EEPROM.get(300, scriptId);
   
   
   Serial.println("Carga completa");
@@ -638,7 +639,7 @@ void Guardado_General() {
   EEPROM.put(166, horaOffR4);
   EEPROM.put(170, minOffR4);
   EEPROM.put(174, chat_id);
-  EEPROM.put(224, scriptId);
+  EEPROM.put(300, scriptId);
   EEPROM.commit();
   
   Serial.println("Guardado realizado con exito.");
@@ -1269,7 +1270,10 @@ if (minOffR4 > 0){
 
 }
 
+
+
 //  MOSTRAR PARAMETROS
+
 
 if (text == "/infoconfig"){
 
@@ -1281,23 +1285,17 @@ if (text == "/infoconfig"){
       infoConfig += "maxR1: " + String(maxR1) + ".\n";
       infoConfig += "paramR1: " + String(paramR1) + ".\n";
       infoConfig += "modoR1: " + String(modoR1) + ".\n";
-      infoConfig += "Estado R1: " + String(estadoR1) + "\n";
       infoConfig += "Rele 2: \n";
       infoConfig += "minR2: " + String(minR2) + ".\n";
       infoConfig += "maxR2: " + String(maxR2) + ".\n";
       infoConfig += "modoR2: " + String(modoR2) + ".\n";
-      infoConfig += "Estado R2: " + String(estadoR2) + "\n";
+      infoConfig += "modoR3: " + String(modoR3) + ".\n";
       infoConfig += "Rele 3: \n";
       infoConfig += "Hora de encendido: " + String(horaOnR3) + ":" + String(minOnR3) + "\n";
       infoConfig += "Hora de apagado: " + String(horaOffR3) + ":" + String(minOffR3) + "\n";
-      infoConfig += "modoR3: " + String(modoR3) + ".\n";
-      infoConfig += "Estado R3: " + String(estadoR3) + "\n";
       infoConfig += "Rele 4: \n";
       infoConfig += "Hora de encendido: " + String(horaOnR4) + ":" + String(minOnR4) + "\n";
       infoConfig += "Hora de apagado: " + String(horaOffR4) + ":" + String(minOffR4) + "\n";
-      infoConfig += "modoR4: " + String(modoR4) + ".\n";
-      infoConfig += "Estado R4: " + String(estadoR4) + "\n";
-
 
       bot.sendMessage(chat_id, infoConfig, "Markdown");
   
@@ -1328,7 +1326,10 @@ if (text == "/status" || modoMenu == STATUS)
     statusMessage += "Humedad: " + String(humidity, 1) + " %\n";
     statusMessage += "DPV: " + String(DPV, 1) + " kPa\n";
     statusMessage += dateTime; // Agrega la fecha y hora al mensaje
-
+    //statusMessage += "Rele 1: " + String(estadoR1) + "\n";
+    //statusMessage += "Rele 2: " + String(estadoR2) + "\n";
+    //statusMessage += "Rele 3: " + String(estadoR3) + "\n";
+    //statusMessage += "Rele 4: " + String(estadoR4) + "\n";
 
 
     bot.sendMessage(chat_id, statusMessage, "");
@@ -1478,10 +1479,12 @@ void connectToWiFi(const char* ssid, const char* password) {
       delay(500);
       Serial.print(".");
     }
-    if (conPW == 0){
-      WiFi.begin(ssid);
-      else {
-      WiFi.begin(ssid, password); //Modificado
+      if (conPW = 0){
+        WiFi.begin(ssid);
+      }
+      if (conPW = 1){
+        WiFi.begin(ssid, password);
+      }
 
   }
 
@@ -1515,7 +1518,7 @@ void modificarChatID(){
   while (Serial.available() > 0) {
   Serial.read();
   }
-  Serial.println("Porfavor ingrese el nuevo Chat ID:");
+  Serial.println("Por favor ingrese el nuevo Chat ID:");
   while (!Serial.available()){}
   if (Serial.available() > 0){ 
   chat_id = Serial.readStringUntil('\n');
@@ -1528,21 +1531,6 @@ void modificarChatID(){
 }
 
 
-void modificarScriptId(){
-  while (Serial.available() > 0) {
-  Serial.read();
-  }
-  Serial.println("Porfavor ingrese el nuevo ID Google:");
-  while (!Serial.available()){}
-  if (Serial.available() > 0){ 
-  scriptId = Serial.readStringUntil('\n');
-  Serial.println("Script ID Modificado: ");
-  Serial.print("Nuevo Script ID: ");
-  Serial.println(scriptId);
-  Guardado_General();
-  }
-
-}
 
 void sendDataToGoogleSheets() {
   HTTPClient http;
@@ -1554,7 +1542,7 @@ void sendDataToGoogleSheets() {
                + "&maxHumidity=" + String(maxHum, 2)
                + "&minHumidity=" + String(minHum, 2);
 
-  Serial.print("Enviando datos a Google Sheets: ");
+  Serial.print("Enviando datos a Google Sheets ");
   Serial.println(url);
 
   // Realizar la solicitud HTTP GET
@@ -1563,7 +1551,7 @@ void sendDataToGoogleSheets() {
 
   if (httpResponseCode > 0) {
     String payload = http.getString();
-    Serial.print("Payload recibido: ");
+    Serial.print("Payload recibido");
     Serial.println(payload);
   } else {
     Serial.print("Error en la solicitud HTTP: ");
