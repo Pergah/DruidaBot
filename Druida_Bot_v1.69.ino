@@ -34,7 +34,6 @@ Se agrego funcion de Medir temperatura de Agua
 #include <DallasTemperature.h>
 
 #define sensor1PIN 19
-#define sensor2PIN 34
 #define RELAY1 18
 #define RELAY2 17
 #define RELAY3 16
