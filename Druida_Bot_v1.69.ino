@@ -13,6 +13,8 @@ Solucionado, no guardaba bien horarios R3 y R4
 Se agrego la funcion "/resetDruidaBot" para reiniciar a distancia el dispositivo
 Se mejoro sistema anti caida de internet (antes se bugeaba al caerse el internet)
 Envia datos a una hoja de calculo de google
+Se agrego la funcion de medir PH
+Se agrego funcion de Medir temperatura de Agua
 
 */
 
@@ -28,6 +30,8 @@ Envia datos a una hoja de calculo de google
 #include <EEPROM.h>
 #include <Time.h>
 #include <HTTPClient.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 #define sensor1PIN 19
 #define sensor2PIN 34
@@ -38,10 +42,22 @@ Envia datos a una hoja de calculo de google
 #define H 1
 #define T 2
 #define D 3
+#define TA 4
+#define PH 5
 #define MANUAL 1
 #define AUTO 2
 #define CONFIG 3
 #define STATUS 4
+
+#include <Arduino.h>
+
+#define SensorPin 34            // pH meter Analog output to Arduino Analog Input 0
+#define Offset 0.00             // deviation compensate
+#define samplingInterval 20
+#define printInterval 800
+#define ArrayLenth  40          // times of collection
+int pHArray[ArrayLenth];        // Store the average value of the sensor feedback
+int pHArrayIndex = 0;
 
 //const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba)
 //const String botToken = "6867697701:AAHtaJ4YC3dDtk1RuFWD-_f72S5MYvlCV4w"; //DRUIDA DOS (rasta)
@@ -54,11 +70,16 @@ unsigned long bot_lasttime;
 const unsigned long wifiCheckInterval = 600000; //WiFi CheckStatus cada 10 minutos
 unsigned long previousMillis = 0;
 
+const int oneWireBus = 4; 
+
 WiFiClientSecure secured_client;
 UniversalTelegramBot bot(botToken, secured_client);
 
 DHT dht(sensor1PIN, DHT11);
 //DHT dht(sensor1PIN, DHT22);
+
+OneWire oneWire(oneWireBus);
+DallasTemperature sensors(&oneWire);
 
 RTC_DS3231 rtc;
 
@@ -122,12 +143,15 @@ float minTemp = 999;
 
 int lastHourSent = -1;
 
+float PHval, PHvolt;
+
 void setup() {
   Wire.begin();
   Serial.begin(115200);
   EEPROM.begin(512);
   rtc.begin();
   dht.begin();
+  sensors.begin();
   
   // Configurar pines de relé como salidas
   pinMode(RELAY1, OUTPUT);
@@ -208,10 +232,41 @@ void loop() {
       horaWifi = rtc.now().hour();
     }
   }
+  //PH
 
+  static unsigned long samplingTime = millis();
+  static unsigned long printTime = millis();
+  static float pHValue, voltage;
+  
+  if (millis() - samplingTime > samplingInterval) {
+    pHArray[pHArrayIndex++] = analogRead(SensorPin);
+    if (pHArrayIndex == ArrayLenth) pHArrayIndex = 0;
+    voltage = avergearray(pHArray, ArrayLenth) * 3.3 / 4096;  // Ajuste para ESP32 con referencia de 3.3V
+
+    // Aplicar el factor de corrección mediante la ecuación lineal ajustada
+    pHValue = 8.21 * voltage - 3.12;  // Nueva ecuación lineal ajustada
+    
+    samplingTime = millis();
+  }
+
+  if (millis() - printTime > printInterval) {   // Cada 800 milisegundos, imprimir el valor de pH ajustado según el voltaje
+    Serial.print("Voltage: ");
+    Serial.print(voltage, 2);
+    PHvolt = voltage;
+    Serial.print("    pH value: ");
+    Serial.println(pHValue, 2);
+    PHval = pHValue;
+    printTime = millis();
+  }
 
   float temperature = dht.readTemperature();
   float humidity = dht.readHumidity();
+
+  sensors.requestTemperatures(); 
+  float temperatureC = sensors.getTempCByIndex(0);
+  Serial.print("Temperature: ");
+  Serial.print(temperatureC);
+  Serial.println("°C");
 
   if (temperature > maxTemp){
     maxTemp = temperature;
@@ -535,6 +590,50 @@ void manejarAutoR4() {
 }
 
 */
+
+double avergearray(int* arr, int number) {
+  int i;
+  int max, min;
+  double avg;
+  long amount = 0;
+  
+  if (number <= 0) {
+    Serial.println("Error number for the array to averaging!\n");
+    return 0;
+  }
+  
+  if (number < 5) {   // less than 5, calculated directly statistics
+    for (i = 0; i < number; i++) {
+      amount += arr[i];
+    }
+    avg = amount / number;
+    return avg;
+  } else {
+    if (arr[0] < arr[1]) {
+      min = arr[0];
+      max = arr[1];
+    } else {
+      min = arr[1];
+      max = arr[0];
+    }
+    
+    for (i = 2; i < number; i++) {
+      if (arr[i] < min) {
+        amount += min;        // arr<min
+        min = arr[i];
+      } else {
+        if (arr[i] > max) {
+          amount += max;    // arr>max
+          max = arr[i];
+        } else {
+          amount += arr[i]; // min<=arr<=max
+        }
+      }
+    }
+    avg = (double)amount / (number - 2);
+  }
+  return avg;
+}
 
 
 float calcularDPV(float temperature, float humidity) {
@@ -890,7 +989,7 @@ if (text == "/paramR1config"){
   modoR1 = CONFIG;
   modoMenu = CONFIG;
   R1config = 3;
-  bot.sendMessage(chat_id, "Ingrese parametro R1: \n1- Humedad.\n2- Temperatura.\n3- DPV.");
+  bot.sendMessage(chat_id, "Ingrese parametro R1: \n1- Humedad.\n2- Temperatura.\n3- DPV.\n4- Temp Agua.");
 
   }
 if (R1config == 3){
@@ -956,7 +1055,7 @@ if (text == "/paramR2config"){
   modoR2 = CONFIG;
   modoMenu = CONFIG;
   R2config = 3;
-  bot.sendMessage(chat_id, "Ingrese parametro R2: ");
+  bot.sendMessage(chat_id, "Ingrese parametro R2: \n1- Humedad.\n2- Temperatura.\n3- DPV.\n4- Temp Agua.");
 
   }
 if (R2config == 3){
@@ -1289,14 +1388,14 @@ if (text == "/infoconfig"){
       infoConfig += "minR2: " + String(minR2) + ".\n";
       infoConfig += "maxR2: " + String(maxR2) + ".\n";
       infoConfig += "modoR2: " + String(modoR2) + ".\n";
-      infoConfig += "modoR3: " + String(modoR3) + ".\n";
       infoConfig += "Rele 3: \n";
       infoConfig += "Hora de encendido: " + String(horaOnR3) + ":" + String(minOnR3) + "\n";
       infoConfig += "Hora de apagado: " + String(horaOffR3) + ":" + String(minOffR3) + "\n";
+      infoConfig += "modoR3: " + String(modoR3) + ".\n";
       infoConfig += "Rele 4: \n";
       infoConfig += "Hora de encendido: " + String(horaOnR4) + ":" + String(minOnR4) + "\n";
       infoConfig += "Hora de apagado: " + String(horaOffR4) + ":" + String(minOffR4) + "\n";
-
+      infoConfig += "modoR4: " + String(modoR4) + ".\n";
       bot.sendMessage(chat_id, infoConfig, "Markdown");
   
 }
@@ -1308,6 +1407,9 @@ if (text == "/status" || modoMenu == STATUS)
     // Leer datos del sensor DHT
     float temperature = dht.readTemperature();
     float humidity = dht.readHumidity();
+    sensors.requestTemperatures(); 
+    float temperatureC = sensors.getTempCByIndex(0);
+
     DateTime now = rtc.now();
     int horaBot = now.hour();
 
@@ -1325,11 +1427,11 @@ if (text == "/status" || modoMenu == STATUS)
     String statusMessage = "Temperatura: " + String(temperature, 1) + " °C\n";
     statusMessage += "Humedad: " + String(humidity, 1) + " %\n";
     statusMessage += "DPV: " + String(DPV, 1) + " kPa\n";
+    statusMessage += "PH: " + String(PHval, 2);
+    statusMessage += "(" + String(PHvolt, 2) + " V)\n";
+    statusMessage += "Temp Agua: " + String(temperatureC, 2) + " °C\n";
     statusMessage += dateTime; // Agrega la fecha y hora al mensaje
-    //statusMessage += "Rele 1: " + String(estadoR1) + "\n";
-    //statusMessage += "Rele 2: " + String(estadoR2) + "\n";
-    //statusMessage += "Rele 3: " + String(estadoR3) + "\n";
-    //statusMessage += "Rele 4: " + String(estadoR4) + "\n";
+
 
 
     bot.sendMessage(chat_id, statusMessage, "");
@@ -1569,4 +1671,3 @@ void checkWiFiConnection() {
     Serial.println("WiFi connected.");
   }
 }
-
