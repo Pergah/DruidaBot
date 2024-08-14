@@ -1,9 +1,9 @@
 # Druida
-Gestor de Placa:
+Gestor de Placas:
 
 ESP32 (v2.0.17) (No usar la version 3.x.x)
 
-Gestir de Librerias:
+Gestor de Librerias:
 
 RTCLib de Adafruit (v2.1.4)
 
