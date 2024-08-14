@@ -7,6 +7,12 @@ Rele 2: Baja parametro (H, T, D)
 Rele 3: Timer diario (Ej: Luz)
 Rele 4: Timer diario + semanal (Ej: Riego)
 
+Conexion de sensores: 
+Temperatura y Humedad ambiente -> 19
+Temperatura de Agua -> 5
+Sensor Emisor IR -> 4
+Sensor PH -> 34
+
 La red WiFi se puede cambiar desde el serial
 El chat ID se puede cambiar desde el serial
 Solucionado, no guardaba bien horarios R3 y R4
@@ -15,7 +21,7 @@ Se mejoro sistema anti caida de internet (antes se bugeaba al caerse el internet
 Envia datos a una hoja de calculo de google
 Se agrego la funcion de medir PH
 Se agrego funcion de Medir temperatura de Agua
-Se agrego funcion para cargar los valores de un boton de un control remoto infrarojo y reproducirlo
+Se agrego funcion para enviar señal IR en el R2
 
 */
 #include <IRsend.h>
@@ -33,12 +39,8 @@ Se agrego funcion para cargar los valores de un boton de un control remoto infra
 #include <HTTPClient.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <Arduino.h>
 
-#define sensor1PIN 19
-#define RELAY1 18
-#define RELAY2 17
-#define RELAY3 16
-#define RELAY4 15
 #define H 1
 #define T 2
 #define D 3
@@ -49,19 +51,25 @@ Se agrego funcion para cargar los valores de un boton de un control remoto infra
 #define CONFIG 3
 #define STATUS 4
 
-#include <Arduino.h>
+#define sensorIRpin 4 //Sensor Emisor IR
+#define sensorTempAgua 5
+#define RELAY4 15
+#define RELAY3 16
+#define RELAY2 17
+#define RELAY1 18
+#define sensor1PIN 19 //Temperatura y humedadAmbiente
+#define SensorPin 34    //PH   
 
-#define SensorPin 34            // pH meter Analog output to Arduino Analog Input 0
 #define Offset 0.00             // deviation compensate
 #define samplingInterval 20
 #define printInterval 800
 #define ArrayLenth  40          // times of collection
+
 int pHArray[ArrayLenth];        // Store the average value of the sensor feedback
 int pHArrayIndex = 0;
 
 uint16_t IRsignal[100] = {0};
-
-IRsend irsend(4);
+IRsend irsend(sensorIRpin);
 
 //const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba y roge)
 //const String botToken = "6867697701:AAHtaJ4YC3dDtk1RuFWD-_f72S5MYvlCV4w"; //DRUIDA DOS (rasta)
@@ -74,7 +82,7 @@ unsigned long bot_lasttime;
 const unsigned long wifiCheckInterval = 600000; //WiFi CheckStatus cada 10 minutos
 unsigned long previousMillis = 0;
 
-const int oneWireBus = 5; 
+const int oneWireBus = sensorTempAgua; 
 
 WiFiClientSecure secured_client;
 UniversalTelegramBot bot(botToken, secured_client);
@@ -127,6 +135,8 @@ byte estadoR1 = 0;
 byte estadoR2 = 0;
 byte estadoR3 = 0;
 byte estadoR4 = 0;
+
+bool R2estado = HIGH;
 
 float DPV = 0;
 
@@ -366,8 +376,10 @@ if (rtc.now().minute() == 0 && hour != lastHourSent){
   if (modoR2 == MANUAL){ 
     if (estadoR2 == 1){
     digitalWrite(RELAY2, LOW); 
+    R2estado = LOW;
   } else {
     digitalWrite(RELAY2, HIGH);
+    R2estado = HIGH;
   }
   }
 
@@ -425,6 +437,17 @@ if (rtc.now().minute() == 0 && hour != lastHourSent){
       }
     }
 
+         if(paramR1 == TA){
+       if (temperatureC < minR1){
+        digitalWrite(RELAY1, LOW);
+
+         if(temperatureC > maxR1){
+          digitalWrite(RELAY1, HIGH);
+
+        }
+      }
+    }
+
    
   }
 
@@ -433,31 +456,66 @@ if (rtc.now().minute() == 0 && hour != lastHourSent){
 if (modoR2 == AUTO){
     //Serial.print("Rele 2 (Down) Automatico");
 
-     if (paramR2 == H){
+     if (paramR2 == H && R2estado == HIGH){
        if (humidity > maxR2){
         digitalWrite(RELAY2, LOW);
+        R2estado == LOW;
+        irsend.sendRaw(IRsignal, 72, 38);
+        delay(1000);
 
-      }  if (humidity < minR2){
+      }  if (humidity < minR2 && R2estado == LOW){
         digitalWrite(RELAY2, HIGH);
+        R2estado == HIGH;
+        irsend.sendRaw(IRsignal, 72, 38);
+        delay(1000);
 
       }
     }
-     if(paramR2 == T){
+         if (paramR2 == T && R2estado == HIGH){
        if (temperature > maxR2){
         digitalWrite(RELAY2, LOW);
+        R2estado == LOW;
+        irsend.sendRaw(IRsignal, 72, 38);
+        delay(1000);
 
-      }  if (temperature < minR2){
+      }  if (temperature < minR2 && R2estado == LOW){
         digitalWrite(RELAY2, HIGH);
+        R2estado == HIGH;
+        irsend.sendRaw(IRsignal, 72, 38);
+        delay(1000);
 
       }
     }
 
-     if(paramR2 == D){
+         if (paramR2 == D && R2estado == HIGH){
        if (DPV > maxR2){
         digitalWrite(RELAY2, LOW);
-         if(DPV < minR2){
-          digitalWrite(RELAY2, HIGH);
-        }
+        R2estado == LOW;
+        irsend.sendRaw(IRsignal, 72, 38);
+        delay(1000);
+
+      }  if (DPV < minR2 && R2estado == LOW){
+        digitalWrite(RELAY2, HIGH);
+        R2estado == HIGH;
+        irsend.sendRaw(IRsignal, 72, 38);
+        delay(1000);
+
+      }
+    }
+
+             if (paramR2 == TA && R2estado == HIGH){
+       if (temperatureC > maxR2){
+        digitalWrite(RELAY2, LOW);
+        R2estado == LOW;
+        irsend.sendRaw(IRsignal, 72, 38);
+        delay(1000);
+
+      }  if (temperatureC < minR2 && R2estado == LOW){
+        digitalWrite(RELAY2, HIGH);
+        R2estado == HIGH;
+        irsend.sendRaw(IRsignal, 72, 38);
+        delay(1000);
+
       }
     }
 
@@ -614,7 +672,7 @@ void Carga_General() {
   minOnR4 = EEPROM.get(162, minOnR4);
   horaOffR4 = EEPROM.get(166, horaOffR4);
   minOffR4 = EEPROM.get(170, minOffR4);
-  chat_id = EEPROM.get(174, chat_id);
+  chat_id = EEPROM.get(200, chat_id);
   for (int i = 0; i < 100; i++) {
     IRsignal[i] = EEPROM.get(300 + i * sizeof(uint16_t), IRsignal[i]);
   }
@@ -660,7 +718,7 @@ void Guardado_General() {
   EEPROM.put(162, minOnR4);
   EEPROM.put(166, horaOffR4);
   EEPROM.put(170, minOffR4);
-  EEPROM.put(174, chat_id);
+  EEPROM.put(200, chat_id);
   for (int i = 0; i < 100; i++) {
     EEPROM.put(300 + i * sizeof(uint16_t), IRsignal[i]);
   }
@@ -715,7 +773,7 @@ void handleNewMessages(int numNewMessages)
       modoManu += "/R2on - /R2off \n";
       modoManu += "/R3on - /R3off \n";
       modoManu += "/R4on - /R4off \n";
-      modoManu += "/controlRemoto"
+      modoManu += "/controlRemoto \n";
       bot.sendMessage(chat_id, modoManu, "Markdown");
       delay(500);
 
