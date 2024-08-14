@@ -1,4 +1,4 @@
-/* Druida BOT 1.69
+/* Druida BOT 1.619
 
 El programa es capaz de controlar 4 reles independientes. 
 Pueden funcionar en modo Manual, o Automatico.
@@ -15,9 +15,10 @@ Se mejoro sistema anti caida de internet (antes se bugeaba al caerse el internet
 Envia datos a una hoja de calculo de google
 Se agrego la funcion de medir PH
 Se agrego funcion de Medir temperatura de Agua
+Se agrego funcion para cargar los valores de un boton de un control remoto infrarojo y reproducirlo
 
 */
-
+#include <IRsend.h>
 #include "esp_system.h"
 #include <DHT.h>
 #include <Wire.h>
@@ -58,10 +59,14 @@ Se agrego funcion de Medir temperatura de Agua
 int pHArray[ArrayLenth];        // Store the average value of the sensor feedback
 int pHArrayIndex = 0;
 
-//const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba)
+uint16_t IRsignal[100] = {0};
+
+IRsend irsend(4);
+
+//const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba y roge)
 //const String botToken = "6867697701:AAHtaJ4YC3dDtk1RuFWD-_f72S5MYvlCV4w"; //DRUIDA DOS (rasta)
-const String botToken = "7273841170:AAHxWF33cIDcIoxgBm3x9tzn9ISJIKoy7X8"; //DRUIDA TRES (matheu)
-//const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (prueba)
+//const String botToken = "7273841170:AAHxWF33cIDcIoxgBm3x9tzn9ISJIKoy7X8"; //DRUIDA TRES (brai e ivana)
+const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (matheu)
 
 const unsigned long BOT_MTBS = 1000;
 const int MAX_STRING_LENGTH = 32;
@@ -69,7 +74,7 @@ unsigned long bot_lasttime;
 const unsigned long wifiCheckInterval = 600000; //WiFi CheckStatus cada 10 minutos
 unsigned long previousMillis = 0;
 
-const int oneWireBus = 4; 
+const int oneWireBus = 5; 
 
 WiFiClientSecure secured_client;
 UniversalTelegramBot bot(botToken, secured_client);
@@ -143,6 +148,7 @@ float minTemp = 999;
 int lastHourSent = -1;
 
 float PHval, PHvolt;
+byte estadoRTC = 0;
 
 void setup() {
   Wire.begin();
@@ -151,7 +157,7 @@ void setup() {
   rtc.begin();
   dht.begin();
   sensors.begin();
-  
+  irsend.begin();   
   // Configurar pines de relé como salidas
   pinMode(RELAY1, OUTPUT);
   pinMode(RELAY2, OUTPUT);
@@ -168,6 +174,7 @@ void setup() {
   Carga_General();
 
   connectToWiFi(ssid.c_str(), password.c_str());
+
   secured_client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
   if (WiFi.status() == WL_CONNECTED) {
@@ -201,6 +208,7 @@ void setup() {
   Serial.println("Menu Serial: ");
   Serial.println("1. Modificar Red WiFi");
   Serial.println("2. Modificar Chat ID");
+  Serial.println("3. Modificar Señal IR");
   
 }
 
@@ -225,11 +233,6 @@ void loop() {
       }
       bot_lasttime = millis();
     }
-  } else {
-    if (horaWifi != rtc.now().hour()) {
-      connectToWiFi(ssid.c_str(), password.c_str());
-      horaWifi = rtc.now().hour();
-    }
   }
   //PH
 
@@ -249,11 +252,11 @@ void loop() {
   }
 
   if (millis() - printTime > printInterval) {   // Cada 800 milisegundos, imprimir el valor de pH ajustado según el voltaje
-    Serial.print("Voltage: ");
-    Serial.print(voltage, 2);
+    //Serial.print("Voltage: ");
+    //Serial.print(voltage, 2);
     PHvolt = voltage;
-    Serial.print("    pH value: ");
-    Serial.println(pHValue, 2);
+    //Serial.print("    pH value: ");
+    //Serial.println(pHValue, 2);
     PHval = pHValue;
     printTime = millis();
   }
@@ -263,9 +266,9 @@ void loop() {
 
   sensors.requestTemperatures(); 
   float temperatureC = sensors.getTempCByIndex(0);
-  Serial.print("Temperature: ");
-  Serial.print(temperatureC);
-  Serial.println("°C");
+  //Serial.print("Temperature: ");
+  //Serial.print(temperatureC);
+  //Serial.println("°C");
 
   if (temperature > maxTemp){
     maxTemp = temperature;
@@ -297,10 +300,6 @@ int serial = Serial.read();
     hour = 24 + hour;
   }
 
-  if (WiFi.status() != WL_CONNECTED && horaWifi != hour){
-    connectToWiFi(ssid.c_str(), password.c_str());
-    horaWifi = hour;
-  }
 if (rtc.now().minute() == 0 && hour != lastHourSent){
   if (WiFi.status() == WL_CONNECTED) {
     sendDataToGoogleSheets();
@@ -334,6 +333,17 @@ if (rtc.now().minute() == 0 && hour != lastHourSent){
     serial = 0;
   }
 
+   if (serial == '3') {
+    modificarValoresArray();
+    serial = 0;
+  }
+
+     if (serial == '4') {
+    mostrarArray();
+    serial = 0;
+  }
+
+
   
 
   if (reset == 1) {
@@ -348,6 +358,7 @@ if (rtc.now().minute() == 0 && hour != lastHourSent){
     digitalWrite(RELAY1, LOW); 
   } else {
     digitalWrite(RELAY1, HIGH);
+
   }
   }
 
@@ -500,95 +511,6 @@ if (modoR4 == AUTO){
   delay(1000);
 }
 
-/*void manejarReles() {
-  // Modo manual para cada relé
-  if (modoR1 == MANUAL) {
-    digitalWrite(RELAY1, estadoR1 == 1 ? LOW : HIGH);
-  }
-  if (modoR2 == MANUAL) {
-    digitalWrite(RELAY2, estadoR2 == 1 ? LOW : HIGH);
-  }
-  if (modoR3 == MANUAL) {
-    digitalWrite(RELAY3, estadoR3 == 1 ? LOW : HIGH);
-  }
-  if (modoR4 == MANUAL) {
-    digitalWrite(RELAY4, estadoR4 == 1 ? LOW : HIGH);
-  }
-
-  // Modo automático para cada relé
-  if (modoR1 == AUTO) {
-    manejarAutoR1();
-  }
-  if (modoR2 == AUTO) {
-    manejarAutoR2();
-  }
-  if (modoR3 == AUTO) {
-    manejarAutoR3();
-  }
-  if (modoR4 == AUTO) {
-    manejarAutoR4();
-  }
-}
-
-void manejarAutoR1() {
-  if (paramR1 == H) {
-    if (humidity < minR1) digitalWrite(RELAY1, LOW);
-    if (humidity > maxR1) digitalWrite(RELAY1, HIGH);
-  }
-  if (paramR1 == T) {
-    if (temperature < minR1) digitalWrite(RELAY1, LOW);
-    if (temperature > minR1) digitalWrite(RELAY1, HIGH);
-  }
-  if (paramR1 == D) {
-    if (DPV < minR1) digitalWrite(RELAY1, LOW);
-    if (DPV > maxR1) digitalWrite(RELAY1, HIGH);
-  }
-}
-
-void manejarAutoR2() {
-  if (paramR2 == H) {
-    if (humidity > maxR2) digitalWrite(RELAY2, LOW);
-    if (humidity < minR2) digitalWrite(RELAY2, HIGH);
-  }
-  if (paramR2 == T) {
-    if (temperature > maxR2) digitalWrite(RELAY2, LOW);
-    if (temperature < minR2) digitalWrite(RELAY2, HIGH);
-  }
-  if (paramR2 == D) {
-    if (DPV > maxR2) digitalWrite(RELAY2, LOW);
-    if (DPV < minR2) digitalWrite(RELAY2, HIGH);
-  }
-}
-
-void manejarAutoR3() {
-  DateTime now = rtc.now();
-  int currentTime = now.hour() * 60 + now.minute();
-  int startR3 = horaOnR3 * 60 + minOnR3;
-  int offR3 = horaOffR3 * 60 + minOffR3;
-
-  if (diasRiego[now.dayOfTheWeek()] == 1) {
-    if (currentTime >= startR3 && currentTime < offR3) {
-      digitalWrite(RELAY3, LOW);
-    } else {
-      digitalWrite(RELAY3, HIGH);
-    }
-  }
-}
-
-void manejarAutoR4() {
-  DateTime now = rtc.now();
-  int currentTime = now.hour() * 60 + now.minute();
-  int startR4 = horaOnR4 * 60 + minOnR4;
-  int offR4 = horaOffR4 * 60 + minOffR4;
-
-  if (currentTime >= startR4 && currentTime < offR4) {
-    digitalWrite(RELAY4, LOW);
-  } else {
-    digitalWrite(RELAY4, HIGH);
-  }
-}
-
-*/
 
 double avergearray(int* arr, int number) {
   int i;
@@ -693,7 +615,9 @@ void Carga_General() {
   horaOffR4 = EEPROM.get(166, horaOffR4);
   minOffR4 = EEPROM.get(170, minOffR4);
   chat_id = EEPROM.get(174, chat_id);
-  scriptId = EEPROM.get(300, scriptId);
+  for (int i = 0; i < 100; i++) {
+    IRsignal[i] = EEPROM.get(300 + i * sizeof(uint16_t), IRsignal[i]);
+  }
   
   
   Serial.println("Carga completa");
@@ -737,7 +661,9 @@ void Guardado_General() {
   EEPROM.put(166, horaOffR4);
   EEPROM.put(170, minOffR4);
   EEPROM.put(174, chat_id);
-  EEPROM.put(300, scriptId);
+  for (int i = 0; i < 100; i++) {
+    EEPROM.put(300 + i * sizeof(uint16_t), IRsignal[i]);
+  }
   EEPROM.commit();
   
   Serial.println("Guardado realizado con exito.");
@@ -789,6 +715,7 @@ void handleNewMessages(int numNewMessages)
       modoManu += "/R2on - /R2off \n";
       modoManu += "/R3on - /R3off \n";
       modoManu += "/R4on - /R4off \n";
+      modoManu += "/controlRemoto"
       bot.sendMessage(chat_id, modoManu, "Markdown");
       delay(500);
 
@@ -799,6 +726,7 @@ void handleNewMessages(int numNewMessages)
       
       modoR1 = MANUAL;
       estadoR1 = 1;
+
       
       bot.sendMessage(chat_id, "Rele 1 is ON", "");
       delay(500);
@@ -860,6 +788,15 @@ void handleNewMessages(int numNewMessages)
       modoR4 = MANUAL;
       estadoR4 = 0;
       bot.sendMessage(chat_id, "Rele 4 is OFF", "");
+      delay(500);
+    }
+
+        if (text == "/controlRemoto")
+    {
+      Serial.println("enviando señal IR...");
+      irsend.sendRaw(IRsignal, 72, 38);  // Envía la señal IR ajustada con frecuencia de 38 kHz
+      delay(1000);  // Espera 10 segundos antes de volver a emitir la señal
+      bot.sendMessage(chat_id, "Señal IR enviada", "");
       delay(500);
     }
 
@@ -1557,8 +1494,8 @@ void connectToWiFi(const char* ssid, const char* password) {
 
   unsigned long startAttemptTime = millis();
 
-  while (cantCon < 6){// Esperar hasta que la conexión se establezca (10 segundos máximo)
-  while (millis() - startAttemptTime < 10000) {
+// Esperar hasta que la conexión se establezca (10 segundos máximo)
+  while (millis() - startAttemptTime < 20000) {
     delay(500);
     Serial.print(".");
   }
@@ -1568,28 +1505,33 @@ void connectToWiFi(const char* ssid, const char* password) {
     Serial.println("WiFi conectado.");
     Serial.println("Dirección IP: ");
     Serial.println(WiFi.localIP());
-    cantCon = 6;
+
   } else {
-    Serial.println("");
-    Serial.println("No se pudo conectar al WiFi.");
-    cantCon++;
-    Serial.print("Intentos: (");
-    Serial.print(cantCon);
-    Serial.println("/5)");
-    while (millis() - startAttemptTime < 10000){
-      delay(500);
-      Serial.print(".");
-    }
-      if (conPW = 0){
+          if (conPW = 0){
         WiFi.begin(ssid);
       }
       if (conPW = 1){
         WiFi.begin(ssid, password);
       }
+    Serial.println("Reintentando conexion..");
+    while (millis() - startAttemptTime < 20000){
+      delay(500);
+      Serial.print(".");
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("");
+    Serial.println("WiFi conectado.");
+    Serial.println("Dirección IP: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("Error conexion WiFi. ");
+  }
+
 
   }
 
-  } 
+  
   
   
 }
@@ -1668,5 +1610,73 @@ void checkWiFiConnection() {
     connectToWiFi(ssid.c_str(), password.c_str());
   } else {
     Serial.println("WiFi connected.");
+  }
+}
+
+void modificarValoresArray() {
+  // Limpia cualquier dato residual en el buffer serial
+  while (Serial.available() > 0) {
+    Serial.read();
+  }
+
+  Serial.println("Ingrese los valores del array, separados por comas, en el siguiente formato:");
+  Serial.println("valor1, valor2,");
+  Serial.println("valor3, valor4,");
+  Serial.println("...");
+  Serial.println("Nota: Use solo números enteros.");
+
+  // Espera hasta que haya datos disponibles en el buffer serial
+  while (!Serial.available()) {}
+
+  // Solo procede si hay datos disponibles
+  if (Serial.available() > 0) {
+    String input = Serial.readString();
+    input.trim();  // Elimina espacios en blanco iniciales y finales
+
+    // Reemplaza los saltos de línea y tabulaciones por espacios en blanco para evitar errores en el procesamiento
+    input.replace("\n", "");
+    input.replace("\t", "");
+
+    // Llena el array con los valores ingresados, multiplicados por 10
+    int index = 0;
+    int lastIndex = 0;
+    while (index < 100 && lastIndex < input.length()) {
+      int commaIndex = input.indexOf(',', lastIndex);
+      if (commaIndex == -1) {
+        commaIndex = input.length();
+      }
+      String value = input.substring(lastIndex, commaIndex);
+      value.trim();  // Elimina posibles espacios en blanco alrededor del valor
+      IRsignal[index] = value.toInt() * 10; // Multiplica por 10 antes de guardar, esto es un cambio de unidades de milisegundos a microsegundos
+      lastIndex = commaIndex + 1;
+      index++;
+    }
+
+    // Completa el resto del array con ceros si no se llenó completamente
+    while (index < 100) {
+      IRsignal[index] = 0;
+      index++;
+    }
+
+    Serial.println("Valores del array modificados.");
+  }
+  mostrarArray();
+  Guardado_General();
+}
+
+
+void mostrarArray() {
+  Serial.println("Señal IR:");
+  for (int i = 0; i < 100; i++) {
+    Serial.print(IRsignal[i]);
+    if (i < 100 - 1) {
+      Serial.print(", ");
+    }
+  }
+  Serial.println();
+
+  // Limpia el buffer serial para evitar lecturas erróneas
+  while (Serial.available() > 0) {
+    Serial.read();
   }
 }
