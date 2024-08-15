@@ -2,15 +2,17 @@
 
 El programa es capaz de controlar 4 reles independientes. 
 Pueden funcionar en modo Manual, o Automatico.
-Rele 1: Sube parametro (H, T, D)
-Rele 2: Baja parametro (H, T, D) 
-Rele 3: Timer diario (Ej: Luz)
-Rele 4: Timer diario + semanal (Ej: Riego)
+Rele 1: Sube parametro (Hum, Temp, DPV, TempA)
+Rele 2: Baja parametro (Hum, Temp, DPV, TempA) 
+Rele 3: Timer diario (Ej: Luz) (Hora encendido / Hora Apagado)
+Rele 4: Timer diario + semanal (Ej: Riego) (Hora Enc / Hora Apag) + (DiaRiego / DiaNoRiego)
 
 Conexion de sensores: 
-Temperatura y Humedad ambiente -> 19
-Temperatura de Agua -> 5
+
 Sensor Emisor IR -> 4
+Temperatura de Agua -> 5
+Sensor IR Receptor -> 14
+Temperatura y Humedad ambiente -> 19
 Sensor PH -> 34
 
 Chenge Log:
@@ -23,13 +25,13 @@ Chenge Log:
 * Envia datos a una hoja de calculo de google
 * Se agrego la funcion de medir PH
 * Se agrego funcion de Medir temperatura de Agua
-* Se agrego funcion para enviar señal IR en el R2, se cargan los valores manualmente.
+* Se agrego funcion para enviar señal IR en el R2, se cargan los valores por serial (carga manual)
 * Se optimizo la parte del codigo donde se encienden y apagan los Rele.
 * Se agrego la funcion de "clonar" la señal IR con un sensor Receptor. (carga automatica)
 
 */
 
-#include <IRsend.h>
+
 #include "esp_system.h"
 #include <DHT.h>
 #include <Wire.h>
@@ -48,6 +50,8 @@ Chenge Log:
 #include <IRrecv.h>
 #include <IRremoteESP8266.h>
 #include <IRutils.h>
+#include <IRsend.h>
+#include <Adafruit_AHTX0.h>
 
 #define H 1
 #define T 2
@@ -59,14 +63,16 @@ Chenge Log:
 #define CONFIG 3
 #define STATUS 4
 
+// Aca se muestra como van conectados los componentes
+
 #define sensorIRpin 4 //Sensor Emisor IR
-#define sensorTempAgua 5
-#define sensorIRreceptor 14
+#define sensorTempAgua 5 //Sensor DS
+#define sensorIRreceptor 14 
 #define RELAY4 15
 #define RELAY3 16
 #define RELAY2 17
 #define RELAY1 18
-#define sensor1PIN 19 //Temperatura y humedadAmbiente
+#define sensor1PIN 19 //Temperatura y humedad Ambiente
 #define SensorPin 34    //PH   
 
 #define Offset 0.00             // deviation compensate
@@ -440,8 +446,10 @@ if (rtc.now().minute() == 0 && hour != lastHourSent){
      if (paramR1 == H){
        if (humidity < minR1 && R4estado == HIGH){
         digitalWrite(RELAY1, LOW);
+        R1estado = LOW;
       }  if (humidity > maxR1 && R4estado == LOW){
         digitalWrite(RELAY1, HIGH);
+        R1estado = HIGH;
 
       }
     }
@@ -498,13 +506,13 @@ if (modoR2 == AUTO){
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
         irsend.sendRaw(IRsignal, 72, 38);
-        delay(1000);
+        delay(200);
 
       }  if (humidity < minR2 && R2estado == LOW){
         digitalWrite(RELAY2, HIGH);
         R2estado = HIGH;
         irsend.sendRaw(IRsignal, 72, 38);
-        delay(1000);
+        delay(200);
 
       }
     }
@@ -513,13 +521,13 @@ if (modoR2 == AUTO){
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
         irsend.sendRaw(IRsignal, 72, 38);
-        delay(1000);
+        delay(200);
 
       }  if (temperature < minR2 && R2estado == LOW){
         digitalWrite(RELAY2, HIGH);
         R2estado = HIGH;
         irsend.sendRaw(IRsignal, 72, 38);
-        delay(1000);
+        delay(200);
 
       }
     }
@@ -529,13 +537,13 @@ if (modoR2 == AUTO){
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
         irsend.sendRaw(IRsignal, 72, 38);
-        delay(1000);
+        delay(200);
 
       }  if (DPV < minR2 && R2estado == LOW){
         digitalWrite(RELAY2, HIGH);
         R2estado = HIGH;
         irsend.sendRaw(IRsignal, 72, 38);
-        delay(1000);
+        delay(200);
 
       }
     }
@@ -545,13 +553,13 @@ if (modoR2 == AUTO){
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
         irsend.sendRaw(IRsignal, 72, 38);
-        delay(1000);
+        delay(200);
 
       }  if (temperatureC < minR2 && R2estado == LOW){
         digitalWrite(RELAY2, HIGH);
         R2estado = HIGH;
         irsend.sendRaw(IRsignal, 72, 38);
-        delay(1000);
+        delay(200);
 
       }
     }
@@ -611,7 +619,7 @@ if (modoR4 == AUTO){
   }
 }
 
-  delay(1000);
+  delay(2000);
 }
 
 
@@ -1354,8 +1362,6 @@ if (text == "/DomingoNoRiego"){
   bot.sendMessage(chat_id, modoRieg, "Markdown");
   Guardado_General();
 }
-
-
   // RELE 4 CONFIG
 
   if (text == "/horaOnR4config"){
@@ -1376,9 +1382,7 @@ if (horaOnR4 > 0){
   Guardado_General();
   R4config = 0;
 }
-  
 }
-
 
   if (text == "/minOnR4config"){
   modoR4 = CONFIG;
@@ -1397,7 +1401,6 @@ if (minOnR4 > 0){
   Guardado_General();
   R4config = 0;
 }
-
 }
 
 if (text == "/horaOffR4config"){
@@ -1437,18 +1440,11 @@ if (minOffR4 > 0){
   Guardado_General();
   R4config = 0;
 }
-
 }
-
-
 
 //  MOSTRAR PARAMETROS
 
-
 if (text == "/infoconfig"){
-
-
-
   String infoConfig = "INFO CONFIG: \n";
       infoConfig += "Rele 1: \n";
       infoConfig += "minR1: " + String(minR1) + ".\n";
@@ -1468,7 +1464,6 @@ if (text == "/infoconfig"){
       infoConfig += "Hora de apagado: " + String(horaOffR4) + ":" + String(minOffR4) + "\n";
       infoConfig += "modoR4: " + String(modoR4) + ".\n";
       bot.sendMessage(chat_id, infoConfig, "Markdown");
-  
 }
 
 if (text == "/status" || modoMenu == STATUS)
@@ -1502,9 +1497,6 @@ if (text == "/status" || modoMenu == STATUS)
     statusMessage += "(" + String(PHvolt, 2) + " V)\n";
     statusMessage += "Temp Agua: " + String(temperatureC, 2) + " °C\n";
     statusMessage += dateTime; // Agrega la fecha y hora al mensaje
-
-
-
     bot.sendMessage(chat_id, statusMessage, "");
 }
 
@@ -1513,29 +1505,17 @@ if (text == "/resetDruidaBot") {
       bot.sendMessage(chat_id, resetMsg, "Markdown");
       delay(2000);
       reset = 1;
-
-
-      
     }
 
     if (text == "/enviarData") {
       String dataMsg = "Enviando data a Google Sheet\n";
       bot.sendMessage(chat_id, dataMsg, "Markdown");
-      delay(2000);
+      delay(500);
       sendDataToGoogleSheets();
-
-
-      
     }
-
-
-  
   delay(500);
-
 }
 }
-
-
 
 
 void modificarWifi() {
@@ -1661,13 +1641,7 @@ void connectToWiFi(const char* ssid, const char* password) {
   } else {
     Serial.println("Error conexion WiFi. ");
   }
-
-
-  }
-
-  
-  
-  
+}
 }
 
 void writeStringToEEPROM(int addrOffset, const String &strToWrite) {
