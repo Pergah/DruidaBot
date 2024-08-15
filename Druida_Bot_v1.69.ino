@@ -13,17 +13,21 @@ Temperatura de Agua -> 5
 Sensor Emisor IR -> 4
 Sensor PH -> 34
 
-La red WiFi se puede cambiar desde el serial
-El chat ID se puede cambiar desde el serial
-Solucionado, no guardaba bien horarios R3 y R4
-Se agrego la funcion "/resetDruidaBot" para reiniciar a distancia el dispositivo
-Se mejoro sistema anti caida de internet (antes se bugeaba al caerse el internet)
-Envia datos a una hoja de calculo de google
-Se agrego la funcion de medir PH
-Se agrego funcion de Medir temperatura de Agua
-Se agrego funcion para enviar señal IR en el R2
+Chenge Log:
+
+* La red WiFi se puede cambiar desde el serial
+* El chat ID se puede cambiar desde el serial
+* Solucionado, no guardaba bien horarios R3 y R4
+* Se agrego la funcion "/resetDruidaBot" para reiniciar a distancia el dispositivo
+* Se mejoro sistema anti caida de internet (antes se bugeaba al caerse el internet)
+* Envia datos a una hoja de calculo de google
+* Se agrego la funcion de medir PH
+* Se agrego funcion de Medir temperatura de Agua
+* Se agrego funcion para enviar señal IR en el R2
+* Se optimizo la parte del codigo donde se encienden y apagan los Rele.
 
 */
+
 #include <IRsend.h>
 #include "esp_system.h"
 #include <DHT.h>
@@ -136,7 +140,11 @@ byte estadoR2 = 0;
 byte estadoR3 = 0;
 byte estadoR4 = 0;
 
+bool R1estado = HIGH;
 bool R2estado = HIGH;
+bool R3estado = HIGH;
+bool R4estado = HIGH;
+
 
 float DPV = 0;
 
@@ -364,20 +372,24 @@ if (rtc.now().minute() == 0 && hour != lastHourSent){
 
   //MODO MANUAL R1
   if (modoR1 == MANUAL){ 
-    if (estadoR1 == 1){
+    if (estadoR1 == 1 && R1estado == HIGH){
     digitalWrite(RELAY1, LOW); 
-  } else {
+    R1estado = LOW;
+  } 
+  if (estadoR1 == 0 && R1estado == LOW){
     digitalWrite(RELAY1, HIGH);
+    R1estado = HIGH;
 
   }
   }
 
  //MODO MANUAL R2
   if (modoR2 == MANUAL){ 
-    if (estadoR2 == 1){
+    if (estadoR2 == 1 && R2estado == HIGH){
     digitalWrite(RELAY2, LOW); 
     R2estado = LOW;
-  } else {
+  } 
+  if (estadoR2 == 0 && R2estado == LOW) {
     digitalWrite(RELAY2, HIGH);
     R2estado = HIGH;
   }
@@ -385,19 +397,25 @@ if (rtc.now().minute() == 0 && hour != lastHourSent){
 
  //MODO MANUAL R3
   if (modoR3 == MANUAL){ 
-    if (estadoR3 == 1){
+    if (estadoR3 == 1 && R3estado == HIGH){
     digitalWrite(RELAY3, LOW);
-  } else {
+    R3estado = LOW;
+  } 
+  if (estadoR3 == 0 && R3estado == LOW) {
     digitalWrite(RELAY3, HIGH);
+    R3estado = HIGH;
   }
   }
 
   //MODO MANUAL R4
   if (modoR4 == MANUAL){ 
-    if (estadoR4 == 1){
+    if (estadoR4 == 1 && R4estado == HIGH){
     digitalWrite(RELAY4, LOW); 
-  } else {
+    R4estado = LOW;
+  } 
+  if (estadoR4 == 0 && R4estado == LOW) {
     digitalWrite(RELAY4, HIGH);
+    R4estado = HIGH;
   }
   }
   
@@ -409,40 +427,48 @@ if (rtc.now().minute() == 0 && hour != lastHourSent){
     //Serial.print("Rele (UP) Automatico");
 
      if (paramR1 == H){
-       if (humidity < minR1){
+       if (humidity < minR1 && R4estado == HIGH){
         digitalWrite(RELAY1, LOW);
-      }  if (humidity > maxR1){
+      }  if (humidity > maxR1 && R4estado == LOW){
         digitalWrite(RELAY1, HIGH);
 
       }
     }
      if(paramR1 == T){
-       if (temperature < minR1){
+       if (temperature < minR1 && R1estado == HIGH){
         digitalWrite(RELAY1, LOW);
+        R1estado = LOW;
 
-      }  if (temperature > minR1){
+      }  if (temperature > minR1 && R1estado == LOW){
         digitalWrite(RELAY1, HIGH);
+        R1estado = HIGH;
 
       }
     }
 
      if(paramR1 == D){
-       if (DPV < minR1){
+       if (DPV < minR1 && R1estado == HIGH){
         digitalWrite(RELAY1, LOW);
+        R1estado = LOW;
 
-         if(DPV > maxR1){
-          digitalWrite(RELAY1, HIGH);
+
+      if(DPV > maxR1 && R1estado == LOW){
+        digitalWrite(RELAY1, HIGH);
+        R1estado = HIGH;
+
 
         }
       }
     }
 
          if(paramR1 == TA){
-       if (temperatureC < minR1){
+       if (temperatureC < minR1 && R1estado == HIGH){
         digitalWrite(RELAY1, LOW);
+        R1estado = LOW;
 
-         if(temperatureC > maxR1){
+         if(temperatureC > maxR1 && R1estado == LOW){
           digitalWrite(RELAY1, HIGH);
+          R1estado = HIGH;
 
         }
       }
@@ -459,13 +485,13 @@ if (modoR2 == AUTO){
      if (paramR2 == H && R2estado == HIGH){
        if (humidity > maxR2){
         digitalWrite(RELAY2, LOW);
-        R2estado == LOW;
+        R2estado = LOW;
         irsend.sendRaw(IRsignal, 72, 38);
         delay(1000);
 
       }  if (humidity < minR2 && R2estado == LOW){
         digitalWrite(RELAY2, HIGH);
-        R2estado == HIGH;
+        R2estado = HIGH;
         irsend.sendRaw(IRsignal, 72, 38);
         delay(1000);
 
@@ -474,13 +500,13 @@ if (modoR2 == AUTO){
          if (paramR2 == T && R2estado == HIGH){
        if (temperature > maxR2){
         digitalWrite(RELAY2, LOW);
-        R2estado == LOW;
+        R2estado = LOW;
         irsend.sendRaw(IRsignal, 72, 38);
         delay(1000);
 
       }  if (temperature < minR2 && R2estado == LOW){
         digitalWrite(RELAY2, HIGH);
-        R2estado == HIGH;
+        R2estado = HIGH;
         irsend.sendRaw(IRsignal, 72, 38);
         delay(1000);
 
@@ -490,13 +516,13 @@ if (modoR2 == AUTO){
          if (paramR2 == D && R2estado == HIGH){
        if (DPV > maxR2){
         digitalWrite(RELAY2, LOW);
-        R2estado == LOW;
+        R2estado = LOW;
         irsend.sendRaw(IRsignal, 72, 38);
         delay(1000);
 
       }  if (DPV < minR2 && R2estado == LOW){
         digitalWrite(RELAY2, HIGH);
-        R2estado == HIGH;
+        R2estado = HIGH;
         irsend.sendRaw(IRsignal, 72, 38);
         delay(1000);
 
@@ -506,13 +532,13 @@ if (modoR2 == AUTO){
              if (paramR2 == TA && R2estado == HIGH){
        if (temperatureC > maxR2){
         digitalWrite(RELAY2, LOW);
-        R2estado == LOW;
+        R2estado = LOW;
         irsend.sendRaw(IRsignal, 72, 38);
         delay(1000);
 
       }  if (temperatureC < minR2 && R2estado == LOW){
         digitalWrite(RELAY2, HIGH);
-        R2estado == HIGH;
+        R2estado = HIGH;
         irsend.sendRaw(IRsignal, 72, 38);
         delay(1000);
 
@@ -545,10 +571,14 @@ if (modoR2 == AUTO){
   for (c = 0; c < 7 ; c++){
    if (diasRiego[c] == 1){
      if (c == day){
-  if (currentTime >= startR3 && currentTime < offR3){
+  if (currentTime >= startR3 && currentTime < offR3 && R3estado == HIGH){
     digitalWrite(RELAY3, LOW);
+    R3estado = LOW;
   } else {
+    if (R3estado == LOW){ 
     digitalWrite(RELAY3, HIGH);
+    R3estado = HIGH;
+    }
   }
     }
   }
@@ -559,10 +589,14 @@ if (modoR2 == AUTO){
 
 if (modoR4 == AUTO){
 
-  if (currentTime >= startR4 && currentTime < offR4){
+  if (currentTime >= startR4 && currentTime < offR4 && R4estado == HIGH){
     digitalWrite(RELAY4, LOW);
+    R4estado = LOW;
   } else {
+    if (R4estado == LOW){ 
     digitalWrite(RELAY4, HIGH);
+    R4estado = HIGH;
+    }
   }
 }
 
