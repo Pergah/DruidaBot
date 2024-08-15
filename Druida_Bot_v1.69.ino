@@ -23,8 +23,9 @@ Chenge Log:
 * Envia datos a una hoja de calculo de google
 * Se agrego la funcion de medir PH
 * Se agrego funcion de Medir temperatura de Agua
-* Se agrego funcion para enviar señal IR en el R2
+* Se agrego funcion para enviar señal IR en el R2, se cargan los valores manualmente.
 * Se optimizo la parte del codigo donde se encienden y apagan los Rele.
+* Se agrego la funcion de "clonar" la señal IR con un sensor Receptor. (carga automatica)
 
 */
 
@@ -44,6 +45,9 @@ Chenge Log:
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <Arduino.h>
+#include <IRrecv.h>
+#include <IRremoteESP8266.h>
+#include <IRutils.h>
 
 #define H 1
 #define T 2
@@ -57,6 +61,7 @@ Chenge Log:
 
 #define sensorIRpin 4 //Sensor Emisor IR
 #define sensorTempAgua 5
+#define sensorIRreceptor 14
 #define RELAY4 15
 #define RELAY3 16
 #define RELAY2 17
@@ -72,7 +77,13 @@ Chenge Log:
 int pHArray[ArrayLenth];        // Store the average value of the sensor feedback
 int pHArrayIndex = 0;
 
-uint16_t IRsignal[100] = {0};
+const uint16_t kRecvPin = sensorIRreceptor;
+const uint16_t kCaptureBufferSize = 1024;
+IRrecv irrecv(kRecvPin, kCaptureBufferSize);
+decode_results results;
+
+uint16_t IRsignal[150] = {0};
+uint16_t IRsignalLength = 0;
 IRsend irsend(sensorIRpin);
 
 //const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba y roge)
@@ -145,7 +156,6 @@ bool R2estado = HIGH;
 bool R3estado = HIGH;
 bool R4estado = HIGH;
 
-
 float DPV = 0;
 
 int diaNumero;
@@ -176,6 +186,7 @@ void setup() {
   dht.begin();
   sensors.begin();
   irsend.begin();   
+  irrecv.enableIRIn();
   // Configurar pines de relé como salidas
   pinMode(RELAY1, OUTPUT);
   pinMode(RELAY2, OUTPUT);
@@ -708,7 +719,7 @@ void Carga_General() {
   minOffR4 = EEPROM.get(170, minOffR4);
   chat_id = EEPROM.get(200, chat_id);
   for (int i = 0; i < 100; i++) {
-    IRsignal[i] = EEPROM.get(300 + i * sizeof(uint16_t), IRsignal[i]);
+    IRsignal[i] = EEPROM.get(250 + i * sizeof(uint16_t), IRsignal[i]);
   }
   
   
@@ -754,7 +765,7 @@ void Guardado_General() {
   EEPROM.put(170, minOffR4);
   EEPROM.put(200, chat_id);
   for (int i = 0; i < 100; i++) {
-    EEPROM.put(300 + i * sizeof(uint16_t), IRsignal[i]);
+    EEPROM.put(250 + i * sizeof(uint16_t), IRsignal[i]);
   }
   EEPROM.commit();
   
@@ -821,6 +832,7 @@ void handleNewMessages(int numNewMessages)
 
       
       bot.sendMessage(chat_id, "Rele 1 is ON", "");
+      Guardado_General();
       delay(500);
     }
 
@@ -829,6 +841,7 @@ void handleNewMessages(int numNewMessages)
       modoR1 = MANUAL;
       estadoR1 = 0;
       bot.sendMessage(chat_id, "Rele 1 is OFF", "");
+      Guardado_General();
       delay(500);
     }
 
@@ -838,6 +851,7 @@ void handleNewMessages(int numNewMessages)
       modoR2 = MANUAL;
       estadoR2 = 1;
       bot.sendMessage(chat_id, "Rele 2 is ON", "");
+      Guardado_General();
       delay(500);
     }
 
@@ -846,6 +860,7 @@ void handleNewMessages(int numNewMessages)
       modoR2 = MANUAL;
       estadoR2 = 0;
       bot.sendMessage(chat_id, "Rele 2 is OFF", "");
+      Guardado_General();
       delay(500);
     }
 
@@ -855,6 +870,7 @@ void handleNewMessages(int numNewMessages)
       modoR3 = MANUAL;
       estadoR3 = 1; 
       bot.sendMessage(chat_id, "Rele 3 is ON", "");
+      Guardado_General();
       delay(500);
     }
 
@@ -863,6 +879,7 @@ void handleNewMessages(int numNewMessages)
       modoR3 = MANUAL;
       estadoR3 = 0;
       bot.sendMessage(chat_id, "Rele 3 is OFF", "");
+      Guardado_General();
       delay(500);
     }
 
@@ -872,6 +889,7 @@ void handleNewMessages(int numNewMessages)
       modoR4 = MANUAL;
       estadoR4 = 1;
       bot.sendMessage(chat_id, "Rele 4 is ON", "");
+      Guardado_General();
       delay(500);
     }
 
@@ -880,6 +898,7 @@ void handleNewMessages(int numNewMessages)
       modoR4 = MANUAL;
       estadoR4 = 0;
       bot.sendMessage(chat_id, "Rele 4 is OFF", "");
+      Guardado_General();
       delay(500);
     }
 
@@ -913,6 +932,7 @@ if (text == "/auto" || modoMenu == AUTO){
       
       modoR1 = AUTO;
       bot.sendMessage(chat_id, "Rele 1 Automatico", "");
+      Guardado_General();
       delay(500);
     }
 
@@ -920,14 +940,17 @@ if (text == "/auto" || modoMenu == AUTO){
     {
       modoR2 = AUTO;
       bot.sendMessage(chat_id, "Rele 2 Automatico", "");
+      Guardado_General();
       delay(500);
     }
 
     if (text == "/R3auto")
+    
     {
       
       modoR3 = AUTO; 
       bot.sendMessage(chat_id, "Rele 3 Automatico", "");
+      Guardado_General();
       delay(500);
     }
 
@@ -935,6 +958,7 @@ if (text == "/auto" || modoMenu == AUTO){
     {
       modoR4 = AUTO;
       bot.sendMessage(chat_id, "Rele 4 Automatico", "");
+      Guardado_General();
   
       delay(500);
     }
@@ -984,6 +1008,7 @@ if (R1config == 1){
   Serial.println(minR1);
   bot.sendMessage(chat_id, "Valor min R1 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
+  Guardado_General();
   R1config = 0;
   }
 
@@ -1006,6 +1031,7 @@ if (R1config == 2){
   Serial.println(maxR1);
   bot.sendMessage(chat_id, "Valor max R1 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
+  Guardado_General();
   R1config = 0;
   }
 
@@ -1028,6 +1054,7 @@ if (R1config == 3){
   Serial.println(paramR1);
   bot.sendMessage(chat_id, "Valor param R1 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
+  Guardado_General();
   R1config = 0;
   }
 }
@@ -1049,7 +1076,7 @@ if (R2config == 1){
   Serial.println(minR2);
   bot.sendMessage(chat_id, "Valor min R2 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
-
+  Guardado_General();
   R2config = 0;
   }
 
@@ -1071,7 +1098,7 @@ if (R2config == 2){
   Serial.println(maxR2);
   bot.sendMessage(chat_id, "Valor max R2 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
-  
+  Guardado_General();
   R2config = 0;
   }
 
@@ -1094,7 +1121,7 @@ if (R2config == 3){
   Serial.println(paramR2);
   bot.sendMessage(chat_id, "Valor param R2 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
-  
+  Guardado_General();
   R2config = 0;
   }
 }
@@ -1115,6 +1142,7 @@ if (horaOnR3 > 0){
   Serial.println(horaOnR3);
   bot.sendMessage(chat_id, "Valor hora Encendido Rele 3 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
+  Guardado_General();
   R3config = 0;
 }
 }
@@ -1133,6 +1161,7 @@ if (minOnR3 > 0){
   Serial.println(minOnR3);
   bot.sendMessage(chat_id, "Valor minuto de encendido R3 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
+  Guardado_General();
   R3config = 0;
 }
 }
@@ -1151,7 +1180,7 @@ if (horaOffR3 > 0){
   Serial.println(horaOffR3);
   bot.sendMessage(chat_id, "Hora de apagado R3 modificado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
-
+  Guardado_General();
   R3config = 0;
 }
 }
@@ -1170,7 +1199,7 @@ if (minOffR3 > 0){
   Serial.println(minOffR3);
   bot.sendMessage(chat_id, "Valor minuto de apagado R3 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
-
+  Guardado_General();
   R3config = 0;
 }
 }
@@ -1213,6 +1242,7 @@ if (text == "/LunesRiego"){
   diasRiego[1] = 1;
   bot.sendMessage(chat_id, "Lunes configurado: Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
   
 
 }
@@ -1221,6 +1251,7 @@ if (text == "/LunesNoRiego"){
   diasRiego[1] = 0;
   bot.sendMessage(chat_id, "Lunes configurado: No Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
   
 
 }
@@ -1229,6 +1260,7 @@ if (text == "/MartesRiego"){
   diasRiego[2] = 1;
   bot.sendMessage(chat_id, "Martes configurado: Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
   
 
 }
@@ -1237,6 +1269,7 @@ if (text == "/MartesNoRiego"){
   diasRiego[2] = 0;
   bot.sendMessage(chat_id, "Martes configurado: No Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
   
 
 }
@@ -1245,6 +1278,7 @@ if (text == "/MiercolesRiego"){
   diasRiego[3] = 1;
   bot.sendMessage(chat_id, "Miercoles configurado: Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
   
 
 }
@@ -1253,6 +1287,7 @@ if (text == "/MiercolesNoRiego"){
   diasRiego[3] = 0;
   bot.sendMessage(chat_id, "Miercoles configurado: No Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
   
 
 }
@@ -1261,6 +1296,7 @@ if (text == "/JuevesRiego"){
   diasRiego[4] = 1;
   bot.sendMessage(chat_id, "Jueves configurado: Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
 
 }
 
@@ -1268,6 +1304,7 @@ if (text == "/JuevesNoRiego"){
   diasRiego[4] = 0;
   bot.sendMessage(chat_id, "Jueves configurado: No Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
 
 }
 
@@ -1275,6 +1312,7 @@ if (text == "/ViernesRiego"){
   diasRiego[5] = 1;
   bot.sendMessage(chat_id, "Viernes configurado: Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
 
 }
 
@@ -1282,6 +1320,7 @@ if (text == "/ViernesNoRiego"){
   diasRiego[5] = 0;
   bot.sendMessage(chat_id, "Viernes configurado: No Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
 
 }
 
@@ -1289,6 +1328,7 @@ if (text == "/SabadoRiego"){
   diasRiego[6] = 1;
   bot.sendMessage(chat_id, "Sabado configurado: Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
 
 }
 
@@ -1296,6 +1336,7 @@ if (text == "/SabadoNoRiego"){
   diasRiego[6] = 0;
   bot.sendMessage(chat_id, "Sabado configurado: No Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
 
 }
 
@@ -1303,6 +1344,7 @@ if (text == "/DomingoRiego"){
   diasRiego[0] = 1;
   bot.sendMessage(chat_id, "Domingo configurado: Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
 
 }
 
@@ -1310,6 +1352,7 @@ if (text == "/DomingoNoRiego"){
   diasRiego[0] = 0;
   bot.sendMessage(chat_id, "Domingo configurado: No Riego");
   bot.sendMessage(chat_id, modoRieg, "Markdown");
+  Guardado_General();
 }
 
 
@@ -1330,7 +1373,7 @@ if (horaOnR4 > 0){
   Serial.println(horaOnR4);
   bot.sendMessage(chat_id, "Valor hora Encendido Rele 4 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
-
+  Guardado_General();
   R4config = 0;
 }
   
@@ -1351,7 +1394,7 @@ if (minOnR4 > 0){
   Serial.println(minOnR4);
   bot.sendMessage(chat_id, "Valor minuto de encendido de R4 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
-
+  Guardado_General();
   R4config = 0;
 }
 
@@ -1371,7 +1414,7 @@ if (horaOffR4 > 0){
   Serial.println(horaOffR4);
   bot.sendMessage(chat_id, "Valor hora de Apagado R4 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
-
+  Guardado_General();
   R4config = 0;
 }
 
@@ -1391,7 +1434,7 @@ if (minOffR4 > 0){
   Serial.println(minOffR4);
   bot.sendMessage(chat_id, "Valor minuto de Apagado R4 guardado");
   bot.sendMessage(chat_id, modoConf, "Markdown");
-
+  Guardado_General();
   R4config = 0;
 }
 
@@ -1476,7 +1519,7 @@ if (text == "/resetDruidaBot") {
     }
 
     if (text == "/enviarData") {
-      String dataMsg = "Enviando Data\n";
+      String dataMsg = "Enviando data a Google Sheet\n";
       bot.sendMessage(chat_id, dataMsg, "Markdown");
       delay(2000);
       sendDataToGoogleSheets();
@@ -1490,7 +1533,6 @@ if (text == "/resetDruidaBot") {
   delay(500);
 
 }
-  Guardado_General();
 }
 
 
@@ -1711,47 +1753,83 @@ void modificarValoresArray() {
     Serial.read();
   }
 
-  Serial.println("Ingrese los valores del array, separados por comas, en el siguiente formato:");
-  Serial.println("valor1, valor2,");
-  Serial.println("valor3, valor4,");
-  Serial.println("...");
-  Serial.println("Nota: Use solo números enteros.");
+  // Preguntar al usuario si desea carga manual o automática
+  Serial.println("¿Desea ingresar los valores manualmente (1) o cargarlos automáticamente usando el sensor IR (2)? Ingrese 1 o 2:");
 
-  // Espera hasta que haya datos disponibles en el buffer serial
-  while (!Serial.available()) {}
-
-  // Solo procede si hay datos disponibles
-  if (Serial.available() > 0) {
-    String input = Serial.readString();
-    input.trim();  // Elimina espacios en blanco iniciales y finales
-
-    // Reemplaza los saltos de línea y tabulaciones por espacios en blanco para evitar errores en el procesamiento
-    input.replace("\n", "");
-    input.replace("\t", "");
-
-    // Llena el array con los valores ingresados, multiplicados por 10
-    int index = 0;
-    int lastIndex = 0;
-    while (index < 100 && lastIndex < input.length()) {
-      int commaIndex = input.indexOf(',', lastIndex);
-      if (commaIndex == -1) {
-        commaIndex = input.length();
-      }
-      String value = input.substring(lastIndex, commaIndex);
-      value.trim();  // Elimina posibles espacios en blanco alrededor del valor
-      IRsignal[index] = value.toInt() * 10; // Multiplica por 10 antes de guardar, esto es un cambio de unidades de milisegundos a microsegundos
-      lastIndex = commaIndex + 1;
-      index++;
+  // Esperar a que el usuario haga una selección válida
+  int selection = 0;
+  while (selection != '1' && selection != '2') {
+    if (Serial.available() > 0) {
+      selection = Serial.read();
     }
-
-    // Completa el resto del array con ceros si no se llenó completamente
-    while (index < 100) {
-      IRsignal[index] = 0;
-      index++;
-    }
-
-    Serial.println("Valores del array modificados.");
   }
+
+  if (selection == '1') {
+    // Proceso de carga manual
+    Serial.println("Ingrese los valores del array, separados por comas, en el siguiente formato:");
+    Serial.println("valor1, valor2,");
+    Serial.println("valor3, valor4,");
+    Serial.println("...");
+    Serial.println("Nota: Use solo números enteros.");
+
+    // Espera hasta que haya datos disponibles en el buffer serial
+    while (!Serial.available()) {}
+
+    // Solo procede si hay datos disponibles
+    if (Serial.available() > 0) {
+      String input = Serial.readString();
+      input.trim();  // Elimina espacios en blanco iniciales y finales
+
+      // Reemplaza los saltos de línea y tabulaciones por espacios en blanco para evitar errores en el procesamiento
+      input.replace("\n", "");
+      input.replace("\t", "");
+
+      // Llena el array con los valores ingresados, multiplicados por 10
+      int index = 0;
+      int lastIndex = 0;
+      while (index < 150 && lastIndex < input.length()) {
+        int commaIndex = input.indexOf(',', lastIndex);
+        if (commaIndex == -1) {
+          commaIndex = input.length();
+        }
+        String value = input.substring(lastIndex, commaIndex);
+        value.trim();  // Elimina posibles espacios en blanco alrededor del valor
+        IRsignal[index] = value.toInt() * 10; // Multiplica por 10 antes de guardar
+        lastIndex = commaIndex + 1;
+        index++;
+      }
+
+      // Completa el resto del array con ceros si no se llenó completamente
+      while (index < 150) {
+        IRsignal[index] = 0;
+        index++;
+      }
+
+      Serial.println("Valores del array modificados.");
+    }
+  } else if (selection == '2') {
+    // Proceso de carga automática usando el sensor IR
+    Serial.println("Apunte el control remoto hacia el sensor IR y presione el botón deseado.");
+    
+    // Esperar hasta que se reciba una señal IR válida
+    while (!irrecv.decode(&results)) {
+      delay(100);  // Pequeño delay para evitar un bucle muy rápido
+    }
+
+    // Capturar los valores del buffer IR
+    IRsignalLength = results.rawlen - 1;
+    if (IRsignalLength > 150) {
+      IRsignalLength = 150; // Limitar la longitud a 150 si es mayor
+    }
+
+    for (uint16_t i = 1; i <= IRsignalLength; i++) {
+      IRsignal[i - 1] = results.rawbuf[i] * kRawTick;
+    }
+
+    Serial.println("Valores del array capturados automáticamente.");
+    irrecv.resume();  // Preparar el receptor para la siguiente señal
+  }
+
   mostrarArray();
   Guardado_General();
 }
