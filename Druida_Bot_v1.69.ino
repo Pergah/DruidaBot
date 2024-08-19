@@ -28,6 +28,7 @@ Chenge Log:
 * Se agrego funcion para enviar señal IR en el R2, se cargan los valores manualmente.
 * Se optimizo la parte del codigo donde se encienden y apagan los Rele.
 * Se agrego la funcion de "clonar" la señal IR con un sensor Receptor. (carga automatica)
+* Se arreglo la logica de R3 y R4, fallaba cuando HoraEnc > HoraApag
 
 */
 
@@ -43,6 +44,7 @@ Chenge Log:
 #include <UniversalTelegramBot.h>
 #include <EEPROM.h>
 #include <Time.h>
+//#include <TimeAlarms.h>
 #include <HTTPClient.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -53,11 +55,12 @@ Chenge Log:
 #include <IRsend.h>
 #include <Adafruit_AHTX0.h>
 
+
 #define H 1
 #define T 2
 #define D 3
 #define TA 4
-#define PH 5
+#define HS 5
 #define MANUAL 1
 #define AUTO 2
 #define CONFIG 3
@@ -65,8 +68,9 @@ Chenge Log:
 
 // Aca se muestra como van conectados los componentes
 
-#define sensorIRpin 12    //Sensor Emisor IR
 #define sensorTempAgua 5  //Sensor DS
+#define sensorIRpin 12    //Sensor Emisor IR
+#define sensorHS 13
 #define sensorIRreceptor 14
 #define RELAY4 15
 #define RELAY3 16
@@ -213,6 +217,7 @@ void setup() {
   unsigned long startMillis = millis();
   Carga_General();
 
+
   connectToWiFi(ssid.c_str(), password.c_str());
 
   secured_client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
@@ -284,7 +289,12 @@ void loop() {
     voltage = avergearray(pHArray, ArrayLenth) * 3.3 / 4096;  // Ajuste para ESP32 con referencia de 3.3V
 
     // Aplicar el factor de corrección mediante la ecuación lineal ajustada
-    pHValue = 8.21 * voltage - 3.12;  // Nueva ecuación lineal ajustada
+    //pHValue = 8.21 * voltage - 3.12;  // Nueva ecuación lineal ajustada
+    if (voltage <= 1.67) {
+        pHValue = 6.06 * voltage - 3.262;  // Ecuación para el rango de 4.01 a 6.86 pH
+    } else {
+        pHValue = 5.95 * voltage - 3.0815;  // Ecuación para el rango de 6.86 a 9.18 pH
+    }
 
     samplingTime = millis();
   }
@@ -324,6 +334,10 @@ void loop() {
   //Serial.print("Temperature: ");
   //Serial.print(temperatureC);
   //Serial.println("°C");
+
+  int humedadSuelo = analogRead(sensorHS); // Lee el valor analógico del sensor
+  Serial.print("Humedad del suelo: ");
+  Serial.println(humedadSuelo);
 
   if (temperature > maxTemp) {
     maxTemp = temperature;
@@ -583,6 +597,7 @@ void loop() {
   }
 
 
+  //TIMERS 
 
   timeOnR3 = horaOnR3 * 60 + minOnR3;
   timeOffR3 = horaOffR3 * 60 + minOffR3;
@@ -597,21 +612,37 @@ void loop() {
   int offR3 = timeOffR3;
   int startR4 = timeOnR4;  // *60
   int offR4 = timeOffR4;   // *60
-
-
   int c;
 
   if (modoR3 == AUTO) {
     for (c = 0; c < 7; c++) {
       if (diasRiego[c] == 1) {
         if (c == day) {
-          if (currentTime >= startR3 && currentTime < offR3 && R3estado == HIGH) {
-            digitalWrite(RELAY3, LOW);
-            R3estado = LOW;
-          } else {
-            if (R3estado == LOW) {
-              digitalWrite(RELAY3, HIGH);
-              R3estado = HIGH;
+          if (startR3 < offR3) { 
+            // Caso normal: encendido antes que apagado
+            if (currentTime >= startR3 && currentTime < offR3) {
+              if (R3estado == HIGH){ 
+                digitalWrite(RELAY3, LOW);
+                R3estado = LOW;
+              }
+            } else {
+              if (R3estado == LOW) {
+                digitalWrite(RELAY3, HIGH);
+                R3estado = HIGH;
+              }
+            }
+          } else { 
+            // Caso cruzando medianoche: encendido después que apagado
+            if (currentTime >= startR3 || currentTime < offR3) {
+              if (R3estado == HIGH){ 
+                digitalWrite(RELAY3, LOW);
+                R3estado = LOW;
+              }
+            } else {
+              if (R3estado == LOW) {
+                digitalWrite(RELAY3, HIGH);
+                R3estado = HIGH;
+              }
             }
           }
         }
@@ -622,10 +653,26 @@ void loop() {
   //MODO AUTO R4 (Luz)
 
   if (modoR4 == AUTO) {
-
-    if (currentTime >= startR4 && currentTime < offR4 && R4estado == HIGH) {
-      digitalWrite(RELAY4, LOW);
-      R4estado = LOW;
+  if (startR4 < offR4) { 
+    // Caso normal: encendido antes que apagado
+    if (currentTime >= startR4 && currentTime < offR4) {
+      if (R4estado == HIGH){ 
+        digitalWrite(RELAY4, LOW);
+        R4estado = LOW;
+      }
+    } else {
+      if (R4estado == LOW) {
+        digitalWrite(RELAY4, HIGH);
+        R4estado = HIGH;
+      }
+    }
+  } else { 
+    // Caso cruzando medianoche: encendido después que apagado
+    if (currentTime >= startR4 || currentTime < offR4) {
+      if (R4estado == HIGH){ 
+        digitalWrite(RELAY4, LOW);
+        R4estado = LOW;
+      }
     } else {
       if (R4estado == LOW) {
         digitalWrite(RELAY4, HIGH);
@@ -633,9 +680,11 @@ void loop() {
       }
     }
   }
+}
 
   delay(2000);
 }
+
 
 
 double avergearray(int* arr, int number) {
@@ -792,7 +841,6 @@ void Guardado_General() {
     EEPROM.put(250 + i * sizeof(uint16_t), IRsignal[i]);
   }
   EEPROM.commit();
-
   Serial.println("Guardado realizado con exito.");
 }
 
