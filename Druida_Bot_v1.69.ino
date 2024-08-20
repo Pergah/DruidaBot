@@ -29,6 +29,7 @@ Chenge Log:
 * Se optimizo la parte del codigo donde se encienden y apagan los Rele.
 * Se agrego la funcion de "clonar" la señal IR con un sensor Receptor. (carga automatica)
 * Se arreglo la logica de R3 y R4, fallaba cuando HoraEnc > HoraApag
+* Se agrego la funcion de encender los reles por X segundos en modo Manual (/R1onTime)
 
 */
 
@@ -190,6 +191,17 @@ int lastHourSent = -1;
 
 float PHval, PHvolt;
 byte estadoRTC = 0;
+
+int tiempoR1 = 0;
+int tiempoR2 = 0;
+int tiempoR3 = 0;
+int tiempoR4 = 0; 
+bool esperandoTiempoR1 = false;
+bool esperandoTiempoR2 = false;
+bool esperandoTiempoR3 = false;
+bool esperandoTiempoR4 = false;
+
+
 
 void setup() {
   Wire.begin();
@@ -433,6 +445,7 @@ void loop() {
       digitalWrite(RELAY1, LOW);
       R1estado = LOW;
     }
+
     if (estadoR1 == 0 && R1estado == LOW) {
       digitalWrite(RELAY1, HIGH);
       R1estado = HIGH;
@@ -741,7 +754,7 @@ float calcularDPV(float temperature, float humedad) {
     77.76
   };
 
-  if (temperature < 1 || temperature > 41) {
+  if (temperature > 41) {
     Serial.println("Error: Temperatura fuera de rango válido (1-41)");
     bot.sendMessage(chat_id, "Temperatura fuera de rango válido (1-41)", "");
 
@@ -844,7 +857,7 @@ void Guardado_General() {
   Serial.println("Guardado realizado con exito.");
 }
 
-
+//ACA SE CONFIGURAN TODOS LOS COMANDOS DEL BOT DE TELEGRAM, HABRIA QUE PASARLO A OTRA PESTAÑA
 
 void handleNewMessages(int numNewMessages) {
   Serial.print("handleNewMessages ");
@@ -883,10 +896,10 @@ void handleNewMessages(int numNewMessages) {
     if (text == "/manual" || modoMenu == MANUAL) {
       modoMenu = MANUAL;
       String modoManu = "MODO MANUAL \n";
-      modoManu += "/R1on - /R1off \n";
-      modoManu += "/R2on - /R2off \n";
-      modoManu += "/R3on - /R3off \n";
-      modoManu += "/R4on - /R4off \n";
+      modoManu += "/R1on - /R1off - /R1onTime\n";
+      modoManu += "/R2on - /R2off - /R2onTime\n";
+      modoManu += "/R3on - /R3off - /R3onTime\n";
+      modoManu += "/R4on - /R4off - /R4onTime\n";
       modoManu += "/controlRemoto \n";
       bot.sendMessage(chat_id, modoManu, "Markdown");
       delay(500);
@@ -911,6 +924,7 @@ void handleNewMessages(int numNewMessages) {
         Guardado_General();
         delay(500);
       }
+
 
       if (text == "/R2on") {
 
@@ -968,6 +982,76 @@ void handleNewMessages(int numNewMessages) {
         irsend.sendRaw(IRsignal, 72, 38);  // Envía la señal IR ajustada con frecuencia de 38 kHz
         delay(1000);                       // Espera 10 segundos antes de volver a emitir la señal
         bot.sendMessage(chat_id, "Señal IR enviada", "");
+        delay(500);
+      }
+
+      // Lógica para encender los relés por un tiempo determinado
+      if (text == "/R1onTime") {
+        esperandoTiempoR1 = true; // Establece que estamos esperando el tiempo de encendido para R1
+        bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 1?", "");
+        delay(500);
+      }
+
+      if (text == "/R2onTime") {
+        esperandoTiempoR2 = true; // Establece que estamos esperando el tiempo de encendido para R2
+        bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 2?", "");
+        delay(500);
+      }
+
+      if (text == "/R3onTime") {
+        esperandoTiempoR3 = true; // Establece que estamos esperando el tiempo de encendido para R3
+        bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 3?", "");
+        delay(500);
+      }
+
+      if (text == "/R4onTime") {
+        esperandoTiempoR4 = true; // Establece que estamos esperando el tiempo de encendido para R4
+        bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 4?", "");
+        delay(500);
+      }
+
+      // Espera un nuevo mensaje del usuario para ingresar el tiempo
+      if (esperandoTiempoR1 && text != "/R1onTime") {
+        tiempoR1 = text.toInt(); // Convierte el texto ingresado en un número entero
+        if (tiempoR1 > 0) { // Si el valor ingresado es válido
+          esperandoTiempoR1 = false; // Resetea la variable
+          encenderRele1PorTiempo(tiempoR1); // Enciende el relé 1 por el tiempo indicado
+        } else {
+          bot.sendMessage(chat_id, "Por favor ingresa un valor válido en segundos.", "");
+        }
+        delay(500);
+      }
+
+      if (esperandoTiempoR2 && text != "/R2onTime") {
+        tiempoR2 = text.toInt(); // Convierte el texto ingresado en un número entero
+        if (tiempoR2 > 0) { // Si el valor ingresado es válido
+          esperandoTiempoR2 = false; // Resetea la variable
+          encenderRele2PorTiempo(tiempoR2); // Enciende el relé 2 por el tiempo indicado
+        } else {
+          bot.sendMessage(chat_id, "Por favor ingresa un valor válido en segundos.", "");
+        }
+        delay(500);
+      }
+
+      if (esperandoTiempoR3 && text != "/R3onTime") {
+        tiempoR3 = text.toInt(); // Convierte el texto ingresado en un número entero
+        if (tiempoR3 > 0) { // Si el valor ingresado es válido
+          esperandoTiempoR3 = false; // Resetea la variable
+          encenderRele3PorTiempo(tiempoR3); // Enciende el relé 3 por el tiempo indicado
+        } else {
+          bot.sendMessage(chat_id, "Por favor ingresa un valor válido en segundos.", "");
+        }
+        delay(500);
+      }
+
+      if (esperandoTiempoR4 && text != "/R4onTime") {
+        tiempoR4 = text.toInt(); // Convierte el texto ingresado en un número entero
+        if (tiempoR4 > 0) { // Si el valor ingresado es válido
+          esperandoTiempoR4 = false; // Resetea la variable
+          encenderRele4PorTiempo(tiempoR4); // Enciende el relé 4 por el tiempo indicado
+        } else {
+          bot.sendMessage(chat_id, "Por favor ingresa un valor válido en segundos.", "");
+        }
         delay(500);
       }
     }
@@ -1391,7 +1475,7 @@ void handleNewMessages(int numNewMessages) {
       if (horaOnR4 > 0) {
         Serial.print("Hora encendido R4: ");
         Serial.println(horaOnR4);
-        bot.sendMessage(chat_id, "Valor hora Encendido Rele 4 guardado");
+        bot.sendMessage(chat_id, "Hora Encendido Rele 4 guardado");
         bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R4config = 0;
@@ -1409,7 +1493,7 @@ void handleNewMessages(int numNewMessages) {
       if (minOnR4 > 0) {
         Serial.print("Tiempo Minuto de encendido de Rele 4: ");
         Serial.println(minOnR4);
-        bot.sendMessage(chat_id, "Valor minuto de encendido de R4 guardado");
+        bot.sendMessage(chat_id, "Minuto de encendido de R4 guardado");
         bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R4config = 0;
@@ -1420,14 +1504,14 @@ void handleNewMessages(int numNewMessages) {
       modoR4 = CONFIG;
       modoMenu = CONFIG;
       R4config = 3;
-      bot.sendMessage(chat_id, "Ingrese hora de Apagado R4: ");
+      bot.sendMessage(chat_id, "Ingrese hora de apagado R4: ");
     }
     if (R4config == 3) {
       horaOffR4 = text.toInt();
       if (horaOffR4 > 0) {
         Serial.print("Tiempo hora de apagado Rele 4: ");
         Serial.println(horaOffR4);
-        bot.sendMessage(chat_id, "Valor hora de Apagado R4 guardado");
+        bot.sendMessage(chat_id, "Hora de apagado R4 guardado");
         bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R4config = 0;
@@ -1438,14 +1522,14 @@ void handleNewMessages(int numNewMessages) {
       modoR4 = CONFIG;
       modoMenu = CONFIG;
       R4config = 4;
-      bot.sendMessage(chat_id, "Ingrese minuto de Apagado R4 (en minutos): ");
+      bot.sendMessage(chat_id, "Ingrese minuto de Apagado R4: ");
     }
     if (R4config == 4) {
       minOffR4 = text.toInt();
       if (minOffR4 > 0) {
         Serial.print("Tiempo minuto de apagado Rele 4: ");
         Serial.println(minOffR4);
-        bot.sendMessage(chat_id, "Valor minuto de Apagado R4 guardado");
+        bot.sendMessage(chat_id, "Minuto de apagado R4 guardado");
         bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R4config = 0;
@@ -1837,4 +1921,44 @@ void mostrarArray() {
   while (Serial.available() > 0) {
     Serial.read();
   }
+}
+
+void encenderRele1PorTiempo(int tiempoSegundos) {
+  digitalWrite(RELAY1, LOW); // Enciende el relé
+  delay(tiempoSegundos * 1000); // Mantiene encendido por el tiempo indicado
+  digitalWrite(RELAY1, HIGH); // Apaga el relé
+  bot.sendMessage(chat_id, "Rele apagado después de " + String(tiempoSegundos) + " segundos", "");
+  estadoR1 = 0;
+  R1estado = HIGH;
+  Guardado_General();
+}
+
+void encenderRele2PorTiempo(int tiempoSegundos) {
+  digitalWrite(RELAY2, LOW); // Enciende el relé
+  delay(tiempoSegundos * 1000); // Mantiene encendido por el tiempo indicado
+  digitalWrite(RELAY2, HIGH); // Apaga el relé
+  bot.sendMessage(chat_id, "Rele apagado después de " + String(tiempoSegundos) + " segundos", "");
+  estadoR2 = 0;
+  R2estado = HIGH;
+  Guardado_General();
+}
+
+void encenderRele3PorTiempo(int tiempoSegundos) {
+  digitalWrite(RELAY3, LOW); // Enciende el relé
+  delay(tiempoSegundos * 1000); // Mantiene encendido por el tiempo indicado
+  digitalWrite(RELAY3, HIGH); // Apaga el relé
+  bot.sendMessage(chat_id, "Rele apagado después de " + String(tiempoSegundos) + " segundos", "");
+  estadoR3 = 0;
+  R3estado = HIGH;
+  Guardado_General();
+}
+
+void encenderRele4PorTiempo(int tiempoSegundos) {
+  digitalWrite(RELAY4, LOW); // Enciende el relé
+  delay(tiempoSegundos * 1000); // Mantiene encendido por el tiempo indicado
+  digitalWrite(RELAY4, HIGH); // Apaga el relé
+  bot.sendMessage(chat_id, "Rele apagado después de " + String(tiempoSegundos) + " segundos", "");
+  estadoR4 = 0;
+  R4estado = HIGH;
+  Guardado_General();
 }
