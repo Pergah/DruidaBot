@@ -1,13 +1,6 @@
 
 /* Druida BOT 1.618
 
-El programa es capaz de controlar 4 reles independientes. 
-Pueden funcionar en modo Manual, o Automatico.
-Rele 1: Sube parametro (Hum, Temp, DPV, TempA)
-Rele 2: Baja parametro (Hum, Temp, DPV, TempA) 
-Rele 3: Timer diario (Ej: Luz) (Hora encendido / Hora Apagado)
-Rele 4: Timer diario + semanal (Ej: Riego) (Hora Enc / Hora Apag) + (DiaRiego / DiaNoRiego)
-
 Conexion de sensores: 
 
 Sensor Emisor IR -> 4
@@ -16,24 +9,6 @@ Sensor IR Receptor -> 14
 Temperatura y Humedad ambiente -> 19
 Sensor PH -> 34
 
-Chenge Log:
-
-* La red WiFi se puede cambiar desde el serial
-* El chat ID se puede cambiar desde el serial
-* Solucionado, no guardaba bien horarios R3 y R4
-* Se agrego la funcion "/resetDruidaBot" para reiniciar a distancia el dispositivo
-* Se mejoro sistema anti caida de internet (antes se bugeaba al caerse el internet)
-* Envia datos a una hoja de calculo de google
-* Se agrego la funcion de medir PH
-* Se agrego funcion de Medir temperatura de Agua
-* Se agrego funcion para enviar señal IR en el R2, se cargan los valores manualmente.
-* Se optimizo la parte del codigo donde se encienden y apagan los Rele.
-* Se agrego la funcion de "clonar" la señal IR con un sensor Receptor. (carga automatica)
-* Se arreglo la logica de R3 y R4, fallaba cuando HoraEnc > HoraApag
-* Se agrego la funcion de encender los reles por X segundos en modo Manual (/R1onTime)
-
-
-* Falta modificar logica del R3 para que pueda accionar o no, en funcion del sensor de HumedadSuelo
 */
 
 #include "esp_system.h"
