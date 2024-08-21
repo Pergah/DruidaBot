@@ -1,5 +1,5 @@
 
-/* Druida BOT 1.619
+/* Druida BOT 1.618
 
 El programa es capaz de controlar 4 reles independientes. 
 Pueden funcionar en modo Manual, o Automatico.
