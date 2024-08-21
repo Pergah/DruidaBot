@@ -1,0 +1,16 @@
+Chenge Log:
+
+* La red WiFi se puede cambiar desde el serial
+* El chat ID se puede cambiar desde el serial
+* Solucionado, no guardaba bien horarios R3 y R4
+* Se agrego la funcion "/resetDruidaBot" para reiniciar a distancia el dispositivo
+* Se mejoro sistema anti caida de internet (antes se bugeaba al caerse el internet)
+* Envia datos a una hoja de calculo de google
+* Se agrego la funcion de medir PH
+* Se agrego funcion de Medir temperatura de Agua
+* Se agrego funcion para enviar señal IR en el R2, se cargan los valores manualmente.
+* Se optimizo la parte del codigo donde se encienden y apagan los Rele.
+* Se agrego la funcion de "clonar" la señal IR con un sensor Receptor. (carga automatica)
+* Se arreglo la logica de R3 y R4, fallaba cuando HoraEnc > HoraApag
+* Se agrego la funcion de encender los reles por X segundos en modo Manual (/R1onTime)
+* Se agrego la funcion de manejar el R3 en funcion del sensor de Humedad de Suelo. (Riego automatico inteligente)
