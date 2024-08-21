@@ -14,3 +14,4 @@ Chenge Log:
 * Se arreglo la logica de R3 y R4, fallaba cuando HoraEnc > HoraApag
 * Se agrego la funcion de encender los reles por X segundos en modo Manual (/R1onTime)
 * Se agrego la funcion de manejar el R3 en funcion del sensor de Humedad de Suelo. (Riego automatico inteligente)
+* Se crearon nuevas pestañas para no tener todo el codigo en una sola.
