@@ -15,3 +15,10 @@ Chenge Log:
 * Se agrego la funcion de encender los reles por X segundos en modo Manual (/R1onTime)
 * Se agrego la funcion de manejar el R3 en funcion del sensor de Humedad de Suelo. (Riego automatico inteligente)
 * Se crearon nuevas pestañas para no tener todo el codigo en una sola.
+
+El programa es capaz de controlar 4 reles independientes. 
+Pueden funcionar en modo Manual, o Automatico.
+Rele 1: Sube parametro (Hum, Temp, DPV, TempA)
+Rele 2: Baja parametro (Hum, Temp, DPV, TempA) 
+Rele 3: Timer diario (Ej: Luz) (Hora encendido / Hora Apagado)
+Rele 4: Timer diario + semanal (Ej: Riego) (Hora Enc / Hora Apag) + (DiaRiego / DiaNoRiego)
