@@ -9,8 +9,6 @@ void setup() {
   Serial.begin(115200);
   EEPROM.begin(512);
   rtc.begin();
-  //dht.begin();
-  //sensors.begin();
   irsend.begin();
   irrecv.enableIRIn();
   aht.begin();
@@ -97,22 +95,7 @@ void loop() {
     }
   }
 
-
-Wire.requestFrom(8, 6);  // Solicitar 6 bytes al dispositivo esclavo con dirección 8
-  
-  if (Wire.available() == 6) {
-    sensor1Value = Wire.read() << 8;    // Parte alta del valor del sensor 1
-    sensor1Value |= Wire.read();        // Parte baja del valor del sensor 1
-    sensor2Value = Wire.read() << 8;    // Parte alta del valor del sensor 2
-    sensor2Value |= Wire.read();        // Parte baja del valor del sensor 2
-    sensor3Value = Wire.read() << 8;    // Parte alta del valor del sensor 3
-    sensor3Value |= Wire.read();        // Parte baja del valor del sensor 3
-  }
-
-      // Convertir los valores directamente a porcentaje (asumiendo que los valores van de 0 a 1023)
-    sensor1Value = map(sensor1Value, 0, 1023, 0, 100);
-    sensor2Value = map(sensor2Value, 0, 1023, 0, 100);
-    sensor3Value = map(sensor3Value, 0, 1023, 0, 100);
+  requestSensorData();
 
   sensors_event_t humidity, temp;
   aht.getEvent(&humidity, &temp);
@@ -1326,9 +1309,9 @@ void requestSensorData() {
     sensor3Value |= Wire.read();        // Parte baja del sensor 3
 
     // Convertir los valores directamente a porcentaje (asumiendo que los valores van de 0 a 1023)
-    sensor1Value = map(sensor1Value, 0, 1023, 0, 100);
-    sensor2Value = map(sensor2Value, 0, 1023, 0, 100);
-    sensor3Value = map(sensor3Value, 0, 1023, 0, 100);
+    sensor1Value = map(sensor1Value, 0, 1023, 100, 0);
+    sensor2Value = map(sensor2Value, 0, 1023, 100, 0);
+    sensor3Value = map(sensor3Value, 0, 1023, 100, 0);
 
   }
 }

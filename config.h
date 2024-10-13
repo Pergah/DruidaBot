@@ -82,16 +82,7 @@ Chenge Log:
 #define RELAY3 18
 #define RELAY2 17
 #define RELAY1 16
-//#define sensorHS 34  //humedad Suelo
-//#define SensorPin 35   //PH
 
-#define Offset 0.00  // deviation compensate
-#define samplingInterval 20
-#define printInterval 800
-#define ArrayLenth 40  // times of collection
-
-int pHArray[ArrayLenth];  // Store the average value of the sensor feedback
-int pHArrayIndex = 0;
 
 const uint16_t kRecvPin = sensorIRreceptor;
 const uint16_t kCaptureBufferSize = 1024;
@@ -122,25 +113,19 @@ unsigned long bot_lasttime;
 const unsigned long wifiCheckInterval = 600000;  //WiFi CheckStatus cada 10 minutos
 unsigned long previousMillis = 0;
 
-//const int oneWireBus = sensorTempAgua;
 
 WiFiClientSecure secured_client;
 UniversalTelegramBot bot(botToken, secured_client);
 
-//DHT dht(sensor1PIN, DHT11);
-//DHT dht(sensor1PIN, DHT22);
 
 Adafruit_AHTX0 aht;
 
-//OneWire oneWire(oneWireBus);
-//DallasTemperature sensors(&oneWire);
 
 RTC_DS3231 rtc;
 
 String chat_id = "";
 String ssid = "";
 String password = "";
-
 
 
 int conPW = 1;
@@ -218,7 +203,6 @@ float minTemp = 999;
 
 int lastHourSent = -1;
 
-//float PHval, PHvolt;
 byte estadoRTC = 0;
 
 int tiempoR1 = 0;
@@ -232,18 +216,11 @@ bool esperandoTiempoR2ir = false;
 bool esperandoTiempoR3 = false;
 bool esperandoTiempoR4 = false;
 
-//int humedadSuelo;
-//float temperatureC;
-//static float pHValue, voltage;
-//int humedadMinima = 3400; // Valor en aire (seco)
-//int humedadMaxima = 1600; // Valor en agua (húmedo)
-
-
 
 WebServer server(80);
 
-
-int sensor1Value;
+//Humedad Suelo
+int sensor1Value; 
 int sensor2Value;
 int sensor3Value;
 

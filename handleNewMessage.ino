@@ -313,27 +313,27 @@ void handleNewMessages(int numNewMessages) {
     //MODO CONFIG
 
     String modoConf = "MODO CONFIG: \n";
-    modoConf += "/infoconfig\n";
-    modoConf += "/RELE 1: \n";
+    modoConf += "/infoconfig\n\n";
+    modoConf += "RELE 1: \n";
     modoConf += "/minR1config\n";
     modoConf += "/maxR1config\n";
     modoConf += "/paramR1config\n";
     modoConf += "/horaOnR1config\n";
     modoConf += "/minOnR1config\n";
     modoConf += "/horaOffR1config\n";
-    modoConf += "/minOffR1config\n";
+    modoConf += "/minOffR1config\n\n";
     modoConf += "RELE 2:\n";
     modoConf += "/minR2config\n";
     modoConf += "/maxR2config\n";
     modoConf += "/paramR2config\n";
     modoConf += "/minR2irconfig\n";
     modoConf += "/maxR2irconfig\n";
-    modoConf += "/paramR2irconfig\n";
+    modoConf += "/paramR2irconfig\n\n";
     modoConf += "RELE 3:\n";
     modoConf += "/horaOnR3config\n";
     modoConf += "/minOnR3config\n";
     modoConf += "/horaOffR3config\n";
-    modoConf += "/minOffR3config\n";
+    modoConf += "/minOffR3config\n\n";
     //modoConf += "/minR3config\n";
     //modoConf += "/maxR3config\n";
     modoConf += "RELE 4:\n";
@@ -934,7 +934,7 @@ void handleNewMessages(int numNewMessages) {
     //  MOSTRAR PARAMETROS
 
     if (text == "/infoconfig") {
-      String infoConfig = "INFO CONFIG: \n";
+      String infoConfig = "INFO CONFIG: \n\n";
       infoConfig += "Rele 1: \n";
       infoConfig += "minR1: " + String(minR1) + ".\n";
       infoConfig += "maxR1: " + String(maxR1) + ".\n";
@@ -1010,7 +1010,7 @@ void handleNewMessages(int numNewMessages) {
       //statusMessage += "PH: " + String(PHval, 2);
       //statusMessage += "(" + String(PHvolt, 2) + " V)\n";
       statusMessage += "Humedad Suelo (1): " + String(sensor1Value) + " %\n";
-      //statusMessage += "Humedad Suelo (2): " + String(sensor2Value) + " %\n";
+      statusMessage += "Humedad Suelo (2): " + String(sensor2Value) + " %\n";
       //statusMessage += "Humedad Suelo (3): " + String(sensor3Value) + " %\n";
 
       statusMessage += dateTime;  // Agrega la fecha y hora al mensaje
