@@ -1191,14 +1191,18 @@ void handleConfig() {
   html += "<input type=\"submit\" name=\"save_R4\" value=\"Guardar R4\">";
   html += "</form><br>";
 
-  // Agregar sección para modificar valores del array IR
-  /*html += "<h2>Modificar Valores del Array IR</h2>";
-  html += "<form action=\"/modificarValoresArray\" method=\"POST\">";
-  html += "Seleccione el método de carga: <br>";
-  html += "<input type=\"radio\" name=\"modoArray\" value=\"1\"> Carga manual<br>";
-  html += "<input type=\"radio\" name=\"modoArray\" value=\"2\"> Carga automática con sensor IR<br>";
-  html += "<input type=\"submit\" name=\"modificarArray\" value=\"Modificar Array\">";
-  html += "</form><br>";*/
+// Agregar sección para modificar valores del array IR
+html += "<h2>Modificar Valores del Array IR</h2>";
+html += "<form action=\"/modificarValoresArray\" method=\"POST\">";
+// Botón de selección para carga manual
+html += "<input type=\"radio\" name=\"modoArray\" value=\"1\"> Carga manual<br>";
+// Campo de texto para ingresar los valores del array manualmente
+html += "<textarea name=\"valoresArray\" placeholder=\"Ingrese los valores manualmente separados por comas\" rows=\"4\" cols=\"50\"></textarea><br>";
+html += "<input type=\"submit\" name=\"cargarManual\" value=\"Cargar Manualmente\"><br><br>";
+// Botón para la carga automática
+html += "<input type=\"radio\" name=\"modoArray\" value=\"2\"> Carga automática con sensor IR<br>";
+html += "<input type=\"submit\" name=\"cargarAutomatica\" value=\"Iniciar Carga Automática\">";
+html += "</form><br>";
 
 
 
@@ -1207,27 +1211,41 @@ void handleConfig() {
 }
 
 void handleModificarArray() {
+  String html = "<h1>Modificación del Array IR</h1>";
+
   if (server.hasArg("modoArray")) {
     String modoArray = server.arg("modoArray");
 
-    if (modoArray == "1") {
-      // Proceso de carga manual desde el menú web
-      Serial.println("Modo de carga manual seleccionado.");
-
-      // Aquí puedes modificar para permitir la entrada de valores manuales desde el menú
-      // O podrías redirigir al monitor serial si prefieres seguir utilizando Serial para el input
-      modificarValoresArray(true);  // Llama a la función con parámetro true para carga manual
+    if (modoArray == "1" && server.hasArg("valoresArray")) {
+      // Proceso de carga manual
+      String valores = server.arg("valoresArray");
+      // Separar los valores por comas y almacenarlos en el array
+      int indice = 0;
+      int posicion = 0;
+      while ((posicion = valores.indexOf(',', indice)) != -1 && indice < 150) {
+        IRsignal[indice] = valores.substring(indice, posicion).toInt();
+        indice++;
+      }
+      html += "<p>Valores ingresados manualmente:</p><p>";
+      for (int i = 0; i < indice; i++) {
+        html += String(IRsignal[i]) + ", ";
+      }
+      html += "</p>";
+      modificarValoresArray(true);
     } else if (modoArray == "2") {
       // Proceso de carga automática usando el sensor IR
-      Serial.println("Modo de carga automática con sensor IR seleccionado.");
-      modificarValoresArray(false);  // Llama a la función con parámetro false para carga automática
+      html += "<p>Modo de carga automática seleccionado.</p>";
+      html += "<p>Apunte el control remoto hacia el sensor y presione el botón deseado.</p>";
+      modificarValoresArray(false);  // Llama a la función para la carga automática
     }
+  } else {
+    html += "<p>Error: No se seleccionó un modo de carga.</p>";
   }
 
-  // Enviar mensaje de confirmación
-  String html = "<h1>Modificacion de Array Completada</h1><a href=\"/\">Volver al inicio</a>";
+  html += "<a href=\"/\">Volver al inicio</a>";
   server.send(200, "text/html", html);
 }
+
 
 void handleSaveConfig() {
   // Guardar las configuraciones individuales de R1
