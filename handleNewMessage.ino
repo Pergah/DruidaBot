@@ -244,7 +244,7 @@ void handleNewMessages(int numNewMessages) {
       modoManu += "/R2auto\n";
       modoManu += "/R2irauto\n";
       modoManu += "/R3auto\n";
-      modoManu += "/R3autoParam\n";
+      //modoManu += "/R3autoParam\n";
       modoManu += "/R4auto\n";
       bot.sendMessage(chat_id, modoManu, "Markdown");
       delay(500);
@@ -314,6 +314,7 @@ void handleNewMessages(int numNewMessages) {
 
     String modoConf = "MODO CONFIG: \n";
     modoConf += "/infoconfig\n";
+    modoConf += "/RELE 1: \n";
     modoConf += "/minR1config\n";
     modoConf += "/maxR1config\n";
     modoConf += "/paramR1config\n";
@@ -321,18 +322,21 @@ void handleNewMessages(int numNewMessages) {
     modoConf += "/minOnR1config\n";
     modoConf += "/horaOffR1config\n";
     modoConf += "/minOffR1config\n";
+    modoConf += "RELE 2:\n";
     modoConf += "/minR2config\n";
     modoConf += "/maxR2config\n";
     modoConf += "/paramR2config\n";
     modoConf += "/minR2irconfig\n";
     modoConf += "/maxR2irconfig\n";
     modoConf += "/paramR2irconfig\n";
+    modoConf += "RELE 3:\n";
     modoConf += "/horaOnR3config\n";
     modoConf += "/minOnR3config\n";
     modoConf += "/horaOffR3config\n";
     modoConf += "/minOffR3config\n";
-    modoConf += "/minR3config\n";
-    modoConf += "/maxR3config\n";
+    //modoConf += "/minR3config\n";
+    //modoConf += "/maxR3config\n";
+    modoConf += "RELE 4:\n";
     modoConf += "/horaOnR4config\n";
     modoConf += "/minOnR4config\n";
     modoConf += "/horaOffR4config\n";
@@ -970,6 +974,8 @@ void handleNewMessages(int numNewMessages) {
       float temperature = (temp.temperature);
       float humedad = (humidity.relative_humidity);
 
+      requestSensorData();
+
       //int humedadS = analogRead(sensorHS); // Lee el valor analógico del sensor
       //int humedadSuelo = map(humedadS, 0, 4095, 0, 100);
 
@@ -1003,8 +1009,9 @@ void handleNewMessages(int numNewMessages) {
       statusMessage += "DPV: " + String(DPV, 1) + " kPa\n";
       //statusMessage += "PH: " + String(PHval, 2);
       //statusMessage += "(" + String(PHvolt, 2) + " V)\n";
-      //statusMessage += "Sensor HS: " + String(sensorValue);
-//      statusMessage += "Humedad Suelo: " + String(humedadS) + " % (" + String(sensorValue) + ")\n";
+      statusMessage += "Humedad Suelo (1): " + String(sensor1Value) + " %\n";
+      //statusMessage += "Humedad Suelo (2): " + String(sensor2Value) + " %\n";
+      //statusMessage += "Humedad Suelo (3): " + String(sensor3Value) + " %\n";
 
       statusMessage += dateTime;  // Agrega la fecha y hora al mensaje
       bot.sendMessage(chat_id, statusMessage, "");

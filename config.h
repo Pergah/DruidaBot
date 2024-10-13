@@ -57,6 +57,7 @@ Chenge Log:
 #include <IRsend.h>
 #include <Adafruit_AHTX0.h>
 #include <WebServer.h>
+//#include <HardwareSerial.h>
 
 
 #define H 1
@@ -104,12 +105,12 @@ IRsend irsend(sensorIRpin);
 //const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba y roge)
 //const String botToken = "6867697701:AAHtaJ4YC3dDtk1RuFWD-_f72S5MYvlCV4w"; //DRUIDA DOS (matheu 2)
 //const String botToken = "7273841170:AAHxWF33cIDcIoxgBm3x9tzn9ISJIKoy7X8"; //DRUIDA TRES (brai e ivana)
-const String botToken = "7357647743:AAFPD1Tc099-2o-E2-Ph7SZluzwHubrl700";  //DRUIDA CINCO
-//const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (matheu)
+//const String botToken = "7357647743:AAFPD1Tc099-2o-E2-Ph7SZluzwHubrl700";  //DRUIDA CINCO
+const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (matheu)
 
-
-//const char* ssid_AP = "Druida Cuatro";  
-const char* ssid_AP = "Druida Cinco";           // Nombre de la red AP creada por el ESP32
+//const char* ssid_AP = "Druida Dos"; 
+const char* ssid_AP = "Druida Cuatro";  
+//const char* ssid_AP = "Druida Cinco";           // Nombre de la red AP creada por el ESP32
 const char* password_AP = "12345678";          // Contraseña de la red AP
 
 //String scriptId = "AKfycbwXhUu15DVEI4b1BDf8Y8Up_qKIXDUvfWgHLKppNL6rUMOnfiQRDfxGXtCt3_n0NXt_Nw"; //Druida UNO (Caba)
@@ -241,4 +242,8 @@ bool esperandoTiempoR4 = false;
 
 WebServer server(80);
 
+
+int sensor1Value;
+int sensor2Value;
+int sensor3Value;
 

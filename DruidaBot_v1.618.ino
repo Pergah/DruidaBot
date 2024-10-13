@@ -15,8 +15,6 @@ void setup() {
   irrecv.enableIRIn();
   aht.begin();
 
-  
-
   // Configurar pines de relé como salidas
   pinMode(RELAY1, OUTPUT);
   pinMode(RELAY2, OUTPUT);
@@ -98,83 +96,29 @@ void loop() {
       bot_lasttime = millis();
     }
   }
-  /*//PH
 
-  static unsigned long samplingTime = millis();
-  static unsigned long printTime = millis();
+
+Wire.requestFrom(8, 6);  // Solicitar 6 bytes al dispositivo esclavo con dirección 8
   
-
-  if (millis() - samplingTime > samplingInterval) {
-    pHArray[pHArrayIndex++] = analogRead(SensorPin);
-    if (pHArrayIndex == ArrayLenth) pHArrayIndex = 0;
-    voltage = avergearray(pHArray, ArrayLenth) * 3.3 / 4096;  // Ajuste para ESP32 con referencia de 3.3V
-
-    // Aplicar el factor de corrección mediante la ecuación lineal ajustada
-    //pHValue = 8.21 * voltage - 3.12;  // Nueva ecuación lineal ajustada
-    if (voltage <= 1.67) {
-        pHValue = 6.06 * voltage - 3.262;  // Ecuación para el rango de 4.01 a 6.86 pH
-    } else {
-        pHValue = 5.95 * voltage - 3.0815;  // Ecuación para el rango de 6.86 a 9.18 pH
-    }
-
-    samplingTime = millis();
+  if (Wire.available() == 6) {
+    sensor1Value = Wire.read() << 8;    // Parte alta del valor del sensor 1
+    sensor1Value |= Wire.read();        // Parte baja del valor del sensor 1
+    sensor2Value = Wire.read() << 8;    // Parte alta del valor del sensor 2
+    sensor2Value |= Wire.read();        // Parte baja del valor del sensor 2
+    sensor3Value = Wire.read() << 8;    // Parte alta del valor del sensor 3
+    sensor3Value |= Wire.read();        // Parte baja del valor del sensor 3
   }
 
-  if (millis() - printTime > printInterval) {  // Cada 800 milisegundos, imprimir el valor de pH ajustado según el voltaje
-    //Serial.print("Voltage: ");
-    //Serial.print(voltage, 2);
-    PHvolt = voltage;
-    //Serial.print("    pH value: ");
-    //Serial.println(pHValue, 2);
-    PHval = pHValue;
-    printTime = millis();
-  }
-*/
-  //float temperature = dht.readTemperature();
-  //float humidity = dht.readHumidity();
-
-
+      // Convertir los valores directamente a porcentaje (asumiendo que los valores van de 0 a 1023)
+    sensor1Value = map(sensor1Value, 0, 1023, 0, 100);
+    sensor2Value = map(sensor2Value, 0, 1023, 0, 100);
+    sensor3Value = map(sensor3Value, 0, 1023, 0, 100);
 
   sensors_event_t humidity, temp;
   aht.getEvent(&humidity, &temp);
 
   float temperature = (temp.temperature);
   float humedad = (humidity.relative_humidity);
-
-  //nt sensorValue = analogRead(sensorHS);
-
-  // Mapear el valor del sensor al rango de 0 a 100
-  //int humedadS = map(sensorValue, humedadMinima, humedadMaxima, 0, 100);
-
-  // Limitar el valor de humedad a 0 y 100
-  //if (humedadS < 0) humedadS = 0;
-  //if (humedadS > 100) humedadS = 100;
-
-  // Imprimir el valor de humedad
-  //Serial.print("Humedad del suelo: ");
-  //Serial.print(humedadS);
-  //Serial.println("%");
-
-  // Mostrar los resultados en el monitor serial
-  /*Serial.print("Temperatura: ");
-  Serial.print(temp.temperature);
-  Serial.println(" °C");
-
-  Serial.print("Humedad: ");
-  Serial.print(humidity.relative_humidity);
-  Serial.println(" %");*/
-
-  //sensors.requestTemperatures();
-  //temperatureC = sensors.getTempCByIndex(0);
-  //Serial.print("Temperature: ");
-  //Serial.print(temperatureC);
-  //Serial.println("°C");
-
-  //int humedadS = analogRead(sensorHS); // Lee el valor analógico del sensor
-  //humedadSuelo = map(humedadS, 0, 4095, 0, 100);
-  //Serial.print("Humedad del suelo: ");
-  //Serial.print(humedadSuelo);
-  //Serial.println(" %\n");
 
   if (temperature > maxTemp) {
     maxTemp = temperature;
@@ -256,8 +200,6 @@ void loop() {
   }
 
 
-
-
   if (reset == 1) {
     esp_restart();
   }
@@ -324,8 +266,6 @@ void loop() {
       R4estado = HIGH;
     }
   }
-
-
 
   //MODO AUTO R1 (UP) :
 
@@ -1371,5 +1311,25 @@ void handleSaveConfig() {
   String html = "<h1>Configuración Guardada</h1><a href=\"/\">Volver al inicio</a>";
   server.send(200, "text/html", html);
   Guardado_General();  // Función para guardar en EEPROM o similar
+}
+
+// Función para solicitar datos al Arduino Nano (I2C)
+void requestSensorData() {
+  Wire.requestFrom(8, 6);  // Solicita 6 bytes (2 bytes por sensor) desde el esclavo I2C (dirección 8)
+
+  if (Wire.available() == 6) {
+    sensor1Value = Wire.read() << 8;    // Parte alta del sensor 1
+    sensor1Value |= Wire.read();        // Parte baja del sensor 1
+    sensor2Value = Wire.read() << 8;    // Parte alta del sensor 2
+    sensor2Value |= Wire.read();        // Parte baja del sensor 2
+    sensor3Value = Wire.read() << 8;    // Parte alta del sensor 3
+    sensor3Value |= Wire.read();        // Parte baja del sensor 3
+
+    // Convertir los valores directamente a porcentaje (asumiendo que los valores van de 0 a 1023)
+    sensor1Value = map(sensor1Value, 0, 1023, 0, 100);
+    sensor2Value = map(sensor2Value, 0, 1023, 0, 100);
+    sensor3Value = map(sensor3Value, 0, 1023, 0, 100);
+
+  }
 }
 
