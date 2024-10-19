@@ -13,6 +13,8 @@ void setup() {
   irrecv.enableIRIn();
   aht.begin();
 
+  esp_reset_reason_t resetReason = esp_reset_reason();
+
   // Configurar pines de relé como salidas
   pinMode(RELAY1, OUTPUT);
   pinMode(RELAY2, OUTPUT);
@@ -45,8 +47,12 @@ mostrarMensajeBienvenida();
 
 
   if (WiFi.status() == WL_CONNECTED) {
-    bot.sendMessage(chat_id, "Druida Bot is ON");
-    String keyboardJson = "[[\"STATUS\", \"MANUAL\"], [\"AUTO\", \"CONFIG\"], [\"INFO CONFIG\", \"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
+    String motivoReinicio = obtenerMotivoReinicio();
+  
+  // Enviar mensaje con el motivo del reinicio
+  String message = "Druida Bot is ON (" + motivoReinicio + ")";
+  bot.sendMessage(chat_id, message);
+    String keyboardJson = "[[\"STATUS\"], [\"MANUAL\", \"AUTO\"], [\"CONFIG\", \"INFO CONFIG\"], [\"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "MENU PRINCIPAL:", "", keyboardJson, true);
     configTime(0, 0, "pool.ntp.org");
 
@@ -1398,7 +1404,7 @@ void mostrarEnPantallaOLED(float temperature, float humedad, float DPV, String h
   display.print("DPV: ");
   display.print(dpvDisplay);
   display.setTextSize(1); 
-  display.print("kPa");
+  display.print("hPa");
 
   // Mostrar hora (solo horas y minutos, tamaño 1)
   display.setTextSize(1);       // Cambiar el tamaño a 1 para la hora
@@ -1429,4 +1435,46 @@ void mostrarMensajeBienvenida() {
   display.display();            // Actualiza la pantalla
 }
 
+String obtenerMotivoReinicio() {
+  esp_reset_reason_t resetReason = esp_reset_reason();
+  String motivoReinicio;
+
+  switch (resetReason) {
+    case ESP_RST_POWERON:
+      motivoReinicio = "Power-on";
+      break;
+    case ESP_RST_EXT:
+      motivoReinicio = "External reset";
+      break;
+    case ESP_RST_SW:
+      motivoReinicio = "Software reset";
+      break;
+    case ESP_RST_PANIC:
+      motivoReinicio = "Panic";
+      break;
+    case ESP_RST_INT_WDT:
+      motivoReinicio = "Interrupt WDT";
+      break;
+    case ESP_RST_TASK_WDT:
+      motivoReinicio = "Task WDT";
+      break;
+    case ESP_RST_WDT:
+      motivoReinicio = "Other WDT";
+      break;
+    case ESP_RST_DEEPSLEEP:
+      motivoReinicio = "Deep sleep";
+      break;
+    case ESP_RST_BROWNOUT:
+      motivoReinicio = "Brownout";
+      break;
+    case ESP_RST_SDIO:
+      motivoReinicio = "SDIO reset";
+      break;
+    default:
+      motivoReinicio = "Unknown";
+      break;
+  }
+
+  return motivoReinicio;
+}
 

@@ -16,15 +16,16 @@ void handleNewMessages(int numNewMessages) {
 
     //MENU PRINCIPAL
 
-    if (text == "/start") {
+if (text == "/start") {
     String welcome = "Bienvenido al Druida Bot " + from_name + ".\n";
     bot.sendMessage(chat_id, welcome, "Markdown");
 
     // Crear botones de menú
-    String keyboardJson = "[[\"STATUS\", \"MANUAL\"], [\"AUTO\", \"CONFIG\"], [\"INFO CONFIG\", \"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
+    String keyboardJson = "[[\"STATUS\"], [\"MANUAL\", \"AUTO\"], [\"CONFIG\", \"INFO CONFIG\"], [\"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "MENU PRINCIPAL:", "", keyboardJson, true);
     delay(500);
 }
+
 
     //MODO MANUAL
 
@@ -35,7 +36,7 @@ if (text == "MANUAL") {
     // Crear botones para el modo manual
     String manualKeyboardJson = "[[\"R1 On\", \"R1 Off\", \"R1 On Time\"], [\"R2 On\", \"R2 Off\", \"R2 On Time\"], "
                                 "[\"R2 IR On\", \"R2 IR Off\", \"R2 IR On Time\"], [\"R3 On\", \"R3 Off\", \"R3 On Time\"], "
-                                "[\"R4 On\", \"R4 Off\", \"R4 On Time\"], [\"Control Remoto\", \"Volver\"]]";
+                                "[\"R4 On\", \"R4 Off\", \"R4 On Time\"], [\"Control Remoto\", \"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "MODO MANUAL:", "", manualKeyboardJson, true);
 }
 
@@ -234,7 +235,7 @@ if (text == "MANUAL") {
     modoMenu = AUTO;
     
     // Crear botones para el modo automático
-    String autoKeyboardJson = "[[\"R1 Auto\", \"R1 Timer\"], [\"R2 Auto\", \"R2 IR Auto\"], [\"R3 Auto\", \"R4 Auto\"], [\"Volver\"]]";
+    String autoKeyboardJson = "[[\"R1 Auto\", \"R1 Timer\"], [\"R2 Auto\", \"R2 IR Auto\"], [\"R3 Auto\", \"R4 Auto\"], [\"Menu Principal\"]]";
 
     bot.sendMessageWithReplyKeyboard(chat_id, "MODO AUTOMATICO:", "", autoKeyboardJson, true);
 }
@@ -304,35 +305,36 @@ if (text == "MANUAL") {
 
 if (text == "CONFIG") {
     // Crear botones para cada relé
-    String configKeyboardJson = "[[\"R1 config\", \"R2 config\"], [\"R3 config\", \"R4 config\"], [\"Volver\"]]";
+    String configKeyboardJson = "[[\"R1 config\", \"R2 config\"], [\"R3 config\", \"R4 config\"], [\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione un relé para configurar:", "", configKeyboardJson, true);
 }
 
 
 if (text == "R1 config") {
     // Crear botones para las opciones del R1
-    String r1KeyboardJson = "[[\"Min R1\", \"Max R1\"], [\"Param R1\", \"Hora On R1\"], [\"Hora Off R1\"], [\"Volver\"]]";
+    String r1KeyboardJson = "[[\"Min R1\", \"Max R1\"], [\"Hora On R1\", \"Hora Off R1\"], [\"Param R1\"], [\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R1:", "", r1KeyboardJson, true);
 }
 
 
 if (text == "R2 config") {
     // Crear botones para las opciones del R2
-    String r2KeyboardJson = "[[\"Min R2\", \"Max R2\"], [\"Param R2\", \"Min IR R2\"], [\"Max IR R2\", \"Param IR R2\"], [\"Volver\"]]";
+    String r2KeyboardJson = "[[\"Min R2\", \"Max R2\"], [\"Min IR R2\", \"Max IR R2\"], [\"Param R2\", \"Param IR R2\"], [\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R2:", "", r2KeyboardJson, true);
 }
 
 
+
 if (text == "R3 config") {
     // Crear botones para las opciones del R3, incluyendo "Dias de riego"
-    String r3KeyboardJson = "[[\"Hora On R3\", \"Hora Off R3\"], [\"Dias de riego\", \"Volver\"]]";
+    String r3KeyboardJson = "[[\"Hora On R3\", \"Hora Off R3\"], [\"Dias de riego\", \"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R3:", "", r3KeyboardJson, true);
 }
 
 
 if (text == "R4 config") {
     // Crear botones para las opciones del R4
-    String r4KeyboardJson = "[[\"Hora On R4\", \"Hora Off R4\"], [\"Volver\"]]";
+    String r4KeyboardJson = "[[\"Hora On R4\", \"Hora Off R4\"], [\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R4:", "", r4KeyboardJson, true);
 }
 
@@ -397,13 +399,14 @@ if (text == "R4 config") {
       }
     }
 
-    if (text == "Hora On R1") {
+// RELE 1 CONFIG
+
+if (text == "Hora On R1") {
   modoR1 = CONFIG;
   modoMenu = CONFIG;
   R1config = 4;
   bot.sendMessage(chat_id, "Ingrese Hora On R1 en formato HH:MM (por ejemplo, 08:30):");
-}
-if (R1config == 4) {
+} else if (R1config == 4) {
   int sep = text.indexOf(':'); // Buscamos el separador ':'
   if (sep != -1) {
     horaOnR1 = text.substring(0, sep).toInt(); // Obtenemos la hora
@@ -415,7 +418,7 @@ if (R1config == 4) {
       Serial.println(minOnR1);
       bot.sendMessage(chat_id, "Hora On R1 guardada correctamente");
       Guardado_General();
-      R1config = 0;
+      R1config = 0; // Reiniciamos la configuración
     } else {
       bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
@@ -429,8 +432,7 @@ if (text == "Hora Off R1") {
   modoMenu = CONFIG;
   R1config = 5;
   bot.sendMessage(chat_id, "Ingrese Hora Off R1 en formato HH:MM (por ejemplo, 18:45):");
-}
-if (R1config == 5) {
+} else if (R1config == 5) {
   int sep = text.indexOf(':'); // Buscamos el separador ':'
   if (sep != -1) {
     horaOffR1 = text.substring(0, sep).toInt(); // Obtenemos la hora
@@ -442,7 +444,7 @@ if (R1config == 5) {
       Serial.println(minOffR1);
       bot.sendMessage(chat_id, "Hora Off R1 guardada correctamente");
       Guardado_General();
-      R1config = 0;
+      R1config = 0; // Reiniciamos la configuración
     } else {
       bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
@@ -450,6 +452,7 @@ if (R1config == 5) {
     bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
   }
 }
+
 
     /// R2
 
@@ -567,15 +570,14 @@ if (R1config == 5) {
       }
     }
 
-    /// RELE 3 CONFIG
+  /// RELE 3 CONFIG
 
-    if (text == "Hora On R3") {
+if (text == "Hora On R3") {
   modoR3 = CONFIG;
   modoMenu = CONFIG;
   R3config = 1;
   bot.sendMessage(chat_id, "Ingrese Hora de Encendido R3 en formato HH:MM (por ejemplo, 08:30):");
-}
-if (R3config == 1) {
+} else if (R3config == 1) {
   int sep = text.indexOf(':'); // Buscamos el separador ':'
   if (sep != -1) {
     horaOnR3 = text.substring(0, sep).toInt(); // Obtenemos la hora
@@ -587,7 +589,7 @@ if (R3config == 1) {
       Serial.println(minOnR3);
       bot.sendMessage(chat_id, "Hora de encendido R3 guardada correctamente");
       Guardado_General();
-      R3config = 0;
+      R3config = 0; // Reiniciamos la configuración
     } else {
       bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
@@ -601,8 +603,7 @@ if (text == "Hora Off R3") {
   modoMenu = CONFIG;
   R3config = 2;
   bot.sendMessage(chat_id, "Ingrese Hora de Apagado R3 en formato HH:MM (por ejemplo, 18:45):");
-}
-if (R3config == 2) {
+} else if (R3config == 2) {
   int sep = text.indexOf(':'); // Buscamos el separador ':'
   if (sep != -1) {
     horaOffR3 = text.substring(0, sep).toInt(); // Obtenemos la hora
@@ -614,7 +615,7 @@ if (R3config == 2) {
       Serial.println(minOffR3);
       bot.sendMessage(chat_id, "Hora de apagado R3 guardada correctamente");
       Guardado_General();
-      R3config = 0;
+      R3config = 0; // Reiniciamos la configuración
     } else {
       bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
@@ -626,12 +627,13 @@ if (R3config == 2) {
 
 
 
+
 if (text == "Dias de riego") {
     // Crear un teclado con botones para los días de riego
     String riegoKeyboardJson = "[[\"Lunes Riego\", \"Lunes No Riego\"], [\"Martes Riego\", \"Martes No Riego\"],"
                                "[\"Miercoles Riego\", \"Miercoles No Riego\"], [\"Jueves Riego\", \"Jueves No Riego\"],"
                                "[\"Viernes Riego\", \"Viernes No Riego\"], [\"Sabado Riego\", \"Sabado No Riego\"],"
-                               "[\"Domingo Riego\", \"Domingo No Riego\"], [\"Volver\"]]";
+                               "[\"Domingo Riego\", \"Domingo No Riego\"], [\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione los días de riego:", "", riegoKeyboardJson, true);
 }
 
@@ -719,15 +721,16 @@ if (text == "Dias de riego") {
       bot.sendMessage(chat_id, "Domingo configurado: No Riego");
       Guardado_General();
     }
-    // RELE 4 CONFIG
+   // RELE 4 CONFIG
 
-    if (text == "Hora On R4") {
+// RELE 4 CONFIG
+
+if (text == "Hora On R4") {
   modoR4 = CONFIG;
   modoMenu = CONFIG;
   R4config = 1;
   bot.sendMessage(chat_id, "Ingrese Hora de Encendido R4 en formato HH:MM (por ejemplo, 08:30):");
-}
-if (R4config == 1) {
+} else if (R4config == 1) {
   int sep = text.indexOf(':'); // Buscamos el separador ':'
   if (sep != -1) {
     horaOnR4 = text.substring(0, sep).toInt(); // Obtenemos la hora
@@ -739,9 +742,9 @@ if (R4config == 1) {
       Serial.println(minOnR4);
       bot.sendMessage(chat_id, "Hora de encendido R4 guardada correctamente");
       Guardado_General();
-      R4config = 0;
+      R4config = 0; // Reseteamos la configuración
     } else {
-      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+      bot.sendMessage(chat_id, "Error: Formato incorrecto. La hora debe estar entre 00:00 y 23:59.");
     }
   } else {
     bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
@@ -753,8 +756,7 @@ if (text == "Hora Off R4") {
   modoMenu = CONFIG;
   R4config = 2;
   bot.sendMessage(chat_id, "Ingrese Hora de Apagado R4 en formato HH:MM (por ejemplo, 18:45):");
-}
-if (R4config == 2) {
+} else if (R4config == 2) {
   int sep = text.indexOf(':'); // Buscamos el separador ':'
   if (sep != -1) {
     horaOffR4 = text.substring(0, sep).toInt(); // Obtenemos la hora
@@ -766,9 +768,9 @@ if (R4config == 2) {
       Serial.println(minOffR4);
       bot.sendMessage(chat_id, "Hora de apagado R4 guardada correctamente");
       Guardado_General();
-      R4config = 0;
+      R4config = 0; // Reseteamos la configuración
     } else {
-      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+      bot.sendMessage(chat_id, "Error: Formato incorrecto. La hora debe estar entre 00:00 y 23:59.");
     }
   } else {
     bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
@@ -776,11 +778,13 @@ if (R4config == 2) {
 }
 
 
+
+
     //  MOSTRAR PARAMETROS
 
     if (text == "INFO CONFIG") {
     // Crear botones para mostrar la información de cada relé
-    String infoKeyboardJson = "[[\"Rele 1 Info\", \"Rele 2 Info\"], [\"Rele 3 Info\", \"Rele 4 Info\"], [\"Volver\"]]";
+    String infoKeyboardJson = "[[\"Rele 1 Info\", \"Rele 2 Info\"], [\"Rele 3 Info\", \"Rele 4 Info\"], [\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione un relé para ver la información:", "", infoKeyboardJson, true);
 }
 
@@ -833,9 +837,9 @@ if (text == "Rele 3 Info") {
     bot.sendMessage(chat_id, infoR3, "Markdown");
 }
 
-if (text == "Volver") {
+if (text == "Menu Principal") {
     // Volver al menú principal
-    String mainKeyboardJson = "[[\"STATUS\", \"MANUAL\"], [\"AUTO\", \"CONFIG\"], [\"INFO CONFIG\", \"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
+    String mainKeyboardJson = "[[\"STATUS\"], [\"MANUAL\", \"AUTO\"], [\"CONFIG\", \"INFO CONFIG\"], [\"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Has vuelto al menú principal. Selecciona una opción:", "", mainKeyboardJson, true);
 }
 
@@ -875,8 +879,8 @@ if (text == "STATUS" ) {
 
     String statusMessage = "🌡️ Temperatura: " + String(temperature, 1) + " °C\n";
     statusMessage += "💧 Humedad: " + String(humedad, 1) + " %\n";
-    statusMessage += "🌬️ DPV: " + String(DPV, 1) + " kPa\n";
-    //statusMessage += "Humedad Suelo (1): " + String(sensor1Value) + " %\n";
+    statusMessage += "🌬️ DPV: " + String(DPV, 1) + " hPa\n";
+    //statusMessage += "💧Humedad Suelo: " + String(sensor1Value) + " %\n";
     //statusMessage += "Humedad Suelo (2): " + String(sensor2Value) + " %\n";
     //statusMessage += "Humedad Suelo (3): " + String(sensor3Value) + " %\n";
 
