@@ -58,6 +58,8 @@ Chenge Log:
 #include <Adafruit_AHTX0.h>
 #include <WebServer.h>
 //#include <HardwareSerial.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 
 #define H 1
@@ -79,9 +81,14 @@ Chenge Log:
 //#define sensorHS 2 //humedad Suelo
 #define sensorIRreceptor 33
 #define RELAY4 19
-#define RELAY3 18
+#define RELAY3 5
 #define RELAY2 17
 #define RELAY1 16
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 
 const uint16_t kRecvPin = sensorIRreceptor;
@@ -94,13 +101,14 @@ uint16_t IRsignalLength = 0;
 IRsend irsend(sensorIRpin);
 
 //const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba y roge)
-//const String botToken = "6867697701:AAHtaJ4YC3dDtk1RuFWD-_f72S5MYvlCV4w"; //DRUIDA DOS (matheu 2)
+const String botToken = "6867697701:AAHtaJ4YC3dDtk1RuFWD-_f72S5MYvlCV4w"; //DRUIDA DOS (matheu 2)
 //const String botToken = "7273841170:AAHxWF33cIDcIoxgBm3x9tzn9ISJIKoy7X8"; //DRUIDA TRES (brai e ivana)
 //const String botToken = "7357647743:AAFPD1Tc099-2o-E2-Ph7SZluzwHubrl700";  //DRUIDA CINCO
-const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (matheu)
+//const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (matheu)
 
-//const char* ssid_AP = "Druida Dos"; 
-const char* ssid_AP = "Druida Cuatro";  
+//const char* ssid_AP = "Druida Uno";
+const char* ssid_AP = "Druida Dos"; 
+//const char* ssid_AP = "Druida Cuatro";  
 //const char* ssid_AP = "Druida Cinco";           // Nombre de la red AP creada por el ESP32
 const char* password_AP = "12345678";          // Contraseña de la red AP
 
@@ -135,12 +143,12 @@ byte modoR1 = 0;
 float minR1 = 0;
 float maxR1 = 0;
 byte paramR1 = 0;
-byte timeOnR1 = 0;
-byte timeOffR1 = 0;
-byte horaOnR1 = 0;
-byte minOnR1 = 0;
-byte horaOffR1 = 0;
-byte minOffR1 = 0;
+int timeOnR1 = 0;
+int timeOffR1 = 0;
+int horaOnR1 = 0;
+int minOnR1 = 0;
+int horaOffR1 = 0;
+int minOffR1 = 0;
 
 byte modoR2 = 0;
 float minR2 = 0;
@@ -224,3 +232,6 @@ int sensor1Value;
 int sensor2Value;
 int sensor3Value;
 
+int parametroActual = 0;  // Variable global para controlar qué parámetro mostrar
+unsigned long lastUpdate = 0;  // Para manejar el tiempo entre actualizaciones
+const unsigned long displayInterval = 2000;  // Intervalo de cambio (2 segundos)

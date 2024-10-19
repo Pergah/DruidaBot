@@ -25,15 +25,29 @@ void setup() {
   digitalWrite(RELAY3, HIGH);
   digitalWrite(RELAY4, HIGH);
 
+  // Inicializar pantalla
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+    Serial.println(F("Error al inicializar la pantalla OLED"));
+    while(true);
+  }
+  display.clearDisplay();
+  display.display();
+
   unsigned long startMillis = millis();
   Carga_General();
+
+mostrarMensajeBienvenida();
+
 
   connectToWiFi(ssid.c_str(), password.c_str());
 
   secured_client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
+
   if (WiFi.status() == WL_CONNECTED) {
     bot.sendMessage(chat_id, "Druida Bot is ON");
+    String keyboardJson = "[[\"STATUS\", \"MANUAL\"], [\"AUTO\", \"CONFIG\"], [\"INFO CONFIG\", \"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "MENU PRINCIPAL:", "", keyboardJson, true);
     configTime(0, 0, "pool.ntp.org");
 
     time_t now = time(nullptr);
@@ -100,8 +114,8 @@ void loop() {
   sensors_event_t humidity, temp;
   aht.getEvent(&humidity, &temp);
 
-  float temperature = (temp.temperature);
-  float humedad = (humidity.relative_humidity);
+  float temperature = temp.temperature;
+  float humedad = humidity.relative_humidity;
 
   if (temperature > maxTemp) {
     maxTemp = temperature;
@@ -119,6 +133,7 @@ void loop() {
     minHum = humedad;
   }
 
+
   int serial = Serial.read();
   //ACA SE PONE LA HORA EN EL RTC
 
@@ -132,6 +147,8 @@ void loop() {
   if (hour < 0) {
     hour = 24 + hour;
   }
+
+
 
   /*if (rtc.now().minute() == 0 && hour != lastHourSent) {
     if (WiFi.status() == WL_CONNECTED) {
@@ -186,6 +203,10 @@ void loop() {
   if (reset == 1) {
     esp_restart();
   }
+
+  //MOSTRAR VALORES POR PANTALLA OLED:
+
+  
 
   //manejarReles();
 
@@ -584,7 +605,14 @@ void loop() {
   }
 }
 
+
+
+ // Crear la variable 'dateTime' para usar en mostrarEnPantallaOLED
+String hora = String(hour) + ":" + String(now.minute());
+
+mostrarEnPantallaOLED(temperature, humedad, DPV, hora);
   delay(2000);
+
 }
 
 
@@ -701,13 +729,13 @@ void Carga_General() {
   estadoR2ir = EEPROM.get(265, estadoR2ir);
   modoR2ir = EEPROM.get(270, modoR2ir);
   R2irestado = EEPROM.get(272, R2irestado);
-  horaOnR1 = EEPROM.get(274, horaOnR1);
-  horaOffR1 = EEPROM.get(276, horaOffR1);
-  horaOffR1 = EEPROM.get(278, minOnR1);
-  horaOffR1 = EEPROM.get(280, minOffR1);
+  horaOnR1 = EEPROM.get(276, horaOnR1);
+  horaOffR1 = EEPROM.get(280, horaOffR1);
+  minOnR1 = EEPROM.get(284, minOnR1);
+  minOffR1 = EEPROM.get(288, minOffR1);
 
   for (int i = 0; i < 100; i++) {
-    IRsignal[i] = EEPROM.get(300 + i * sizeof(uint16_t), IRsignal[i]);
+    IRsignal[i] = EEPROM.get(350 + i * sizeof(uint16_t), IRsignal[i]);
   }
 
 
@@ -760,14 +788,14 @@ void Guardado_General() {
   EEPROM.put(265, estadoR2ir);
   EEPROM.put(270, modoR2ir);
   EEPROM.put(272, R2irestado);
-  EEPROM.put(274, horaOnR1);
-  EEPROM.put(276, horaOffR1);
-  EEPROM.put(278, minOnR1);
-  EEPROM.put(280, minOffR1);
+  EEPROM.put(276, horaOnR1);
+  EEPROM.put(280, horaOffR1);
+  EEPROM.put(284, minOnR1);
+  EEPROM.put(288, minOffR1);
 
   
   for (int i = 0; i < 100; i++) {
-    EEPROM.put(300 + i * sizeof(uint16_t), IRsignal[i]);
+    EEPROM.put(350 + i * sizeof(uint16_t), IRsignal[i]);
   }
   EEPROM.commit();
   Serial.println("Guardado realizado con exito.");
@@ -1333,4 +1361,72 @@ void requestSensorData() {
 
   }
 }
+
+void mostrarEnPantallaOLED(float temperature, float humedad, float DPV, String hora) {
+  display.clearDisplay();       // Limpia la pantalla
+  display.setTextColor(WHITE);  // Color del texto
+  
+  // Comprobar si las lecturas de temperatura y humedad son válidas
+  String tempDisplay;
+  String humDisplay;
+  
+  if (humedad == 0) {
+    // Si la humedad es 0, se consideran ambas lecturas (temperatura y humedad) no válidas
+    tempDisplay = "nan";
+    humDisplay = "nan";
+  } else {
+    tempDisplay = (temperature < -40 || temperature > 85) ? "nan" : String(temperature, 1) + " C";
+    humDisplay = (humedad < 0 || humedad > 100) ? "nan" : String(humedad, 1) + " %";
+  }
+
+  // Comprobar si DPV es válido
+  String dpvDisplay = (isnan(DPV)) ? "nan" : String(DPV, 1);
+
+  // Mostrar temperatura (tamaño 2)
+  display.setTextSize(2);       // Tamaño del texto para temperatura, humedad, DPV
+  display.setCursor(0, 0);      // Ajusta la posición Y para evitar cortes
+  display.print("T: ");
+  display.print(tempDisplay);
+  
+  // Mostrar humedad (tamaño 2)
+  display.setCursor(0, 20);     // Baja un poco el texto
+  display.print("H: ");
+  display.print(humDisplay);
+
+  // Mostrar DPV (tamaño 2)
+  display.setCursor(0, 40);     // Baja más el texto
+  display.print("DPV: ");
+  display.print(dpvDisplay);
+  display.setTextSize(1); 
+  display.print("kPa");
+
+  // Mostrar hora (solo horas y minutos, tamaño 1)
+  display.setTextSize(1);       // Cambiar el tamaño a 1 para la hora
+  display.setCursor(99, 57);     // Posición para la hora
+  display.print(hora);
+  
+  display.display();            // Actualiza la pantalla
+}
+
+
+
+
+
+
+void mostrarMensajeBienvenida() {
+  display.clearDisplay();
+  display.setTextSize(3);       // Tamaño del texto más grande
+  display.setTextColor(WHITE);  // Color del texto
+
+  // Mostrar el mensaje de bienvenida "Druida"
+  display.setCursor((128 - (6 * 3 * 6)) / 2, 5);    // Centrando "Druida" en X
+  display.println("Druida");
+
+  // Mostrar "Bot" justo debajo, centrado
+  display.setCursor((128 - (3 * 3 * 6)) / 2, 35);    // Centrando "Bot" en X
+  display.println("Bot");
+
+  display.display();            // Actualiza la pantalla
+}
+
 

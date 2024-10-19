@@ -17,39 +17,33 @@ void handleNewMessages(int numNewMessages) {
     //MENU PRINCIPAL
 
     if (text == "/start") {
-      String welcome = "Bienvenido al Druida Bot " + from_name + ".\n";
-      welcome += "Ingrese un comando: \n";
-      welcome += "/config \n";
-      welcome += "/manual \n";
-      welcome += "/auto \n";
-      welcome += "/status \n";
-      welcome += "/infoconfig \n";
-      welcome += "/DiasRiego \n";
-      welcome += "/resetDruidaBot \n";
-      welcome += "/enviarData";
-      bot.sendMessage(chat_id, welcome, "Markdown");
-      delay(500);
-    }
+    String welcome = "Bienvenido al Druida Bot " + from_name + ".\n";
+    bot.sendMessage(chat_id, welcome, "Markdown");
+
+    // Crear botones de menú
+    String keyboardJson = "[[\"STATUS\", \"MANUAL\"], [\"AUTO\", \"CONFIG\"], [\"INFO CONFIG\", \"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "MENU PRINCIPAL:", "", keyboardJson, true);
+    delay(500);
+}
 
     //MODO MANUAL
 
 
-    if (text == "/manual" || modoMenu == MANUAL) {
-      modoMenu = MANUAL;
-      String modoManu = "MODO MANUAL \n";
-      modoManu += "/R1on - /R1off - /R1onTime\n";
-      modoManu += "/R2on - /R2off - /R2onTime\n";
-      modoManu += "/R2iron - /R2iroff - /R2ironTime\n";
-      modoManu += "/R3on - /R3off - /R3onTime\n";
-      modoManu += "/R4on - /R4off - /R4onTime\n";
-      modoManu += "/controlRemoto \n";
-      modoManu += "/manual \n";
-      bot.sendMessage(chat_id, modoManu, "Markdown");
-      delay(500);
+if (text == "MANUAL") {
+    modoMenu = MANUAL;
+    
+    // Crear botones para el modo manual
+    String manualKeyboardJson = "[[\"R1 On\", \"R1 Off\", \"R1 On Time\"], [\"R2 On\", \"R2 Off\", \"R2 On Time\"], "
+                                "[\"R2 IR On\", \"R2 IR Off\", \"R2 IR On Time\"], [\"R3 On\", \"R3 Off\", \"R3 On Time\"], "
+                                "[\"R4 On\", \"R4 Off\", \"R4 On Time\"], [\"Control Remoto\", \"Volver\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "MODO MANUAL:", "", manualKeyboardJson, true);
+}
 
 
 
-      if (text == "/R1on") {
+
+
+      if (text == "R1 On") {
 
         modoR1 = MANUAL;
         estadoR1 = 1;
@@ -60,7 +54,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (text == "/R1off") {
+      if (text == "R1 Off") {
         modoR1 = MANUAL;
         estadoR1 = 0;
         bot.sendMessage(chat_id, "Rele 1 is OFF", "");
@@ -69,7 +63,7 @@ void handleNewMessages(int numNewMessages) {
       }
 
 
-      if (text == "/R2on") {
+      if (text == "R2 On") {
 
         modoR2 = MANUAL;
         estadoR2 = 1;
@@ -78,7 +72,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-        if (text == "/R2iron") {
+        if (text == "R2 IR On") {
 
         modoR2ir = MANUAL;
         estadoR2ir = 1;
@@ -87,7 +81,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (text == "/R2off") {
+      if (text == "R2 off") {
         modoR2 = MANUAL;
         estadoR2 = 0;
         bot.sendMessage(chat_id, "Rele 2 is OFF", "");
@@ -95,7 +89,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-            if (text == "/R2iroff") {
+            if (text == "R2 IR Off") {
         modoR2ir = MANUAL;
         estadoR2ir = 0;
         bot.sendMessage(chat_id, "Rele 2 (IR) is OFF", "");
@@ -103,7 +97,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (text == "/R3on") {
+      if (text == "R3 On") {
 
         modoR3 = MANUAL;
         estadoR3 = 1;
@@ -112,7 +106,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (text == "/R3off") {
+      if (text == "R3 Off") {
         modoR3 = MANUAL;
         estadoR3 = 0;
         bot.sendMessage(chat_id, "Rele 3 is OFF", "");
@@ -120,7 +114,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (text == "/R4on") {
+      if (text == "R4 On") {
 
         modoR4 = MANUAL;
         estadoR4 = 1;
@@ -129,7 +123,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (text == "/R4off") {
+      if (text == "R4 Off") {
         modoR4 = MANUAL;
         estadoR4 = 0;
         bot.sendMessage(chat_id, "Rele 4 is OFF", "");
@@ -137,7 +131,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (text == "/controlRemoto") {
+      if (text == "Control Remoto") {
         Serial.println("enviando señal IR...");
         irsend.sendRaw(IRsignal, 72, 38);  // Envía la señal IR ajustada con frecuencia de 38 kHz
         delay(1000);                       // Espera 10 segundos antes de volver a emitir la señal
@@ -146,38 +140,38 @@ void handleNewMessages(int numNewMessages) {
       }
 
       // Lógica para encender los relés por un tiempo determinado
-      if (text == "/R1onTime") {
+      if (text == "R1 On Time") {
         esperandoTiempoR1 = true; // Establece que estamos esperando el tiempo de encendido para R1
         bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 1?", "");
         delay(500);
       }
 
-      if (text == "/R2onTime") {
+      if (text == "R2 On Time") {
         esperandoTiempoR2 = true; // Establece que estamos esperando el tiempo de encendido para R2
         bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 2?", "");
         delay(500);
       }
 
-      if (text == "/R2ironTime") {
+      if (text == "R2 IR On Time") {
         esperandoTiempoR2ir = true; // Establece que estamos esperando el tiempo de encendido para R2
         bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 2 (IR)?", "");
         delay(500);
       }
 
-      if (text == "/R3onTime") {
+      if (text == "R3 On Time") {
         esperandoTiempoR3 = true; // Establece que estamos esperando el tiempo de encendido para R3
         bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 3?", "");
         delay(500);
       }
 
-      if (text == "/R4onTime") {
+      if (text == "R4 On Time") {
         esperandoTiempoR4 = true; // Establece que estamos esperando el tiempo de encendido para R4
         bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 4?", "");
         delay(500);
       }
 
       // Espera un nuevo mensaje del usuario para ingresar el tiempo
-      if (esperandoTiempoR1 && text != "/R1onTime") {
+      if (esperandoTiempoR1 && text != "R1 On Time") {
         tiempoR1 = text.toInt(); // Convierte el texto ingresado en un número entero
         if (tiempoR1 > 0) { // Si el valor ingresado es válido
           esperandoTiempoR1 = false; // Resetea la variable
@@ -188,7 +182,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (esperandoTiempoR2 && text != "/R2onTime") {
+      if (esperandoTiempoR2 && text != "R2 On Time") {
         tiempoR2 = text.toInt(); // Convierte el texto ingresado en un número entero
         if (tiempoR2 > 0) { // Si el valor ingresado es válido
           esperandoTiempoR2 = false; // Resetea la variable
@@ -199,7 +193,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-            if (esperandoTiempoR2ir && text != "/R2ironTime") {
+            if (esperandoTiempoR2ir && text != "R2 IR On Time") {
         tiempoR2ir = text.toInt(); // Convierte el texto ingresado en un número entero
         if (tiempoR2ir > 0) { // Si el valor ingresado es válido
           esperandoTiempoR2ir = false; // Resetea la variable
@@ -210,7 +204,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (esperandoTiempoR3 && text != "/R3onTime") {
+      if (esperandoTiempoR3 && text != "R3 On Time") {
         tiempoR3 = text.toInt(); // Convierte el texto ingresado en un número entero
         if (tiempoR3 > 0) { // Si el valor ingresado es válido
           esperandoTiempoR3 = false; // Resetea la variable
@@ -221,7 +215,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (esperandoTiempoR4 && text != "/R4onTime") {
+      if (esperandoTiempoR4 && text != "R4 On Time") {
         tiempoR4 = text.toInt(); // Convierte el texto ingresado en un número entero
         if (tiempoR4 > 0) { // Si el valor ingresado es válido
           esperandoTiempoR4 = false; // Resetea la variable
@@ -231,26 +225,23 @@ void handleNewMessages(int numNewMessages) {
         }
         delay(500);
       }
-    }
+    
 
 
     // MODO AUTOMATICO
 
-    if (text == "/auto" || modoMenu == AUTO) {
-      modoMenu = AUTO;
-      String modoManu = "MODO AUTOMATICO: \n";
-      modoManu += "/R1auto\n";
-      modoManu += "/R1timer\n";
-      modoManu += "/R2auto\n";
-      modoManu += "/R2irauto\n";
-      modoManu += "/R3auto\n";
-      //modoManu += "/R3autoParam\n";
-      modoManu += "/R4auto\n";
-      bot.sendMessage(chat_id, modoManu, "Markdown");
-      delay(500);
+    if (text == "AUTO") {
+    modoMenu = AUTO;
+    
+    // Crear botones para el modo automático
+    String autoKeyboardJson = "[[\"R1 Auto\", \"R1 Timer\"], [\"R2 Auto\", \"R2 IR Auto\"], [\"R3 Auto\", \"R4 Auto\"], [\"Volver\"]]";
+
+    bot.sendMessageWithReplyKeyboard(chat_id, "MODO AUTOMATICO:", "", autoKeyboardJson, true);
+}
 
 
-      if (text == "/R1auto") {
+
+      if (text == "R1 Auto") {
 
         modoR1 = AUTO;
         bot.sendMessage(chat_id, "Rele 1 Automatico", "");
@@ -258,7 +249,7 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-        if (text == "/R1timer") {
+        if (text == "R1 Timer") {
 
         modoR1 = TIMER;
         bot.sendMessage(chat_id, "Rele 1 Automatico (TIMER)", "");
@@ -266,21 +257,21 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (text == "/R2auto") {
+      if (text == "R2 Auto") {
         modoR2 = AUTO;
         bot.sendMessage(chat_id, "Rele 2 Automatico", "");
         Guardado_General();
         delay(500);
       }
 
-            if (text == "/R2irauto") {
+            if (text == "R2 IR Auto") {
         modoR2ir = AUTO;
         bot.sendMessage(chat_id, "Rele 2 (IR) Automatico", "");
         Guardado_General();
         delay(500);
       }
 
-      if (text == "/R3auto")
+      if (text == "R3 Auto")
 
       {
 
@@ -300,58 +291,55 @@ void handleNewMessages(int numNewMessages) {
         delay(500);
       }
 
-      if (text == "/R4auto") {
+      if (text == "R4 Auto") {
         modoR4 = AUTO;
         bot.sendMessage(chat_id, "Rele 4 Automatico", "");
         Guardado_General();
 
         delay(500);
       }
-    }
+    
 
 
-    //MODO CONFIG
 
-    String modoConf = "MODO CONFIG: \n";
-    modoConf += "/infoconfig\n\n";
-    modoConf += "RELE 1: \n";
-    modoConf += "/minR1config\n";
-    modoConf += "/maxR1config\n";
-    modoConf += "/paramR1config\n";
-    modoConf += "/horaOnR1config\n";
-    modoConf += "/minOnR1config\n";
-    modoConf += "/horaOffR1config\n";
-    modoConf += "/minOffR1config\n\n";
-    modoConf += "RELE 2:\n";
-    modoConf += "/minR2config\n";
-    modoConf += "/maxR2config\n";
-    modoConf += "/paramR2config\n";
-    modoConf += "/minR2irconfig\n";
-    modoConf += "/maxR2irconfig\n";
-    modoConf += "/paramR2irconfig\n\n";
-    modoConf += "RELE 3:\n";
-    modoConf += "/horaOnR3config\n";
-    modoConf += "/minOnR3config\n";
-    modoConf += "/horaOffR3config\n";
-    modoConf += "/minOffR3config\n\n";
-    //modoConf += "/minR3config\n";
-    //modoConf += "/maxR3config\n";
-    modoConf += "RELE 4:\n";
-    modoConf += "/horaOnR4config\n";
-    modoConf += "/minOnR4config\n";
-    modoConf += "/horaOffR4config\n";
-    modoConf += "/minOffR4config\n";
+if (text == "CONFIG") {
+    // Crear botones para cada relé
+    String configKeyboardJson = "[[\"R1 config\", \"R2 config\"], [\"R3 config\", \"R4 config\"], [\"Volver\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione un relé para configurar:", "", configKeyboardJson, true);
+}
 
 
-    if (text == "/config") {
-      bot.sendMessage(chat_id, modoConf, "Markdown");
+if (text == "R1 config") {
+    // Crear botones para las opciones del R1
+    String r1KeyboardJson = "[[\"Min R1\", \"Max R1\"], [\"Param R1\", \"Hora On R1\"], [\"Hora Off R1\"], [\"Volver\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R1:", "", r1KeyboardJson, true);
+}
 
-      modoMenu = CONFIG;
-    }
+
+if (text == "R2 config") {
+    // Crear botones para las opciones del R2
+    String r2KeyboardJson = "[[\"Min R2\", \"Max R2\"], [\"Param R2\", \"Min IR R2\"], [\"Max IR R2\", \"Param IR R2\"], [\"Volver\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R2:", "", r2KeyboardJson, true);
+}
+
+
+if (text == "R3 config") {
+    // Crear botones para las opciones del R3, incluyendo "Dias de riego"
+    String r3KeyboardJson = "[[\"Hora On R3\", \"Hora Off R3\"], [\"Dias de riego\", \"Volver\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R3:", "", r3KeyboardJson, true);
+}
+
+
+if (text == "R4 config") {
+    // Crear botones para las opciones del R4
+    String r4KeyboardJson = "[[\"Hora On R4\", \"Hora Off R4\"], [\"Volver\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R4:", "", r4KeyboardJson, true);
+}
+
 
     /// R1
 
-    if (text == "/minR1config") {
+    if (text == "Min R1") {
       modoR1 = CONFIG;
       modoMenu = CONFIG;
       R1config = 1;
@@ -364,7 +352,6 @@ void handleNewMessages(int numNewMessages) {
         Serial.print("Valor min R1: ");
         Serial.println(minR1);
         bot.sendMessage(chat_id, "Valor min R1 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R1config = 0;
       }
@@ -372,7 +359,7 @@ void handleNewMessages(int numNewMessages) {
 
     ///
 
-    if (text == "/maxR1config") {
+    if (text == "Max R1") {
       modoR1 = CONFIG;
       modoMenu = CONFIG;
       R1config = 2;
@@ -385,7 +372,6 @@ void handleNewMessages(int numNewMessages) {
         Serial.print("Valor max R1: ");
         Serial.println(maxR1);
         bot.sendMessage(chat_id, "Valor max R1 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R1config = 0;
       }
@@ -393,11 +379,11 @@ void handleNewMessages(int numNewMessages) {
 
     ///
 
-    if (text == "/paramR1config") {
+    if (text == "Param R1") {
       modoR1 = CONFIG;
       modoMenu = CONFIG;
       R1config = 3;
-      bot.sendMessage(chat_id, "Ingrese parametro R1: \n1- Humedad.\n2- Temperatura.\n3- DPV.\n4- Temp Agua.");
+      bot.sendMessage(chat_id, "Ingrese parametro R1: \n1- Humedad.\n2- Temperatura.\n3- DPV.");
     }
     if (R1config == 3) {
       paramR1 = text.toInt();
@@ -406,91 +392,68 @@ void handleNewMessages(int numNewMessages) {
         Serial.print("Param R1: ");
         Serial.println(paramR1);
         bot.sendMessage(chat_id, "Valor param R1 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R1config = 0;
       }
     }
 
-        if (text == "/horaOnR1config") {
-      modoR1 = CONFIG;
-      modoMenu = CONFIG;
-      R1config = 4;
-      bot.sendMessage(chat_id, "Ingrese parametro Hora On R1: ");
+    if (text == "Hora On R1") {
+  modoR1 = CONFIG;
+  modoMenu = CONFIG;
+  R1config = 4;
+  bot.sendMessage(chat_id, "Ingrese Hora On R1 en formato HH:MM (por ejemplo, 08:30):");
+}
+if (R1config == 4) {
+  int sep = text.indexOf(':'); // Buscamos el separador ':'
+  if (sep != -1) {
+    horaOnR1 = text.substring(0, sep).toInt(); // Obtenemos la hora
+    minOnR1 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
+    if (horaOnR1 >= 0 && horaOnR1 < 24 && minOnR1 >= 0 && minOnR1 < 60) {
+      Serial.print("Hora On R1: ");
+      Serial.print(horaOnR1);
+      Serial.print(":");
+      Serial.println(minOnR1);
+      bot.sendMessage(chat_id, "Hora On R1 guardada correctamente");
+      Guardado_General();
+      R1config = 0;
+    } else {
+      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
-    if (R1config == 4) {
-      horaOnR1 = text.toInt();
+  } else {
+    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+  }
+}
 
-      if (horaOnR1 > 0) {
-        Serial.print("Hora On R1: ");
-        Serial.println(horaOnR1);
-        bot.sendMessage(chat_id, "Valor horaOnR1 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R1config = 0;
-      }
+if (text == "Hora Off R1") {
+  modoR1 = CONFIG;
+  modoMenu = CONFIG;
+  R1config = 5;
+  bot.sendMessage(chat_id, "Ingrese Hora Off R1 en formato HH:MM (por ejemplo, 18:45):");
+}
+if (R1config == 5) {
+  int sep = text.indexOf(':'); // Buscamos el separador ':'
+  if (sep != -1) {
+    horaOffR1 = text.substring(0, sep).toInt(); // Obtenemos la hora
+    minOffR1 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
+    if (horaOffR1 >= 0 && horaOffR1 < 24 && minOffR1 >= 0 && minOffR1 < 60) {
+      Serial.print("Hora Off R1: ");
+      Serial.print(horaOffR1);
+      Serial.print(":");
+      Serial.println(minOffR1);
+      bot.sendMessage(chat_id, "Hora Off R1 guardada correctamente");
+      Guardado_General();
+      R1config = 0;
+    } else {
+      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
-
-      if (text == "/horaOffR1config") {
-      modoR1 = CONFIG;
-      modoMenu = CONFIG;
-      R1config = 5;
-      bot.sendMessage(chat_id, "Ingrese Hora Off R1:");
-    }
-    if (R1config == 5) {
-      horaOffR1 = text.toInt();
-
-      if (horaOffR1 > 0) {
-        Serial.print("Hora Off R1: ");
-        Serial.println(horaOffR1);
-        bot.sendMessage(chat_id, "Valor horaOffR1 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R1config = 0;
-      }
-    }
-
-          if (text == "/minOnR1config") {
-      modoR1 = CONFIG;
-      modoMenu = CONFIG;
-      R1config = 6;
-      bot.sendMessage(chat_id, "Ingrese Min On R1:");
-    }
-    if (R1config == 6) {
-      minOnR1 = text.toInt();
-
-      if (minOnR1 > 0) {
-        Serial.print("Min On R1: ");
-        Serial.println(minOnR1);
-        bot.sendMessage(chat_id, "Valor minOnR1 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R1config = 0;
-      }
-    }
-
-              if (text == "/minOffR1config") {
-      modoR1 = CONFIG;
-      modoMenu = CONFIG;
-      R1config = 7;
-      bot.sendMessage(chat_id, "Ingrese Min Off R1:");
-    }
-    if (R1config == 7) {
-      minOffR1 = text.toInt();
-
-      if (minOffR1 > 0) {
-        Serial.print("Min Off R1: ");
-        Serial.println(minOffR1);
-        bot.sendMessage(chat_id, "Valor minOffR1 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R1config = 0;
-      }
-    }
+  } else {
+    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+  }
+}
 
     /// R2
 
-    if (text == "/minR2config") {
+    if (text == "Min R2") {
       modoR2 = CONFIG;
       modoMenu = CONFIG;
       R2config = 1;
@@ -503,14 +466,13 @@ void handleNewMessages(int numNewMessages) {
         Serial.print("Valor min R2: ");
         Serial.println(minR2);
         bot.sendMessage(chat_id, "Valor min R2 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R2config = 0;
       }
     }
 
 
-    if (text == "/maxR2config") {
+    if (text == "Max R2") {
       modoR2 = CONFIG;
       modoMenu = CONFIG;
       R2config = 2;
@@ -523,17 +485,16 @@ void handleNewMessages(int numNewMessages) {
         Serial.print("Valor max R2: ");
         Serial.println(maxR2);
         bot.sendMessage(chat_id, "Valor max R2 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R2config = 0;
       }
     }
 
-        if (text == "/paramR2config") {
+        if (text == "Param R2") {
       modoR2 = CONFIG;
       modoMenu = CONFIG;
       R2config = 3;
-      bot.sendMessage(chat_id, "Ingrese parametro R2: \n1- Humedad.\n2- Temperatura.\n3- DPV.\n4- Temp Agua.");
+      bot.sendMessage(chat_id, "Ingrese parametro R2: \n1- Humedad.\n2- Temperatura.\n3- DPV.\n");
     }
     if (R2config == 3) {
       paramR2 = text.toInt();
@@ -542,7 +503,6 @@ void handleNewMessages(int numNewMessages) {
         Serial.print("Param R2: ");
         Serial.println(paramR2);
         bot.sendMessage(chat_id, "Valor param R2 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R2config = 0;
       }
@@ -551,7 +511,7 @@ void handleNewMessages(int numNewMessages) {
 
     // R2 IR
 
-    if (text == "/minR2irconfig") {
+    if (text == "Min IR R2") {
       modoR2ir = CONFIG;
       modoMenu = CONFIG;
       R2irconfig = 1;
@@ -564,13 +524,12 @@ void handleNewMessages(int numNewMessages) {
         Serial.print("Valor min R2 (IR): ");
         Serial.println(minR2ir);
         bot.sendMessage(chat_id, "Valor min R2 (IR) guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R2irconfig = 0;
       }
     }
 
-    if (text == "/maxR2irconfig") {
+    if (text == "Max IR R2") {
       modoR2ir = CONFIG;
       modoMenu = CONFIG;
       R2irconfig = 2;
@@ -583,7 +542,6 @@ void handleNewMessages(int numNewMessages) {
         Serial.print("Valor max R2 (IR): ");
         Serial.println(maxR2ir);
         bot.sendMessage(chat_id, "Valor max R2 (IR) guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R2irconfig = 0;
       }
@@ -591,11 +549,11 @@ void handleNewMessages(int numNewMessages) {
 
     ///
 
-    if (text == "/paramR2irconfig") {
+    if (text == "Param IR R2") {
       modoR2ir = CONFIG;
       modoMenu = CONFIG;
       R2irconfig = 3;
-      bot.sendMessage(chat_id, "Ingrese parametro IR: \n1- Humedad.\n2- Temperatura.\n3- DPV.\n4- Temp Agua.");
+      bot.sendMessage(chat_id, "Ingrese parametro IR: \n1- Humedad.\n2- Temperatura.\n3- DPV.");
     }
     if (R2irconfig == 3) {
       paramR2ir = text.toInt();
@@ -604,7 +562,6 @@ void handleNewMessages(int numNewMessages) {
         Serial.print("Param R2 (IR): ");
         Serial.println(paramR2ir);
         bot.sendMessage(chat_id, "Valor param R2 (IR) guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
         Guardado_General();
         R2irconfig = 0;
       }
@@ -612,419 +569,330 @@ void handleNewMessages(int numNewMessages) {
 
     /// RELE 3 CONFIG
 
-    if (text == "/horaOnR3config") {
-      modoR3 = CONFIG;
-      modoMenu = CONFIG;
-      R3config = 1;
-      bot.sendMessage(chat_id, "Ingrese hora de Encendido R3: ");
+    if (text == "Hora On R3") {
+  modoR3 = CONFIG;
+  modoMenu = CONFIG;
+  R3config = 1;
+  bot.sendMessage(chat_id, "Ingrese Hora de Encendido R3 en formato HH:MM (por ejemplo, 08:30):");
+}
+if (R3config == 1) {
+  int sep = text.indexOf(':'); // Buscamos el separador ':'
+  if (sep != -1) {
+    horaOnR3 = text.substring(0, sep).toInt(); // Obtenemos la hora
+    minOnR3 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
+    if (horaOnR3 >= 0 && horaOnR3 < 24 && minOnR3 >= 0 && minOnR3 < 60) {
+      Serial.print("Hora encendido R3: ");
+      Serial.print(horaOnR3);
+      Serial.print(":");
+      Serial.println(minOnR3);
+      bot.sendMessage(chat_id, "Hora de encendido R3 guardada correctamente");
+      Guardado_General();
+      R3config = 0;
+    } else {
+      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
-    if (R3config == 1) {
-      horaOnR3 = text.toInt();
-      if (horaOnR3 > 0) {
-        Serial.print("Hora encendido R3: ");
-        Serial.println(horaOnR3);
-        bot.sendMessage(chat_id, "Valor hora Encendido Rele 3 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R3config = 0;
-      }
+  } else {
+    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+  }
+}
+
+if (text == "Hora Off R3") {
+  modoR3 = CONFIG;
+  modoMenu = CONFIG;
+  R3config = 2;
+  bot.sendMessage(chat_id, "Ingrese Hora de Apagado R3 en formato HH:MM (por ejemplo, 18:45):");
+}
+if (R3config == 2) {
+  int sep = text.indexOf(':'); // Buscamos el separador ':'
+  if (sep != -1) {
+    horaOffR3 = text.substring(0, sep).toInt(); // Obtenemos la hora
+    minOffR3 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
+    if (horaOffR3 >= 0 && horaOffR3 < 24 && minOffR3 >= 0 && minOffR3 < 60) {
+      Serial.print("Hora apagado R3: ");
+      Serial.print(horaOffR3);
+      Serial.print(":");
+      Serial.println(minOffR3);
+      bot.sendMessage(chat_id, "Hora de apagado R3 guardada correctamente");
+      Guardado_General();
+      R3config = 0;
+    } else {
+      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
-
-    if (text == "/minOnR3config") {
-      modoR3 = CONFIG;
-      modoMenu = CONFIG;
-      R3config = 2;
-      bot.sendMessage(chat_id, "Ingrese minuto de encendido R3: ");
-    }
-    if (R3config == 2) {
-      minOnR3 = text.toInt();
-      if (minOnR3 > 0) {
-        Serial.print("Minuto de encendido: ");
-        Serial.println(minOnR3);
-        bot.sendMessage(chat_id, "Valor minuto de encendido R3 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R3config = 0;
-      }
-    }
-
-    if (text == "/horaOffR3config") {
-      modoR3 = CONFIG;
-      modoMenu = CONFIG;
-      R3config = 3;
-      bot.sendMessage(chat_id, "Ingrese hora de apagado R3: ");
-    }
-    if (R3config == 3) {
-      horaOffR3 = text.toInt();
-      if (horaOffR3 > 0) {
-        Serial.print("Hora de apagado: ");
-        Serial.println(horaOffR3);
-        bot.sendMessage(chat_id, "Hora de apagado R3 modificado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R3config = 0;
-      }
-    }
-
-    if (text == "/minOffR3config") {
-      modoR3 = CONFIG;
-      modoMenu = CONFIG;
-      R3config = 4;
-      bot.sendMessage(chat_id, "Ingrese minuto de apagado R3: ");
-    }
-    if (R3config == 4) {
-      minOffR3 = text.toInt();
-      if (minOffR3 > 0) {
-        Serial.print("Minuto de apagado: ");
-        Serial.println(minOffR3);
-        bot.sendMessage(chat_id, "Valor minuto de apagado R3 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R3config = 0;
-      }
-    }
-
-    if (text == "/minR3config") {
-      modoR3 = CONFIG;
-      modoMenu = CONFIG;
-      R3config = 5;
-      bot.sendMessage(chat_id, "Ingrese valor min R3: ");
-    }
-    if (R3config == 5) {
-      minR3 = text.toFloat();
-
-      if (minR3 > 0) {
-        Serial.print("Valor min R3: ");
-        Serial.println(minR3);
-        bot.sendMessage(chat_id, "Valor min R3 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R3config = 0;
-      }
-    }
-
-        if (text == "/maxR3config") {
-      modoR3 = CONFIG;
-      modoMenu = CONFIG;
-      R3config = 6;
-      bot.sendMessage(chat_id, "Ingrese valor max R3: ");
-    }
-    if (R3config == 6) {
-      maxR3 = text.toFloat();
-
-      if (maxR3 > 0) {
-        Serial.print("Valor max R3: ");
-        Serial.println(maxR3);
-        bot.sendMessage(chat_id, "Valor max R2 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R3config = 0;
-      }
-    }
+  } else {
+    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+  }
+}
 
 
 
 
+if (text == "Dias de riego") {
+    // Crear un teclado con botones para los días de riego
+    String riegoKeyboardJson = "[[\"Lunes Riego\", \"Lunes No Riego\"], [\"Martes Riego\", \"Martes No Riego\"],"
+                               "[\"Miercoles Riego\", \"Miercoles No Riego\"], [\"Jueves Riego\", \"Jueves No Riego\"],"
+                               "[\"Viernes Riego\", \"Viernes No Riego\"], [\"Sabado Riego\", \"Sabado No Riego\"],"
+                               "[\"Domingo Riego\", \"Domingo No Riego\"], [\"Volver\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione los días de riego:", "", riegoKeyboardJson, true);
+}
 
 
-    String modoRieg = "MODO RIEGO: \n";
-    modoRieg += "/DiasRiegoInfo\n";
-    modoRieg += "/LunesRiego\n";
-    modoRieg += "/LunesNoRiego\n";
-    modoRieg += "/MartesRiego\n";
-    modoRieg += "/MartesNoRiego\n";
-    modoRieg += "/MiercolesRiego\n";
-    modoRieg += "/MiercolesNoRiego\n";
-    modoRieg += "/JuevesRiego\n";
-    modoRieg += "/JuevesNoRiego\n";
-    modoRieg += "/ViernesRiego\n";
-    modoRieg += "/ViernesNoRiego\n";
-    modoRieg += "/SabadoRiego\n";
-    modoRieg += "/SabadoNoRiego\n";
-    modoRieg += "/DomingoRiego\n";
-    modoRieg += "/DomingoNoRiego\n";
-
-    //bot.sendMessage(chat_id, modoConf, "Markdown");
-
-    if (text == "/DiasRiego") {
-
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
-    }
-    int d;
-    if (text == "/DiasRiegoInfo") {
-      for (d = 0; d < 7; d++) {
-        if (diasRiego[d] == 1) {
-          bot.sendMessage(chat_id, "Riego dia:  " + String(d) + ".");
-        }
-      }
-    }
-
-    if (text == "/LunesRiego") {
+    if (text == "Lunes Riego") {
       diasRiego[1] = 1;
       bot.sendMessage(chat_id, "Lunes configurado: Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/LunesNoRiego") {
+    if (text == "Lunes No Riego") {
       diasRiego[1] = 0;
       bot.sendMessage(chat_id, "Lunes configurado: No Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/MartesRiego") {
+    if (text == "Martes Riego") {
       diasRiego[2] = 1;
       bot.sendMessage(chat_id, "Martes configurado: Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/MartesNoRiego") {
+    if (text == "Martes No Riego") {
       diasRiego[2] = 0;
       bot.sendMessage(chat_id, "Martes configurado: No Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/MiercolesRiego") {
+    if (text == "Miercoles Riego") {
       diasRiego[3] = 1;
       bot.sendMessage(chat_id, "Miercoles configurado: Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/MiercolesNoRiego") {
+    if (text == "Miercoles No Riego") {
       diasRiego[3] = 0;
       bot.sendMessage(chat_id, "Miercoles configurado: No Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/JuevesRiego") {
+    if (text == "Jueves Riego") {
       diasRiego[4] = 1;
       bot.sendMessage(chat_id, "Jueves configurado: Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/JuevesNoRiego") {
+    if (text == "Jueves No Riego") {
       diasRiego[4] = 0;
       bot.sendMessage(chat_id, "Jueves configurado: No Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/ViernesRiego") {
+    if (text == "Viernes Riego") {
       diasRiego[5] = 1;
       bot.sendMessage(chat_id, "Viernes configurado: Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/ViernesNoRiego") {
+    if (text == "Viernes No Riego") {
       diasRiego[5] = 0;
       bot.sendMessage(chat_id, "Viernes configurado: No Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/SabadoRiego") {
+    if (text == "Sabado Riego") {
       diasRiego[6] = 1;
       bot.sendMessage(chat_id, "Sabado configurado: Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/SabadoNoRiego") {
+    if (text == "Sabado No Riego") {
       diasRiego[6] = 0;
       bot.sendMessage(chat_id, "Sabado configurado: No Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/DomingoRiego") {
+    if (text == "Domingo Riego") {
       diasRiego[0] = 1;
       bot.sendMessage(chat_id, "Domingo configurado: Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
 
-    if (text == "/DomingoNoRiego") {
+    if (text == "Domingo No Riego") {
       diasRiego[0] = 0;
       bot.sendMessage(chat_id, "Domingo configurado: No Riego");
-      bot.sendMessage(chat_id, modoRieg, "Markdown");
       Guardado_General();
     }
     // RELE 4 CONFIG
 
-    if (text == "/horaOnR4config") {
-      modoR4 = CONFIG;
-      modoMenu = CONFIG;
-      R4config = 1;
-      bot.sendMessage(chat_id, "Ingrese hora de Encendido R4: ");
+    if (text == "Hora On R4") {
+  modoR4 = CONFIG;
+  modoMenu = CONFIG;
+  R4config = 1;
+  bot.sendMessage(chat_id, "Ingrese Hora de Encendido R4 en formato HH:MM (por ejemplo, 08:30):");
+}
+if (R4config == 1) {
+  int sep = text.indexOf(':'); // Buscamos el separador ':'
+  if (sep != -1) {
+    horaOnR4 = text.substring(0, sep).toInt(); // Obtenemos la hora
+    minOnR4 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
+    if (horaOnR4 >= 0 && horaOnR4 < 24 && minOnR4 >= 0 && minOnR4 < 60) {
+      Serial.print("Hora encendido R4: ");
+      Serial.print(horaOnR4);
+      Serial.print(":");
+      Serial.println(minOnR4);
+      bot.sendMessage(chat_id, "Hora de encendido R4 guardada correctamente");
+      Guardado_General();
+      R4config = 0;
+    } else {
+      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
-    if (R4config == 1) {
-      horaOnR4 = text.toInt();
+  } else {
+    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+  }
+}
 
-      if (horaOnR4 > 0) {
-        Serial.print("Hora encendido R4: ");
-        Serial.println(horaOnR4);
-        bot.sendMessage(chat_id, "Hora Encendido Rele 4 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R4config = 0;
-      }
+if (text == "Hora Off R4") {
+  modoR4 = CONFIG;
+  modoMenu = CONFIG;
+  R4config = 2;
+  bot.sendMessage(chat_id, "Ingrese Hora de Apagado R4 en formato HH:MM (por ejemplo, 18:45):");
+}
+if (R4config == 2) {
+  int sep = text.indexOf(':'); // Buscamos el separador ':'
+  if (sep != -1) {
+    horaOffR4 = text.substring(0, sep).toInt(); // Obtenemos la hora
+    minOffR4 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
+    if (horaOffR4 >= 0 && horaOffR4 < 24 && minOffR4 >= 0 && minOffR4 < 60) {
+      Serial.print("Hora apagado R4: ");
+      Serial.print(horaOffR4);
+      Serial.print(":");
+      Serial.println(minOffR4);
+      bot.sendMessage(chat_id, "Hora de apagado R4 guardada correctamente");
+      Guardado_General();
+      R4config = 0;
+    } else {
+      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
+  } else {
+    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+  }
+}
 
-    if (text == "/minOnR4config") {
-      modoR4 = CONFIG;
-      modoMenu = CONFIG;
-      R4config = 2;
-      bot.sendMessage(chat_id, "Ingrese minuto de Encendido R4: ");
-    }
-    if (R4config == 2) {
-      minOnR4 = text.toInt();
-      if (minOnR4 > 0) {
-        Serial.print("Tiempo Minuto de encendido de Rele 4: ");
-        Serial.println(minOnR4);
-        bot.sendMessage(chat_id, "Minuto de encendido de R4 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R4config = 0;
-      }
-    }
-
-    if (text == "/horaOffR4config") {
-      modoR4 = CONFIG;
-      modoMenu = CONFIG;
-      R4config = 3;
-      bot.sendMessage(chat_id, "Ingrese hora de apagado R4: ");
-    }
-    if (R4config == 3) {
-      horaOffR4 = text.toInt();
-      if (horaOffR4 > 0) {
-        Serial.print("Tiempo hora de apagado Rele 4: ");
-        Serial.println(horaOffR4);
-        bot.sendMessage(chat_id, "Hora de apagado R4 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R4config = 0;
-      }
-    }
-
-    if (text == "/minOffR4config") {
-      modoR4 = CONFIG;
-      modoMenu = CONFIG;
-      R4config = 4;
-      bot.sendMessage(chat_id, "Ingrese minuto de Apagado R4: ");
-    }
-    if (R4config == 4) {
-      minOffR4 = text.toInt();
-      if (minOffR4 > 0) {
-        Serial.print("Tiempo minuto de apagado Rele 4: ");
-        Serial.println(minOffR4);
-        bot.sendMessage(chat_id, "Minuto de apagado R4 guardado");
-        bot.sendMessage(chat_id, modoConf, "Markdown");
-        Guardado_General();
-        R4config = 0;
-      }
-    }
 
     //  MOSTRAR PARAMETROS
 
-    if (text == "/infoconfig") {
-      String infoConfig = "INFO CONFIG: \n\n";
-      infoConfig += "Rele 1: \n";
-      infoConfig += "minR1: " + String(minR1) + ".\n";
-      infoConfig += "maxR1: " + String(maxR1) + ".\n";
-      infoConfig += "paramR1: " + String(paramR1) + ".\n";
-      infoConfig += "Hora de encendido: " + String(horaOnR1) + ":" + String(minOnR1) + "\n";
-      infoConfig += "Hora de apagado: " + String(horaOffR1) + ":" + String(minOffR1) + "\n";      
-      infoConfig += "modoR1: " + String(modoR1) + ".\n\n";
-      infoConfig += "Rele 2: \n";
-      infoConfig += "minR2: " + String(minR2) + ".\n";
-      infoConfig += "maxR2: " + String(maxR2) + ".\n";
-      infoConfig += "modoR2: " + String(modoR2) + ".\n\n";
-      infoConfig += "Rele 2 (IR): \n";
-      infoConfig += "minR2ir: " + String(minR2ir) + ".\n";
-      infoConfig += "maxR2ir: " + String(maxR2ir) + ".\n";
-      infoConfig += "modoR2ir: " + String(modoR2ir) + ".\n\n";
-      infoConfig += "Rele 3: \n";
-      infoConfig += "Hora de encendido: " + String(horaOnR3) + ":" + String(minOnR3) + "\n";
-      infoConfig += "Hora de apagado: " + String(horaOffR3) + ":" + String(minOffR3) + "\n";
-      infoConfig += "modoR3: " + String(modoR3) + ".\n\n";
-      infoConfig += "Rele 4: \n";
-      infoConfig += "Hora de encendido: " + String(horaOnR4) + ":" + String(minOnR4) + "\n";
-      infoConfig += "Hora de apagado: " + String(horaOffR4) + ":" + String(minOffR4) + "\n";
-      infoConfig += "modoR4: " + String(modoR4) + ".\n";
-      bot.sendMessage(chat_id, infoConfig, "Markdown");
+    if (text == "INFO CONFIG") {
+    // Crear botones para mostrar la información de cada relé
+    String infoKeyboardJson = "[[\"Rele 1 Info\", \"Rele 2 Info\"], [\"Rele 3 Info\", \"Rele 4 Info\"], [\"Volver\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione un relé para ver la información:", "", infoKeyboardJson, true);
+}
+
+if (text == "Rele 1 Info") {
+    String infoR1 = "Rele 1: \n";
+    infoR1 += "Límite Inferior: " + String(minR1) + ".\n";
+    infoR1 += "Límite Superior: " + String(maxR1) + ".\n";
+    infoR1 += "Parametro: " + String(paramR1) + ".\n";
+    infoR1 += "Hora de encendido: " + String(horaOnR1) + ":" + String(minOnR1) + "\n";
+    infoR1 += "Hora de apagado: " + String(horaOffR1) + ":" + String(minOffR1) + "\n";      
+    infoR1 += "modoR1: " + String(modoR1) + ".\n";
+    bot.sendMessage(chat_id, infoR1, "Markdown");
+}
+
+if (text == "Rele 2 Info") {
+    String infoR2 = "Rele 2: \n";
+    infoR2 += "Límite Inferior: " + String(minR2) + ".\n";
+    infoR2 += "Límite Superior: " + String(maxR2) + ".\n";
+    infoR2 += "modoR2: " + String(modoR2) + ".\n";
+    infoR2 += "Rele 2 (IR): \n";
+    infoR2 += "Límite Inferior: " + String(minR2ir) + ".\n";
+    infoR2 += "Límite Superior: " + String(maxR2ir) + ".\n";
+    infoR2 += "modoR2ir: " + String(modoR2ir) + ".\n";
+    bot.sendMessage(chat_id, infoR2, "Markdown");
+}
+
+if (text == "Rele 3 Info") {
+    String infoR3 = "Rele 3: \n";
+    infoR3 += "Hora de encendido: " + String(horaOnR3) + ":" + String(minOnR3) + "\n";
+    infoR3 += "Hora de apagado: " + String(horaOffR3) + ":" + String(minOffR3) + "\n";
+    infoR3 += "modoR3: " + String(modoR3) + ".\n";
+
+    // Agregar la información de los días de riego
+    String diasRiegoInfo = "Días de riego: ";
+    bool hayRiego = false;
+
+    for (int d = 0; d < 7; d++) {
+        if (diasRiego[d] == 1) {
+            diasRiegoInfo += String(d) + " ";
+            hayRiego = true;
+        }
     }
 
-    if (text == "/status" || modoMenu == STATUS) {
-      modoMenu = STATUS;
+    if (hayRiego) {
+        infoR3 += diasRiegoInfo + "\n";
+    } else {
+        infoR3 += "No hay días de riego configurados.\n";
+    }
 
-      // Leer datos del sensor DHT
-      //float temperature = dht.readTemperature();
-      //float humidity = dht.readHumidity();
+    bot.sendMessage(chat_id, infoR3, "Markdown");
+}
 
-      sensors_event_t humidity, temp;
-      aht.getEvent(&humidity, &temp);
-
-      float temperature = (temp.temperature);
-      float humedad = (humidity.relative_humidity);
-
-      requestSensorData();
-
-      //int humedadS = analogRead(sensorHS); // Lee el valor analógico del sensor
-      //int humedadSuelo = map(humedadS, 0, 4095, 0, 100);
-
-      // Mapear el valor del sensor al rango de 0 a 100
-     // int sensorValue = analogRead(sensorHS);
-  //int humedadS = map(sensorValue, humedadMinima, humedadMaxima, 0, 100);
-
-  // Limitar el valor de humedad a 0 y 100
-  //if (humedadS < 0) humedadS = 0;
-  //if (humedadS > 100) humedadS = 100;
+if (text == "Volver") {
+    // Volver al menú principal
+    String mainKeyboardJson = "[[\"STATUS\", \"MANUAL\"], [\"AUTO\", \"CONFIG\"], [\"INFO CONFIG\", \"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Has vuelto al menú principal. Selecciona una opción:", "", mainKeyboardJson, true);
+}
 
 
-     // sensors.requestTemperatures();
-    //  float temperatureC = sensors.getTempCByIndex(0);
+if (text == "Rele 4 Info") {
+    String infoR4 = "Rele 4: \n";
+    infoR4 += "Hora de encendido: " + String(horaOnR4) + ":" + String(minOnR4) + "\n";
+    infoR4 += "Hora de apagado: " + String(horaOffR4) + ":" + String(minOffR4) + "\n";
+    infoR4 += "modoR4: " + String(modoR4) + ".\n";
+    bot.sendMessage(chat_id, infoR4, "Markdown");
+}
 
-      DateTime now = rtc.now();
-      int horaBot = now.hour();
 
-      horaBot -= 3;
-      if (horaBot < 0)
+if (text == "STATUS" ) {
+    modoMenu = STATUS;
+
+    // Leer datos del sensor DHT
+    sensors_event_t humidity, temp;
+    aht.getEvent(&humidity, &temp);
+
+    float temperature = (temp.temperature);
+    float humedad = (humidity.relative_humidity);
+
+    requestSensorData();
+
+    DateTime now = rtc.now();
+    int horaBot = now.hour();
+
+    horaBot -= 3;
+    if (horaBot < 0)
         horaBot = 24 + horaBot;
 
-      int currentTimeBot = horaBot * 60 + now.minute();
+    int currentTimeBot = horaBot * 60 + now.minute();
 
-      // Leer fecha y hora del RTC
+    // Leer fecha y hora del RTC
+    String dateTime = "📅 Fecha y Hora: " + String(now.day()) + "/" + String(now.month()) + "/" + String(now.year()) + " " + horaBot + ":" + String(now.minute()) + ":" + String(now.second()) + "\n";
 
-      String dateTime = "Fecha y Hora: " + String(now.day()) + "/" + String(now.month()) + "/" + String(now.year()) + " " + horaBot + ":" + String(now.minute()) + ":" + String(now.second()) + "\n";
+    String statusMessage = "🌡️ Temperatura: " + String(temperature, 1) + " °C\n";
+    statusMessage += "💧 Humedad: " + String(humedad, 1) + " %\n";
+    statusMessage += "🌬️ DPV: " + String(DPV, 1) + " kPa\n";
+    //statusMessage += "Humedad Suelo (1): " + String(sensor1Value) + " %\n";
+    //statusMessage += "Humedad Suelo (2): " + String(sensor2Value) + " %\n";
+    //statusMessage += "Humedad Suelo (3): " + String(sensor3Value) + " %\n";
 
-      String statusMessage = "Temperatura: " + String(temperature, 1) + " °C\n";
-      statusMessage += "Humedad: " + String(humedad, 1) + " %\n";
-      statusMessage += "DPV: " + String(DPV, 1) + " kPa\n";
-      //statusMessage += "PH: " + String(PHval, 2);
-      //statusMessage += "(" + String(PHvolt, 2) + " V)\n";
-      statusMessage += "Humedad Suelo (1): " + String(sensor1Value) + " %\n";
-      statusMessage += "Humedad Suelo (2): " + String(sensor2Value) + " %\n";
-      //statusMessage += "Humedad Suelo (3): " + String(sensor3Value) + " %\n";
+    statusMessage += dateTime;  // Agrega la fecha y hora al mensaje
+    bot.sendMessage(chat_id, statusMessage, "");
+}
 
-      statusMessage += dateTime;  // Agrega la fecha y hora al mensaje
-      bot.sendMessage(chat_id, statusMessage, "");
-    }
 
-    if (text == "/resetDruidaBot") {
+    if (text == "RESET DRUIDA") {
       String resetMsg = "Reiniciando druida..\n";
       bot.sendMessage(chat_id, resetMsg, "Markdown");
       delay(2000);
       reset = 1;
     }
 
-    if (text == "/enviarData") {
+    if (text == "ENVIAR DATA GOOGLE") {
       String dataMsg = "Enviando data a Google Sheet\n";
       bot.sendMessage(chat_id, dataMsg, "Markdown");
       delay(500);
