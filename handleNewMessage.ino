@@ -792,10 +792,10 @@ if (text == "Rele 1 Info") {
     String infoR1 = "Rele 1: \n";
     infoR1 += "Límite Inferior: " + String(minR1) + ".\n";
     infoR1 += "Límite Superior: " + String(maxR1) + ".\n";
-    infoR1 += "Parametro: " + String(paramR1) + ".\n";
-    infoR1 += "Hora de encendido: " + String(horaOnR1) + ":" + String(minOnR1) + "\n";
-    infoR1 += "Hora de apagado: " + String(horaOffR1) + ":" + String(minOffR1) + "\n";      
-    infoR1 += "modoR1: " + String(modoR1) + ".\n";
+    infoR1 += "Parametro: " + convertirParametro(paramR1) + ".\n";
+    infoR1 += "Hora de encendido: " + formatoHora(horaOnR1, minOnR1) + "\n";
+    infoR1 += "Hora de apagado: " + formatoHora(horaOffR1, minOffR1) + "\n"; 
+    infoR1 += "Modo: " + convertirModo(modoR1) + ".\n";
     bot.sendMessage(chat_id, infoR1, "Markdown");
 }
 
@@ -803,27 +803,29 @@ if (text == "Rele 2 Info") {
     String infoR2 = "Rele 2: \n";
     infoR2 += "Límite Inferior: " + String(minR2) + ".\n";
     infoR2 += "Límite Superior: " + String(maxR2) + ".\n";
-    infoR2 += "modoR2: " + String(modoR2) + ".\n";
+    infoR2 += "Parametro: " + convertirParametro(paramR2) + ".\n";
+    infoR2 += "Modo: " + convertirModo(modoR2) + ".\n";
     infoR2 += "Rele 2 (IR): \n";
     infoR2 += "Límite Inferior: " + String(minR2ir) + ".\n";
     infoR2 += "Límite Superior: " + String(maxR2ir) + ".\n";
-    infoR2 += "modoR2ir: " + String(modoR2ir) + ".\n";
+    infoR2 += "Parametro: " + convertirParametro(paramR2ir) + ".\n";
+    infoR2 += "Modo: " + convertirModo(modoR2ir) + ".\n";
     bot.sendMessage(chat_id, infoR2, "Markdown");
 }
 
 if (text == "Rele 3 Info") {
     String infoR3 = "Rele 3: \n";
-    infoR3 += "Hora de encendido: " + String(horaOnR3) + ":" + String(minOnR3) + "\n";
-    infoR3 += "Hora de apagado: " + String(horaOffR3) + ":" + String(minOffR3) + "\n";
-    infoR3 += "modoR3: " + String(modoR3) + ".\n";
+    infoR3 += "Hora de encendido: " + formatoHora(horaOnR3, minOnR3) + "\n";
+    infoR3 += "Hora de apagado: " + formatoHora(horaOffR3, minOffR3) + "\n";
+    infoR3 += "Modo: " + convertirModo(modoR3) + ".\n";
 
     // Agregar la información de los días de riego
-    String diasRiegoInfo = "Días de riego: ";
+    String diasRiegoInfo = "Días de riego:\n";
     bool hayRiego = false;
 
     for (int d = 0; d < 7; d++) {
         if (diasRiego[d] == 1) {
-            diasRiegoInfo += String(d) + " ";
+            diasRiegoInfo += "-" + convertirDia(d) + ".\n";
             hayRiego = true;
         }
     }
@@ -846,9 +848,9 @@ if (text == "Menu Principal") {
 
 if (text == "Rele 4 Info") {
     String infoR4 = "Rele 4: \n";
-    infoR4 += "Hora de encendido: " + String(horaOnR4) + ":" + String(minOnR4) + "\n";
-    infoR4 += "Hora de apagado: " + String(horaOffR4) + ":" + String(minOffR4) + "\n";
-    infoR4 += "modoR4: " + String(modoR4) + ".\n";
+    infoR4 += "Hora de encendido: " + formatoHora(horaOnR4, minOnR4) + "\n";
+    infoR4 += "Hora de apagado: " + formatoHora(horaOffR4, minOffR4) + "\n";
+    infoR4 += "Modo: " + convertirModo(modoR4) + ".\n";
     bot.sendMessage(chat_id, infoR4, "Markdown");
 }
 

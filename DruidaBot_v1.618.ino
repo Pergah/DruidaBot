@@ -614,7 +614,7 @@ void loop() {
 
 
  // Crear la variable 'dateTime' para usar en mostrarEnPantallaOLED
-String hora = String(hour) + ":" + String(now.minute());
+String hora = formatoHora(hour, now.minute());
 
 mostrarEnPantallaOLED(temperature, humedad, DPV, hora);
   delay(2000);
@@ -683,8 +683,9 @@ float calcularDPV(float temperature, float humedad) {
 
     return 0.0;  // Otra opción podría ser devolver un valor de error
   }
+  float temp = temperature - 2;
 
-  float VPS = VPS_values[static_cast<int>(temperature) - 1];
+  float VPS = VPS_values[static_cast<int>(temp) - 1];
   float DPV = 100 - humedad;
   float DPV1 = DPV / 100;
   float DPV2 = DPV1 * VPS;
@@ -1477,4 +1478,68 @@ String obtenerMotivoReinicio() {
 
   return motivoReinicio;
 }
+
+String convertirModo(int modo) {
+    switch (modo) {
+        case MANUAL:
+            return "Manual";
+        case AUTO:
+            return "Automático";
+        case CONFIG:
+            return "Configuración";
+        case STATUS:
+            return "Estado";
+        case AUTOINT:
+            return "Auto Intermitente";
+        case TIMER:
+            return "Temporizador";
+        default:
+            return "Desconocido";
+    }
+}
+
+String convertirParametro(int parametro) {
+    switch (parametro) {
+        case H:
+            return "Humedad";
+        case T:
+            return "Temperatura";
+        case D:
+            return "DPV";
+        default:
+            return "Desconocido";
+    }
+}
+
+
+String convertirDia(int dia) {
+    switch (dia) {
+        case 0:
+            return "Domingo";
+        case 1:
+            return "Lunes";
+        case 2:
+            return "Martes";
+        case 3:
+            return "Miércoles";
+        case 4:
+            return "Jueves";
+        case 5:
+            return "Viernes";
+        case 6:
+            return "Sábado";
+        default:
+            return "Desconocido";
+    }
+}
+
+
+String formatoHora(int hora, int minuto) {
+    char buffer[6]; // Buffer para almacenar la cadena formateada
+    sprintf(buffer, "%02d:%02d", hora, minuto); // Formatear con dos dígitos
+    return String(buffer); // Devolver como String
+}
+
+
+
 
