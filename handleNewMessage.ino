@@ -82,7 +82,7 @@ if (text == "MANUAL") {
         delay(500);
       }
 
-      if (text == "R2 off") {
+      if (text == "R2 Off") {
         modoR2 = MANUAL;
         estadoR2 = 0;
         bot.sendMessage(chat_id, "Rele 2 is OFF", "");
