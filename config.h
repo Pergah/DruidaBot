@@ -105,7 +105,7 @@ IRsend irsend(sensorIRpin);
 //const String botToken = "7273841170:AAHxWF33cIDcIoxgBm3x9tzn9ISJIKoy7X8"; //DRUIDA TRES (nuevo matheu)
 //const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (bry e ivana)
 //const String botToken = "7357647743:AAFPD1Tc099-2o-E2-Ph7SZluzwHubrl700";  //DRUIDA CINCO (matheu)
-const String botToken = "7611244980:AAEQUDIUZwR4nZBsjEEHPEieyc3k90PxVxI"; //DRUIDA SEIS (bry e ivana)
+const String botToken = "7611244980:AAEQUDIUZwR4nZBsjEEHPEieyc3k90PxVxI"; //DRUIDA SEIS (nuevop)
 
 const char* ssid_AP = "Druida Config";
 //const char* ssid_AP = "Druida Dos"; 
