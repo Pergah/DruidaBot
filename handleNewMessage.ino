@@ -235,7 +235,7 @@ if (text == "MANUAL") {
     modoMenu = AUTO;
     
     // Crear botones para el modo automático
-    String autoKeyboardJson = "[[\"R1 Auto\", \"R1 Timer\"], [\"R2 Auto\", \"R2 IR Auto\"], [\"R3 Auto\", \"R4 Auto\"], [\"Menu Principal\"]]";
+    String autoKeyboardJson = "[[\"R1 Auto\", \"R1 Timer\"], [\"R2 Auto\", \"R2 IR Auto\"], [\"R3 Auto\", \"R3 Riego\"], [\"R4 Auto\"], [\"Menu Principal\"]]";
 
     bot.sendMessageWithReplyKeyboard(chat_id, "MODO AUTOMATICO:", "", autoKeyboardJson, true);
 }
@@ -282,12 +282,12 @@ if (text == "MANUAL") {
         delay(500);
       }
 
-            if (text == "/R3autoParam")
+      if (text == "R3 Riego")
 
       {
 
-        modoR3 = AUTOINT;
-        bot.sendMessage(chat_id, "Rele 3 Automatico inteligente", "");
+        modoR3 = RIEGO;
+        bot.sendMessage(chat_id, "Rele 3 Automatico (Riego)", "");
         Guardado_General();
         delay(500);
       }
@@ -326,17 +326,19 @@ if (text == "R2 config") {
 
 
 if (text == "R3 config") {
-    // Crear botones para las opciones del R3, incluyendo "Dias de riego"
-    String r3KeyboardJson = "[[\"Hora On R3\", \"Hora Off R3\"], [\"Dias de riego\", \"Menu Principal\"]]";
+    // Crear botones para las opciones del R3, incluyendo las nuevas opciones
+    String r3KeyboardJson = "[[\"Hora On R3\", \"Hora Off R3\"], [\"Dias de riego\", \"Tiempo Riego\"], [\"Tiempo No Riego\", \"Cantidad Riegos\"], [\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R3:", "", r3KeyboardJson, true);
 }
 
 
+
 if (text == "R4 config") {
     // Crear botones para las opciones del R4
-    String r4KeyboardJson = "[[\"Hora On R4\", \"Hora Off R4\"], [\"Menu Principal\"]]";
+    String r4KeyboardJson = "[[\"Hora On R4\", \"Hora Off R4\"], [\"Hora Amanecer R4\", \"Hora Atardecer R4\"], [\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R4:", "", r4KeyboardJson, true);
 }
+
 
 
     /// R1
@@ -572,6 +574,60 @@ if (text == "Hora Off R1") {
 
   /// RELE 3 CONFIG
 
+if (text == "Tiempo Riego") {
+      modoR3 = CONFIG;
+      modoMenu = CONFIG;
+      R3config = 3;
+      bot.sendMessage(chat_id, "Ingrese Tiempo de Riego (en segundos)");
+    }
+    if (R3config == 3) {
+      tiempoRiego = text.toInt();
+
+      if (tiempoRiego > 0) {
+        Serial.print("tiempoRiego: ");
+        Serial.println(tiempoRiego);
+        bot.sendMessage(chat_id, "Valor tiempoRiego guardado");
+        Guardado_General();
+        R3config = 0;
+      }
+    }
+
+    if (text == "Tiempo No Riego") {
+      modoR3 = CONFIG;
+      modoMenu = CONFIG;
+      R3config = 4;
+      bot.sendMessage(chat_id, "Ingrese Tiempo de intervalo (en segundos)");
+    }
+    if (R3config == 4) {
+      tiempoNoRiego = text.toInt();
+
+      if (tiempoNoRiego > 0) {
+        Serial.print("tiempoNoRiego: ");
+        Serial.println(tiempoNoRiego);
+        bot.sendMessage(chat_id, "Valor tiempoNoRiego guardado");
+        Guardado_General();
+        R3config = 0;
+      }
+    }
+
+        if (text == "Cantidad Riegos") {
+      modoR3 = CONFIG;
+      modoMenu = CONFIG;
+      R3config = 5;
+      bot.sendMessage(chat_id, "Ingrese Cantidad de riegos");
+    }
+    if (R3config == 5) {
+      cantidadRiegos = text.toInt();
+
+      if (cantidadRiegos > 0) {
+        Serial.print("cantidadRiegos: ");
+        Serial.println(cantidadRiegos);
+        bot.sendMessage(chat_id, "Valor cantidadRiegos guardado");
+        Guardado_General();
+        R3config = 0;
+      }
+    }
+
 if (text == "Hora On R3") {
   modoR3 = CONFIG;
   modoMenu = CONFIG;
@@ -721,6 +777,7 @@ if (text == "Dias de riego") {
       bot.sendMessage(chat_id, "Domingo configurado: No Riego");
       Guardado_General();
     }
+
    // RELE 4 CONFIG
 
 // RELE 4 CONFIG
@@ -751,6 +808,7 @@ if (text == "Hora On R4") {
   }
 }
 
+
 if (text == "Hora Off R4") {
   modoR4 = CONFIG;
   modoMenu = CONFIG;
@@ -767,6 +825,56 @@ if (text == "Hora Off R4") {
       Serial.print(":");
       Serial.println(minOffR4);
       bot.sendMessage(chat_id, "Hora de apagado R4 guardada correctamente");
+      Guardado_General();
+      R4config = 0; // Reseteamos la configuración
+    } else {
+      bot.sendMessage(chat_id, "Error: Formato incorrecto. La hora debe estar entre 00:00 y 23:59.");
+    }
+  } else {
+    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+  }
+}
+
+if (text == "Hora Amanecer R4") {
+  modoR4 = CONFIG;
+  modoMenu = CONFIG;
+  R4config = 3;
+  bot.sendMessage(chat_id, "Ingrese la hora del amanecer en formato HH:MM (por ejemplo, 06:30):");
+} else if (R4config == 3) {
+  int sep = text.indexOf(':'); // Buscamos el separador ':'
+  if (sep != -1) {
+    int hora = text.substring(0, sep).toInt(); // Obtenemos la hora
+    int minuto = text.substring(sep + 1).toInt(); // Obtenemos los minutos
+    if (hora >= 0 && hora < 24 && minuto >= 0 && minuto < 60) {
+      horaAmanecer = hora * 60 + minuto; // Convertimos a minutos totales
+      Serial.print("Hora amanecer (en minutos totales): ");
+      Serial.println(horaAmanecer);
+      bot.sendMessage(chat_id, "Hora del amanecer guardada correctamente");
+      Guardado_General();
+      R4config = 0; // Reseteamos la configuración
+    } else {
+      bot.sendMessage(chat_id, "Error: Formato incorrecto. La hora debe estar entre 00:00 y 23:59.");
+    }
+  } else {
+    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+  }
+}
+
+if (text == "Hora Atardecer R4") {
+  modoR4 = CONFIG;
+  modoMenu = CONFIG;
+  R4config = 4;
+  bot.sendMessage(chat_id, "Ingrese la hora del atardecer en formato HH:MM (por ejemplo, 06:30):");
+} else if (R4config == 4) {
+  int sep = text.indexOf(':'); // Buscamos el separador ':'
+  if (sep != -1) {
+    int hora = text.substring(0, sep).toInt(); // Obtenemos la hora
+    int minuto = text.substring(sep + 1).toInt(); // Obtenemos los minutos
+    if (hora >= 0 && hora < 24 && minuto >= 0 && minuto < 60) {
+      horaAtardecer = hora * 60 + minuto; // Convertimos a minutos totales
+      Serial.print("Hora atardecer (en minutos totales): ");
+      Serial.println(horaAtardecer);
+      bot.sendMessage(chat_id, "Hora del atardecer guardada correctamente");
       Guardado_General();
       R4config = 0; // Reseteamos la configuración
     } else {
@@ -817,6 +925,9 @@ if (text == "Rele 3 Info") {
     String infoR3 = "Rele 3: \n";
     infoR3 += "Hora de encendido: " + formatoHora(horaOnR3, minOnR3) + "\n";
     infoR3 += "Hora de apagado: " + formatoHora(horaOffR3, minOffR3) + "\n";
+    infoR3 += "Tiempo Riego: " + String(tiempoRiego) + ".\n";
+    infoR3 += "Tiempo No Riego: " + String(tiempoNoRiego) + ".\n";
+    infoR3 += "Cantidad de Riegos: " + String(cantidadRiegos) + ".\n";
     infoR3 += "Modo: " + convertirModo(modoR3) + ".\n";
 
     // Agregar la información de los días de riego
@@ -850,9 +961,12 @@ if (text == "Rele 4 Info") {
     String infoR4 = "Rele 4: \n";
     infoR4 += "Hora de encendido: " + formatoHora(horaOnR4, minOnR4) + "\n";
     infoR4 += "Hora de apagado: " + formatoHora(horaOffR4, minOffR4) + "\n";
+    infoR4 += "Hora de amanecer: " + formatoHora(horaAmanecer / 60, horaAmanecer % 60) + "\n";
+    infoR4 += "Hora de atardecer: " + formatoHora(horaAtardecer / 60, horaAtardecer % 60) + "\n";
     infoR4 += "Modo: " + convertirModo(modoR4) + ".\n";
     bot.sendMessage(chat_id, infoR4, "Markdown");
 }
+
 
 
 if (text == "STATUS" ) {

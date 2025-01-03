@@ -37,6 +37,8 @@ void setup() {
 
   unsigned long startMillis = millis();
   Carga_General();
+  dimmerServo.attach(SERVO); // 
+  moveServoSlowly(currentPosition); // Mover a la última posición guardada
 
 mostrarMensajeBienvenida();
 
@@ -81,6 +83,8 @@ mostrarMensajeBienvenida();
     Serial.println("\nNo se pudo conectar a Wi-Fi. Iniciando modo AP para configuración.");
 
     // Iniciar el modo AP para configuración
+
+  // Inicia el servidor web
     startAccessPoint();}
 
   Serial.println("Menu Serial: ");
@@ -203,6 +207,16 @@ void loop() {
     irsend.sendRaw(IRsignal, 72, 38);
     delay(200);
     serial = 0;
+  }
+
+  if (serial == '6') {
+    moveServoSlowly(180);
+    delay(200);
+  }
+
+  if (serial == '7') {
+    moveServoSlowly(0);
+    delay(200);
   }
 
 
@@ -540,52 +554,52 @@ void loop() {
     }
   }
 
-// MODO R3 AUTO INTELIGENTE
+//MODO RIEGO R3
 
-/*if (modoR3 == AUTOINT) {
+unsigned long previousMillisRiego = 0;  // Variable para manejar el tiempo
+int cicloRiegoActual = 0;               // Contador de ciclos de riego
+bool enRiego = false;                   // Flag para saber si está en riego
+
+if (modoR3 == RIEGO) {
   for (c = 0; c < 7; c++) {
     if (diasRiego[c] == 1) {
       if (c == day) {
-        // Verifica si está dentro del horario de encendido
-        if ((startR3 < offR3 && currentTime >= startR3 && currentTime < offR3) ||
-            (startR3 > offR3 && (currentTime >= startR3 || currentTime < offR3))) {
-
-          // Verifica si la humedad es menor a minR3
-          if (humedadSuelo < minR3) {
-            // Enciende el relé si no estaba encendido
-            if (R3estado == HIGH) {
-              digitalWrite(RELAY3, LOW);
-              R3estado = LOW;
-            }
-          }
-
-          // Apaga el relé si la humedad supera los maxR3 o si se sale del horario
-          if (humedadSuelo > maxR3 || currentTime >= offR3) {
-            if (R3estado == LOW) {
-              digitalWrite(RELAY3, HIGH);
-              R3estado = HIGH;
-            }
-          }
-
-        } else {
-          // Fuera del horario de encendido: Apaga el relé si está encendido
-          if (R3estado == LOW) {
+        if (startR3 < offR3) { 
+          // Caso normal: encendido antes que apagado
+          if (currentTime >= startR3 && currentTime < offR3) {
+            riegoIntermitente();  // Llamada a la función de riego
+          } else {
+            // Apagar el relé fuera del horario
             digitalWrite(RELAY3, HIGH);
             R3estado = HIGH;
+            cicloRiegoActual = 0; // Reiniciar ciclos
+            enRiego = false;
+          }
+        } else { 
+          // Caso cruzando medianoche: encendido después que apagado
+          if (currentTime >= startR3 || currentTime < offR3) {
+            riegoIntermitente();  // Llamada a la función de riego
+          } else {
+            // Apagar el relé fuera del horario
+            digitalWrite(RELAY3, HIGH);
+            R3estado = HIGH;
+            cicloRiegoActual = 0; // Reiniciar ciclos
+            enRiego = false;
           }
         }
       }
     }
   }
 }
-*/
-  //MODO AUTO R4 (Luz)
+ 
 
-  if (modoR4 == AUTO) {
-  if (startR4 < offR4) { 
+
+  // MODO AUTO R4 (Luz)
+if (modoR4 == AUTO) {
+  if (startR4 < offR4) {
     // Caso normal: encendido antes que apagado
     if (currentTime >= startR4 && currentTime < offR4) {
-      if (R4estado == HIGH){ 
+      if (R4estado == HIGH) {
         digitalWrite(RELAY4, LOW);
         R4estado = LOW;
       }
@@ -595,10 +609,10 @@ void loop() {
         R4estado = HIGH;
       }
     }
-  } else { 
+  } else {
     // Caso cruzando medianoche: encendido después que apagado
     if (currentTime >= startR4 || currentTime < offR4) {
-      if (R4estado == HIGH){ 
+      if (R4estado == HIGH) {
         digitalWrite(RELAY4, LOW);
         R4estado = LOW;
       }
@@ -609,7 +623,19 @@ void loop() {
       }
     }
   }
+
+  // Control del servomotor (manejo de horarios cruzados)
+  bool dentroAmanecer = (horaAmanecer < horaAtardecer) 
+                          ? (currentTime >= horaAmanecer && currentTime < horaAtardecer)
+                          : (currentTime >= horaAmanecer || currentTime < horaAtardecer);
+
+  if (dentroAmanecer) {
+    moveServoSlowly(180); // Simula el mediodía
+  } else {
+    moveServoSlowly(0); // Simula amanecer o atardecer
+  }
 }
+
 
 
 
@@ -740,6 +766,12 @@ void Carga_General() {
   horaOffR1 = EEPROM.get(280, horaOffR1);
   minOnR1 = EEPROM.get(284, minOnR1);
   minOffR1 = EEPROM.get(288, minOffR1);
+  tiempoRiego = EEPROM.get(292, tiempoRiego);
+  tiempoNoRiego = EEPROM.get(296, tiempoNoRiego);
+  cantidadRiegos = EEPROM.get(300, cantidadRiegos);
+  currentPosition = EEPROM.get(304, currentPosition);
+  horaAmanecer = EEPROM.get(308, horaAmanecer);
+  horaAtardecer = EEPROM.get(312, horaAtardecer);
 
   for (int i = 0; i < 100; i++) {
     IRsignal[i] = EEPROM.get(350 + i * sizeof(uint16_t), IRsignal[i]);
@@ -799,6 +831,12 @@ void Guardado_General() {
   EEPROM.put(280, horaOffR1);
   EEPROM.put(284, minOnR1);
   EEPROM.put(288, minOffR1);
+  EEPROM.put(292, tiempoRiego);
+  EEPROM.put(296, tiempoNoRiego);
+  EEPROM.put(300, cantidadRiegos);
+  EEPROM.put(304, currentPosition);
+  EEPROM.put(308, horaAmanecer);
+  EEPROM.put(312, horaAtardecer);
 
   
   for (int i = 0; i < 100; i++) {
@@ -882,60 +920,118 @@ String readSerialInput() {
   return input;
 }
 
+
 void connectToWiFi(const char* ssid, const char* password) {
+  // Inicia la conexión WiFi dependiendo del uso de contraseña
   if (conPW == 1) {
     WiFi.begin(ssid, password);
-    Serial.print("Red WiFi: ");
+    Serial.print("Conectando a la red WiFi con contraseña...");
     Serial.println(ssid);
-    Serial.print("Password: ");
-    Serial.println(password);
-    Serial.print("Chat ID: ");
-    Serial.println(chat_id);
-  }
-  if (conPW == 0) {
+  } else {
     WiFi.begin(ssid);
-    Serial.print("Red WiFi: ");
+    Serial.print("Conectando a la red WiFi sin contraseña...");
     Serial.println(ssid);
   }
 
   unsigned long startAttemptTime = millis();
+  bool isConnected = false;
 
-  // Esperar hasta que la conexión se establezca (10 segundos máximo)
+  // Intentar conectar durante 20 segundos
   while (millis() - startAttemptTime < 20000) {
+    if (WiFi.status() == WL_CONNECTED) {
+      isConnected = true;
+      break;
+    }
     delay(500);
     Serial.print(".");
   }
 
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("");
-    Serial.println("WiFi conectado.");
-    Serial.println("Dirección IP: ");
+  if (isConnected) {
+    Serial.println("\nWiFi conectado.");
+    Serial.print("Dirección IP: ");
     Serial.println(WiFi.localIP());
 
+    // Mostrar mensaje de éxito en la pantalla OLED
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("WiFi conectado");
+    display.print("IP: ");
+    display.println(WiFi.localIP());
+
+    // Dibujar el logo WiFi
+    display.drawCircle(110, 20, 10, SSD1306_WHITE);
+    display.drawCircle(110, 20, 7, SSD1306_WHITE);
+    display.drawCircle(110, 20, 4, SSD1306_WHITE);
+    display.drawLine(108, 30, 112, 30, SSD1306_WHITE);
+    display.display();
+
   } else {
-    if (conPW = 0) {
-      WiFi.begin(ssid);
-    }
-    if (conPW = 1) {
-      WiFi.begin(ssid, password);
-    }
-    Serial.println("Reintentando conexion..");
-    while (millis() - startAttemptTime < 20000) {
-      delay(500);
-      Serial.print(".");
+    Serial.println("\nNo se pudo conectar a WiFi. Reintentando...");
+
+    // Reintentar conexión
+    for (int attempt = 1; attempt <= 3; ++attempt) {
+      Serial.print("Intento ");
+      Serial.print(attempt);
+      Serial.println(" de reconexión...");
+
+      if (conPW == 1) {
+        WiFi.begin(ssid, password);
+      } else {
+        WiFi.begin(ssid);
+      }
+
+      startAttemptTime = millis();
+      while (millis() - startAttemptTime < 10000) { // Intento de reconexión por 10 segundos
+        if (WiFi.status() == WL_CONNECTED) {
+          isConnected = true;
+          break;
+        }
+        delay(500);
+        Serial.print(".");
+      }
+
+      if (isConnected) {
+        break;
+      }
     }
 
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("");
-      Serial.println("WiFi conectado.");
-      Serial.println("Dirección IP: ");
+    if (isConnected) {
+      Serial.println("\nWiFi conectado tras reintento.");
+      Serial.print("Dirección IP: ");
       Serial.println(WiFi.localIP());
+
+      // Mostrar mensaje de éxito en la pantalla OLED
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setTextColor(SSD1306_WHITE);
+      display.setCursor(0, 0);
+      display.println("WiFi conectado");
+      display.print("IP: ");
+      display.println(WiFi.localIP());
+
+      // Dibujar el logo WiFi
+      display.drawCircle(110, 20, 10, SSD1306_WHITE);
+      display.drawCircle(110, 20, 7, SSD1306_WHITE);
+      display.drawCircle(110, 20, 4, SSD1306_WHITE);
+      display.drawLine(108, 30, 112, 30, SSD1306_WHITE);
+      display.display();
+
     } else {
-      Serial.println("Error conexion WiFi. ");
-      startAccessPoint();
+      Serial.println("\nError: No se pudo conectar a WiFi tras múltiples intentos.");
+            // Mostrar mensaje de falla wifi en la pantalla OLED
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setTextColor(SSD1306_WHITE);
+      display.setCursor(0, 0);
+      display.println("WiFi AP");
+      display.print("IP: 192.168.4.1");
+      startAccessPoint(); // Inicia el punto de acceso
     }
   }
 }
+
 
 void writeStringToEEPROM(int addrOffset, const String& strToWrite) {
   byte len = strToWrite.length();
@@ -1149,14 +1245,40 @@ void mostrarSensores() {
 
 //CONFIG WIFI IPLOCAL
 
+// Cambios en handleRoot
 void handleRoot() {
-  server.send(200, "text/html", "<h1>Bienvenido al configurador del Druida Bot</h1><a href=\"/config\">Ir a Configuracion</a>");
+    String html = "<html><head><style>";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding-top: 15%; margin: 0; }";
+    html += "h1 { font-size: 800%; margin: 0 auto; line-height: 1.2; animation: fadeIn 2s ease-in-out; }";
+    html += "h1 span { display: block; }";
+    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 15px 40px; font-size: 24px; border-radius: 10px; cursor: pointer; display: inline-block; opacity: 0; transform: scale(0.9); animation: fadeInScale 1s ease-in-out forwards; margin-top: 30px; }";
+    html += "button:hover { background-color: #004080; border-color: #00cc00; }";
+    html += "@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }";
+    html += "@keyframes fadeInScale { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }";
+    html += "</style></head><body>";
+    html += "<h1><span>Data</span><span>Druida</span></h1>";
+    html += "<a href=\"/config\"><button>Configuracion</button></a>";
+    html += "</body></html>";
+
+    server.send(200, "text/html", html);
 }
 
-void handleConfig() {
-  String html = "<h1>Configuracion de ESP32</h1>";
 
-    // Agregar configuraciones de WiFi
+
+// Cambios en handleConfig
+void handleConfig() {
+  String html = "<html><head><style>";
+  html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; }";
+  html += "h1, h2 { color: #00bfff; }";
+  html += "form { display: inline-block; text-align: left; margin: 10px auto; padding: 20px; border: 1px solid #00bfff; border-radius: 10px; background-color: #004080; }";
+  html += "input, textarea { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #00bfff; border-radius: 5px; font-size: 16px; }";
+  html += "input[type=\"submit\"] { width: auto; background-color: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 5px; }";
+  html += "input[type=\"submit\"]:hover { background-color: #0056b3; }";
+  html += "</style></head><body>";
+
+  html += "<h1>Configuracion de Druida BOT</h1>";
+
+  // Sección de configuración de WiFi
   html += "<h2>Configuracion de WiFi</h2>";
   html += "<form action=\"/saveConfig\" method=\"POST\">";
   html += "SSID: <input type=\"text\" name=\"ssid\" value=\"" + ssid + "\"><br>";
@@ -1164,86 +1286,99 @@ void handleConfig() {
   html += "Chat ID: <input type=\"text\" name=\"chat_id\" value=\"" + chat_id + "\"><br>";
   html += "<input type=\"submit\" name=\"save_wifi\" value=\"Guardar WiFi\">";
   html += "</form><br>";
-  
-  // Variables relacionadas con R1
-  html += "<h2>Configuracion R1</h2>";
+
+  // Configuración R1
+  html += "<h2>Configuracion R1 (Up)</h2>";
   html += "<form action=\"/saveConfig\" method=\"POST\">";
   html += "Modo R1: <input type=\"number\" name=\"modoR1\" value=\"" + String(modoR1) + "\"><br>";
   html += "Min R1: <input type=\"number\" step=\"0.01\" name=\"minR1\" value=\"" + String(minR1) + "\"><br>";
   html += "Max R1: <input type=\"number\" step=\"0.01\" name=\"maxR1\" value=\"" + String(maxR1) + "\"><br>";
   html += "Param R1: <input type=\"number\" name=\"paramR1\" value=\"" + String(paramR1) + "\"><br>";
-  html += "Hora On R1: <input type=\"number\" name=\"horaOnR1\" value=\"" + String(horaOnR1) + "\"><br>";
-  html += "Min On R1: <input type=\"number\" name=\"minOnR1\" value=\"" + String(minOnR1) + "\"><br>";
-  html += "Hora Off R1: <input type=\"number\" name=\"horaOffR1\" value=\"" + String(horaOffR1) + "\"><br>";
-  html += "Min Off R1: <input type=\"number\" name=\"minOffR1\" value=\"" + String(minOffR1) + "\"><br>";
+  html += "Hora On R1 (HH:MM): <input type=\"text\" name=\"horaOnR1\" value=\"" + String(horaOnR1) + ":" + String(minOnR1) + "\"><br>";
+  html += "Hora Off R1 (HH:MM): <input type=\"text\" name=\"horaOffR1\" value=\"" + String(horaOffR1) + ":" + String(minOffR1) + "\"><br>";
   html += "Estado R1: <input type=\"number\" name=\"estadoR1\" value=\"" + String(estadoR1) + "\"><br>";
   html += "<input type=\"submit\" name=\"save_R1\" value=\"Guardar R1\">";
   html += "</form><br>";
 
-  // Variables relacionadas con R2
-  html += "<h2>Configuracion R2</h2>";
+  // Configuración R2
+  html += "<h2>Configuracion R2 (Down)</h2>";
   html += "<form action=\"/saveConfig\" method=\"POST\">";
   html += "Modo R2: <input type=\"number\" name=\"modoR2\" value=\"" + String(modoR2) + "\"><br>";
   html += "Min R2: <input type=\"number\" step=\"0.01\" name=\"minR2\" value=\"" + String(minR2) + "\"><br>";
   html += "Max R2: <input type=\"number\" step=\"0.01\" name=\"maxR2\" value=\"" + String(maxR2) + "\"><br>";
   html += "Param R2: <input type=\"number\" name=\"paramR2\" value=\"" + String(paramR2) + "\"><br>";
-  html += "Modo R2 IR: <input type=\"number\" name=\"modoR2ir\" value=\"" + String(modoR2ir) + "\"><br>";
-  html += "Min R2 IR: <input type=\"number\" step=\"0.01\" name=\"minR2ir\" value=\"" + String(minR2ir) + "\"><br>";
-  html += "Max R2 IR: <input type=\"number\" step=\"0.01\" name=\"maxR2ir\" value=\"" + String(maxR2ir) + "\"><br>";
-  html += "Param R2 IR: <input type=\"number\" name=\"paramR2ir\" value=\"" + String(paramR2ir) + "\"><br>";
-  html += "Estado R2 IR: <input type=\"number\" name=\"estadoR2ir\" value=\"" + String(estadoR2ir) + "\"><br>";
+  //html += "Hora On R2 (HH:MM): <input type=\"text\" name=\"horaOnR2\" value=\"" + String(horaOnR2) + ":" + String(minOnR2) + "\"><br>";
+  //html += "Hora Off R2 (HH:MM): <input type=\"text\" name=\"horaOffR2\" value=\"" + String(horaOffR2) + ":" + String(minOffR2) + "\"><br>";
+  html += "Estado R2: <input type=\"number\" name=\"estadoR2\" value=\"" + String(estadoR2) + "\"><br>";
   html += "<input type=\"submit\" name=\"save_R2\" value=\"Guardar R2\">";
   html += "</form><br>";
 
-  // Variables relacionadas con R3
-  html += "<h2>Configuracion R3</h2>";
+  // Configuración R2 IR
+  html += "<h2>Configuracion R2 IR (Down)</h2>";
+  html += "<form action=\"/saveConfig\" method=\"POST\">";
+  html += "Modo R2 (IR): <input type=\"number\" name=\"modoR2ir\" value=\"" + String(modoR2ir) + "\"><br>";
+  html += "Min R2 (IR): <input type=\"number\" step=\"0.01\" name=\"minR2ir\" value=\"" + String(minR2ir) + "\"><br>";
+  html += "Max R2 (IR): <input type=\"number\" step=\"0.01\" name=\"maxR2ir\" value=\"" + String(maxR2ir) + "\"><br>";
+  html += "Param R2 (IR): <input type=\"number\" name=\"paramR2ir\" value=\"" + String(paramR2ir) + "\"><br>";
+  //html += "Hora On R2 (IR) (HH:MM): <input type=\"text\" name=\"horaOnR2ir\" value=\"" + String(horaOnR2ir) + ":" + String(minOnR2ir) + "\"><br>";
+  //html += "Hora Off R2 (IR) (HH:MM): <input type=\"text\" name=\"horaOffR2ir\" value=\"" + String(horaOffR2ir) + ":" + String(minOffR2ir) + "\"><br>";
+  html += "Estado R2 (IR): <input type=\"number\" name=\"estadoR2ir\" value=\"" + String(estadoR2ir) + "\"><br>";
+  html += "<input type=\"submit\" name=\"save_R2IR\" value=\"Guardar R2 IR\">";
+  html += "</form><br>";
+
+  html += "<h2>Configuracion R3 (Riego)</h2>";
   html += "<form action=\"/saveConfig\" method=\"POST\">";
   html += "Modo R3: <input type=\"number\" name=\"modoR3\" value=\"" + String(modoR3) + "\"><br>";
-  html += "Min R3: <input type=\"number\" name=\"minR3\" value=\"" + String(minR3) + "\"><br>";
-  html += "Max R3: <input type=\"number\" name=\"maxR3\" value=\"" + String(maxR3) + "\"><br>";
+  html += "Min R3: <input type=\"number\" step=\"0.01\" name=\"minR3\" value=\"" + String(minR3) + "\"><br>";
+  html += "Max R3: <input type=\"number\" step=\"0.01\" name=\"maxR3\" value=\"" + String(maxR3) + "\"><br>";
   html += "Param R3: <input type=\"number\" name=\"paramR3\" value=\"" + String(paramR3) + "\"><br>";
-  html += "Hora On R3: <input type=\"number\" name=\"horaOnR3\" value=\"" + String(horaOnR3) + "\"><br>";
-  html += "Min On R3: <input type=\"number\" name=\"minOnR3\" value=\"" + String(minOnR3) + "\"><br>";
-  html += "Hora Off R3: <input type=\"number\" name=\"horaOffR3\" value=\"" + String(horaOffR3) + "\"><br>";
-  html += "Min Off R3: <input type=\"number\" name=\"minOffR3\" value=\"" + String(minOffR3) + "\"><br>";
+  html += "Hora On R3 (HH:MM): <input type=\"text\" name=\"horaOnR3\" value=\"" + String(horaOnR3) + ":" + String(minOnR3) + "\"><br>";
+  html += "Hora Off R3 (HH:MM): <input type=\"text\" name=\"horaOffR3\" value=\"" + String(horaOffR3) + ":" + String(minOffR3) + "\"><br>";
   html += "Estado R3: <input type=\"number\" name=\"estadoR3\" value=\"" + String(estadoR3) + "\"><br>";
-  html += "Dias de Riego R3 (0 o 1): <br>";
-  for (int i = 0; i < 7; i++) {
-    html += "Dia " + String(i + 1) + ": <input type=\"number\" name=\"diasRiego" + String(i) + "\" value=\"" + String(diasRiego[i]) + "\"><br>";
-  }
+  html += "Tiempo Riego (seg): <input type=\"number\" name=\"tiempoRiego\" value=\"" + String(tiempoRiego) + "\"><br>";
+  html += "Tiempo No Riego (seg): <input type=\"number\" name=\"tiempoNoRiego\" value=\"" + String(tiempoNoRiego) + "\"><br>";
+  html += "Cantidad de Riegos: <input type=\"number\" name=\"cantidadRiegos\" value=\"" + String(cantidadRiegos) + "\"><br>";
   html += "<input type=\"submit\" name=\"save_R3\" value=\"Guardar R3\">";
   html += "</form><br>";
 
-  // Variables relacionadas con R4
-  html += "<h2>Configuracion R4</h2>";
+  // Configuración R4
+  html += "<h2>Configuracion R4 (Luz)</h2>";
   html += "<form action=\"/saveConfig\" method=\"POST\">";
   html += "Modo R4: <input type=\"number\" name=\"modoR4\" value=\"" + String(modoR4) + "\"><br>";
-  html += "Hora On R4: <input type=\"number\" name=\"horaOnR4\" value=\"" + String(horaOnR4) + "\"><br>";
-  html += "Min On R4: <input type=\"number\" name=\"minOnR4\" value=\"" + String(minOnR4) + "\"><br>";
-  html += "Hora Off R4: <input type=\"number\" name=\"horaOffR4\" value=\"" + String(horaOffR4) + "\"><br>";
-  html += "Min Off R4: <input type=\"number\" name=\"minOffR4\" value=\"" + String(minOffR4) + "\"><br>";
+  //html += "Min R4: <input type=\"number\" step=\"0.01\" name=\"minR4\" value=\"" + String(minR4) + "\"><br>";
+  //html += "Max R4: <input type=\"number\" step=\"0.01\" name=\"maxR4\" value=\"" + String(maxR4) + "\"><br>";
+  //html += "Param R4: <input type=\"number\" name=\"paramR4\" value=\"" + String(paramR4) + "\"><br>";
+  html += "Hora On R4 (HH:MM): <input type=\"text\" name=\"horaOnR4\" value=\"" + String(horaOnR4) + ":" + String(minOnR4) + "\"><br>";
+  html += "Hora Off R4 (HH:MM): <input type=\"text\" name=\"horaOffR4\" value=\"" + String(horaOffR4) + ":" + String(minOffR4) + "\"><br>";
   html += "Estado R4: <input type=\"number\" name=\"estadoR4\" value=\"" + String(estadoR4) + "\"><br>";
   html += "<input type=\"submit\" name=\"save_R4\" value=\"Guardar R4\">";
   html += "</form><br>";
 
-// Agregar sección para modificar valores del array IR
-html += "<h2>Modificar Valores del Array IR</h2>";
-html += "<form action=\"/modificarValoresArray\" method=\"POST\">";
-// Botón de selección para carga manual
-html += "<input type=\"radio\" name=\"modoArray\" value=\"1\"> Carga manual<br>";
-// Campo de texto para ingresar los valores del array manualmente
-html += "<textarea name=\"valoresArray\" placeholder=\"Ingrese los valores manualmente separados por comas\" rows=\"4\" cols=\"50\"></textarea><br>";
-html += "<input type=\"submit\" name=\"cargarManual\" value=\"Cargar Manualmente\"><br><br>";
-// Botón para la carga automática
-html += "<input type=\"radio\" name=\"modoArray\" value=\"2\"> Carga automática con sensor IR<br>";
-html += "<input type=\"submit\" name=\"cargarAutomatica\" value=\"Iniciar Carga Automática\">";
-html += "</form><br>";
+    // Modificar valores del Array IR
+  html += "<h2>Modificar Valores del Array IR</h2>";
+  html += "<form action=\"/modificarArray\" method=\"POST\">";
+  html += "<textarea name=\"arrayIR\" rows=\"4\" cols=\"50\" placeholder=\"Ingrese los valores separados por comas\"></textarea><br>";
+  html += "<input type=\"submit\" value=\"Actualizar Array IR\">";
+  html += "</form><br>";
 
-
-
-
+  html += "</body></html>";
   server.send(200, "text/html", html);
 }
+
+// Función para descomponer el formato HH:MM y guardar en variables separadas
+void guardarHora(String horaStr, int &hora, int &minuto) {
+  int separador = horaStr.indexOf(':');
+  if (separador != -1) {
+    hora = horaStr.substring(0, separador).toInt();
+    minuto = horaStr.substring(separador + 1).toInt();
+  } else {
+    hora = 0;
+    minuto = 0;
+  }
+}
+
+
+
 
 void handleModificarArray() {
   String html = "<h1>Modificación del Array IR</h1>";
@@ -1310,7 +1445,7 @@ void handleSaveConfig() {
   }
 
   // Guardar las configuraciones individuales de R3
-  if (server.hasArg("save_R3")) {
+if (server.hasArg("save_R3")) {
     modoR3 = server.arg("modoR3").toInt();
     minR3 = server.arg("minR3").toInt();
     maxR3 = server.arg("maxR3").toInt();
@@ -1321,9 +1456,13 @@ void handleSaveConfig() {
     minOffR3 = server.arg("minOffR3").toInt();
     estadoR3 = server.arg("estadoR3").toInt();
     for (int i = 0; i < 7; i++) {
-      diasRiego[i] = server.arg("diasRiego" + String(i)).toInt();
+        diasRiego[i] = server.arg("diasRiego" + String(i)).toInt();
     }
-  }
+    tiempoRiego = server.arg("tiempoRiego").toInt();  // Guardar tiempo de riego
+    tiempoNoRiego = server.arg("tiempoNoRiego").toInt();  // Guardar tiempo sin riego
+    cantidadRiegos = server.arg("cantidadRiegos").toInt();  // Guardar cantidad de riegos
+}
+
 
   // Guardar las configuraciones individuales de R4
   if (server.hasArg("save_R4")) {
@@ -1344,10 +1483,24 @@ void handleSaveConfig() {
 
 
   // Mensaje de confirmación
-  String html = "<h1>Configuración Guardada</h1><a href=\"/\">Volver al inicio</a>";
-  server.send(200, "text/html", html);
+  handleConfirmation();
   Guardado_General();  // Función para guardar en EEPROM o similar
 }
+
+// Mensaje de confirmación
+void handleConfirmation() {
+  String html = "<html><head><style>";
+  html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding-top: 20%; }";
+  html += "div { background-color: #004080; border: 2px solid #00bfff; border-radius: 10px; padding: 20px; display: inline-block; text-align: center; }";
+  html += "a { color: #00bfff; text-decoration: none; font-size: 20px; margin-top: 10px; display: inline-block; }";
+  html += "a:hover { text-decoration: underline; }";
+  html += "</style></head><body>";
+  html += "<div><h1>Configuracion Guardada</h1><a href=\"/\">Volver al inicio</a></div>";
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+
 
 // Función para solicitar datos al Arduino Nano (I2C)
 void requestSensorData() {
@@ -1409,7 +1562,7 @@ void mostrarEnPantallaOLED(float temperature, float humedad, float DPV, String h
 
   // Mostrar hora (solo horas y minutos, tamaño 1)
   display.setTextSize(1);       // Cambiar el tamaño a 1 para la hora
-  display.setCursor(99, 57);     // Posición para la hora
+  display.setCursor(95, 57);     // Posición para la hora
   display.print(hora);
   
   display.display();            // Actualiza la pantalla
@@ -1493,6 +1646,8 @@ String convertirModo(int modo) {
             return "Auto Intermitente";
         case TIMER:
             return "Temporizador";
+        case RIEGO:
+            return "Riego";
         default:
             return "Desconocido";
     }
@@ -1541,5 +1696,46 @@ String formatoHora(int hora, int minuto) {
 }
 
 
+void riegoIntermitente() {
+  unsigned long currentMillis = millis();
 
+  if (cicloRiegoActual < cantidadRiegos) {  // Verificar si aún no completamos los ciclos
+    if (!enRiego) { // Si está en pausa
+      if (currentMillis - previousMillisRiego >= tiempoNoRiego * 1000) {
+        // Encender el relé
+        digitalWrite(RELAY3, LOW);
+        R3estado = LOW;
+        previousMillisRiego = currentMillis;
+        enRiego = true;
+      }
+    } else { // Si está en riego
+      if (currentMillis - previousMillisRiego >= tiempoRiego * 1000) {
+        // Apagar el relé
+        digitalWrite(RELAY3, HIGH);
+        R3estado = HIGH;
+        previousMillisRiego = currentMillis;
+        enRiego = false;
+        cicloRiegoActual++;  // Incrementar el contador de ciclos
+      }
+    }
+  } else {
+    // Finalizar todos los ciclos de riego
+    digitalWrite(RELAY3, HIGH);
+    R3estado = HIGH;
+  }
+}
 
+void moveServoSlowly(int targetPosition) {
+  if (targetPosition > currentPosition) {
+    for (int pos = currentPosition; pos <= targetPosition; pos++) {
+      dimmerServo.write(pos); // Mover un paso
+      delay(15); // Controla la velocidad del movimiento (ajusta si es necesario)
+    }
+  } else {
+    for (int pos = currentPosition; pos >= targetPosition; pos--) {
+      dimmerServo.write(pos); // Mover un paso
+      delay(15); // Controla la velocidad del movimiento (ajusta si es necesario)
+    }
+  }
+  currentPosition = targetPosition; // Actualizar la posición actual
+}
