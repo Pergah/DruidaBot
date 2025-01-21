@@ -110,15 +110,15 @@ IRsend irsend(sensorIRpin);
 //const String botToken = "6867697701:AAHtaJ4YC3dDtk1RuFWD-_f72S5MYvlCV4w"; //DRUIDA DOS (matheu 2)
 //const String botToken = "7273841170:AAHxWF33cIDcIoxgBm3x9tzn9ISJIKoy7X8"; //DRUIDA TRES (nuevo matheu)
 //const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (bry e ivana)
-const String botToken = "7357647743:AAFPD1Tc099-2o-E2-Ph7SZluzwHubrl700";  //DRUIDA CINCO (matheu)
-//const String botToken = "7611244980:AAEQUDIUZwR4nZBsjEEHPEieyc3k90PxVxI"; //DRUIDA SEIS (nuevop)
+//const String botToken = "7357647743:AAFPD1Tc099-2o-E2-Ph7SZluzwHubrl700";  //DRUIDA CINCO (matheu)
+const String botToken = "7611244980:AAEQUDIUZwR4nZBsjEEHPEieyc3k90PxVxI"; //DRUIDA SEIS (nuevop)
 
 //const char* ssid_AP = "Druida Config";
 //const char* ssid_AP = "Druida Dos"; 
 //const char* ssid_AP = "Druida Tres"; 
 //const char* ssid_AP = "Druida Cuatro";  
-const char* ssid_AP = "Druida Cinco";     
-//const char* ssid_AP = "Druida Seis";        // Nombre de la red AP creada por el ESP32
+//const char* ssid_AP = "Druida Cinco";     
+const char* ssid_AP = "Druida Seis";        // Nombre de la red AP creada por el ESP32
 const char* password_AP = "12345678";          // Contraseña de la red AP
 
 //String scriptId = "AKfycbwXhUu15DVEI4b1BDf8Y8Up_qKIXDUvfWgHLKppNL6rUMOnfiQRDfxGXtCt3_n0NXt_Nw"; //Druida UNO (Caba)
@@ -252,7 +252,19 @@ int cantidadRiegos = -1;     // Número de ciclos de riego
 unsigned long previousMillisRiego = 0;  // Variable para manejar el tiempo
 int cicloRiegoActual = 0;               // Contador de ciclos de riego
 bool enRiego = false;   
+bool riegoActivo = false;
 
-int horaAmanecer = 4 * 60; // Hora de amanecer en minutos (04:00 -> 240 minutos)
-int horaAtardecer = 10 * 60;
+int horaAmanecer = -1; // Hora de amanecer en minutos (04:00 -> 240 minutos)
+int horaAtardecer = -1;
 int currentPosition = 0; // Posición inicial del servo
+
+int previousSecondRiego = 0; // Inicialización con 0
+int previousSeconds = 0; 
+
+String relayNames[] = {"Humidificacion", "Extraccion", "Irrigacion", "Iluminacion", "extra", "extra2"};
+String relayAssignedNames[4] = {"R1", "R2", "R3", "R4"}; // Nombres actuales para cada relé
+
+int R1name = 0; // Índice inicial (Extraccion)
+int R2name = 1; // Índice inicial (Intraccion)
+int R3name = 2; // Índice inicial (Humidificador)
+int R4name = 3; // Índice inicial (Caloventor)

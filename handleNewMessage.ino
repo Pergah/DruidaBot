@@ -13,7 +13,7 @@ void handleNewMessages(int numNewMessages) {
 
   //  int commandCode = getCommandCode(text);
 
-
+  
     //MENU PRINCIPAL
 
 if (text == "/start") {
@@ -21,7 +21,7 @@ if (text == "/start") {
     bot.sendMessage(chat_id, welcome, "Markdown");
 
     // Crear botones de menú
-    String keyboardJson = "[[\"STATUS\"], [\"MANUAL\", \"AUTO\"], [\"CONFIG\", \"INFO CONFIG\"], [\"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
+    String keyboardJson = "[[\"STATUS\"], [\"MANUAL\", \"AUTO\"], [\"CONFIG\", \"INFO CONFIG\"], [\"RESET DRUIDA\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "MENU PRINCIPAL:", "", keyboardJson, true);
     delay(500);
 }
@@ -32,11 +32,13 @@ if (text == "/start") {
 
 if (text == "MANUAL") {
     modoMenu = MANUAL;
-    
-    // Crear botones para el modo manual
-    String manualKeyboardJson = "[[\"R1 On\", \"R1 Off\", \"R1 On Time\"], [\"R2 On\", \"R2 Off\", \"R2 On Time\"], "
-                                "[\"R2 IR On\", \"R2 IR Off\", \"R2 IR On Time\"], [\"R3 On\", \"R3 Off\", \"R3 On Time\"], "
-                                "[\"R4 On\", \"R4 Off\", \"R4 On Time\"], [\"Control Remoto\", \"Menu Principal\"]]";
+
+    // Crear botones dinámicamente
+    String manualKeyboardJson = "[[\"" + getRelayName(R1name) + " On\", \"" + getRelayName(R1name) + " Off\", \"" + getRelayName(R1name) + " On Time\"], " +
+                                "[\"" + getRelayName(R2name) + " On\", \"" + getRelayName(R2name) + " Off\", \"" + getRelayName(R2name) + " On Time\"], " +
+                                "[\"" + getRelayName(R3name) + " On\", \"" + getRelayName(R3name) + " Off\", \"" + getRelayName(R3name) + " On Time\"], " +
+                                "[\"" + getRelayName(R4name) + " On\", \"" + getRelayName(R4name) + " Off\", \"" + getRelayName(R4name) + " On Time\"], " +
+                                "[\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "MODO MANUAL:", "", manualKeyboardJson, true);
 }
 
@@ -235,7 +237,7 @@ if (text == "MANUAL") {
     modoMenu = AUTO;
     
     // Crear botones para el modo automático
-    String autoKeyboardJson = "[[\"R1 Auto\", \"R1 Timer\"], [\"R2 Auto\", \"R2 IR Auto\"], [\"R3 Auto\", \"R3 Riego\"], [\"R4 Auto\"], [\"Menu Principal\"]]";
+    String autoKeyboardJson = "[[\"R1 Auto\", \"R1 Timer\"], [\"R2 Auto\", \"R2 IR Auto\"], [\"R3 Auto\"], [\"R4 Auto\"], [\"Menu Principal\"]]";
 
     bot.sendMessageWithReplyKeyboard(chat_id, "MODO AUTOMATICO:", "", autoKeyboardJson, true);
 }
@@ -304,217 +306,218 @@ if (text == "MANUAL") {
 
 
 if (text == "CONFIG") {
-    // Crear botones para cada relé
-    String configKeyboardJson = "[[\"R1 config\", \"R2 config\"], [\"R3 config\", \"R4 config\"], [\"Menu Principal\"]]";
+    // Crear botones dinámicos para cada relé según sus nombres actuales
+    String configKeyboardJson = "[[\"" + getRelayName(R1name) + " config\", \"" + getRelayName(R2name) + " config\"], " +
+                                "[\"" + getRelayName(R3name) + " config\", \"" + getRelayName(R4name) + " config\"], " +
+                                "[\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione un relé para configurar:", "", configKeyboardJson, true);
 }
 
 
-if (text == "R1 config") {
-    // Crear botones para las opciones del R1
-    String r1KeyboardJson = "[[\"Min R1\", \"Max R1\"], [\"Hora On R1\", \"Hora Off R1\"], [\"Param R1\"], [\"Menu Principal\"]]";
-    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R1:", "", r1KeyboardJson, true);
+
+// Configuración del relé 1
+if (text == getRelayName(R1name) + " config") { // Menú principal de configuración para R1
+    String r1KeyboardJson = "[[\"Min " + getRelayName(R1name) + "\", \"Max " + getRelayName(R1name) + "\"], "
+                            "[\"Hora On " + getRelayName(R1name) + "\", \"Hora Off " + getRelayName(R1name) + "\"], "
+                            "[\"Parametro " + getRelayName(R1name) + "\", \"Config " + getRelayName(R1name) + " Name\"], "
+                            "[\"Menu Principal\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R1name) + ":", "", r1KeyboardJson, true);
 }
 
 
-if (text == "R2 config") {
-    // Crear botones para las opciones del R2
-    String r2KeyboardJson = "[[\"Min R2\", \"Max R2\"], [\"Min IR R2\", \"Max IR R2\"], [\"Param R2\", \"Param IR R2\"], [\"Menu Principal\"]]";
-    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R2:", "", r2KeyboardJson, true);
-}
-
-
-
-if (text == "R3 config") {
-    // Crear botones para las opciones del R3, incluyendo las nuevas opciones
-    String r3KeyboardJson = "[[\"Hora On R3\", \"Hora Off R3\"], [\"Dias de riego\", \"Tiempo Riego\"], [\"Tiempo No Riego\", \"Cantidad Riegos\"], [\"Menu Principal\"]]";
-    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R3:", "", r3KeyboardJson, true);
-}
-
-
-
-if (text == "R4 config") {
-    // Crear botones para las opciones del R4
-    String r4KeyboardJson = "[[\"Hora On R4\", \"Hora Off R4\"], [\"Hora Amanecer R4\", \"Hora Atardecer R4\"], [\"Menu Principal\"]]";
-    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para R4:", "", r4KeyboardJson, true);
+if (text == getRelayName(R2name) + " config") {
+    // Crear botones dinámicos para las opciones de R2
+    String r2KeyboardJson = "[[\"Min " + getRelayName(R2name) + "\", \"Max " + getRelayName(R2name) + "\"], "
+                            "[\"Parametro " + getRelayName(R2name) + "\"], [\"Config " + getRelayName(R2name) + " Name\"], [\"Menu Principal\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R2name) + ":", "", r2KeyboardJson, true);
 }
 
 
 
-    /// R1
+if (text == getRelayName(R3name) + " config") {
+    // Crear botones dinámicos para las opciones de R3
+    String r3KeyboardJson = "[[\"Hora On " + getRelayName(R3name) + "\", \"Hora Off " + getRelayName(R3name) + "\"], "
+                            "[\"Dias de Riego\", \"Duración de Riego\"], "
+                            "[\"Intervalo de Riego\"], "
+                            "[\"Config " + getRelayName(R3name) + " Name\", \"Menu Principal\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R3name) + ":", "", r3KeyboardJson, true);
+}
 
-    if (text == "Min R1") {
-      modoR1 = CONFIG;
-      modoMenu = CONFIG;
-      R1config = 1;
-      bot.sendMessage(chat_id, "Ingrese valor Min R1: ");
-    }
-    if (R1config == 1) {
-      minR1 = text.toFloat();  //Ingresa valor por mensaje de telegram
 
-      if (minR1 > 0 && minR1 < 100) {
-        Serial.print("Valor min R1: ");
+
+
+// Menú dinámico de configuración para R4
+if (text == getRelayName(R4name) + " config") {
+    // Crear botones dinámicos para las opciones de R4
+    String r4KeyboardJson = "[[\"Hora On " + getRelayName(R4name) + "\", \"Hora Off " + getRelayName(R4name) + "\"], "
+                            "[\"Hora Amanecer " + getRelayName(R4name) + "\", \"Hora Atardecer " + getRelayName(R4name) + "\"], "
+                            "[\"Config " + getRelayName(R4name) + " Name\", \"Menu Principal\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R4name) + ":", "", r4KeyboardJson, true);
+}
+
+
+
+    // Configurar el valor mínimo
+if (text == "Min " + getRelayName(R1name)) {
+    modoR1 = CONFIG;
+    modoMenu = CONFIG;
+    R1config = 1;
+    bot.sendMessage(chat_id, "Ingrese valor Min " + getRelayName(R1name) + ":");
+}
+if (R1config == 1) {
+    minR1 = text.toFloat();
+    if (minR1 > 0 && minR1 < 100) {
+        Serial.print("Valor min " + getRelayName(R1name) + ": ");
         Serial.println(minR1);
-        bot.sendMessage(chat_id, "Valor min R1 guardado");
+        bot.sendMessage(chat_id, "Valor min " + getRelayName(R1name) + " guardado");
         Guardado_General();
         R1config = 0;
-      }
     }
-
-    ///
-
-    if (text == "Max R1") {
-      modoR1 = CONFIG;
-      modoMenu = CONFIG;
-      R1config = 2;
-      bot.sendMessage(chat_id, "Ingrese valor Max R1: ");
-    }
-    if (R1config == 2) {
-      maxR1 = text.toFloat();
-
-      if (maxR1 > 0) {
-        Serial.print("Valor max R1: ");
-        Serial.println(maxR1);
-        bot.sendMessage(chat_id, "Valor max R1 guardado");
-        Guardado_General();
-        R1config = 0;
-      }
-    }
-
-    ///
-
-    if (text == "Param R1") {
-      modoR1 = CONFIG;
-      modoMenu = CONFIG;
-      R1config = 3;
-      bot.sendMessage(chat_id, "Ingrese parametro R1: \n1- Humedad.\n2- Temperatura.\n3- DPV.");
-    }
-    if (R1config == 3) {
-      paramR1 = text.toInt();
-
-      if (paramR1 > 0) {
-        Serial.print("Param R1: ");
-        Serial.println(paramR1);
-        bot.sendMessage(chat_id, "Valor param R1 guardado");
-        Guardado_General();
-        R1config = 0;
-      }
-    }
-
-// RELE 1 CONFIG
-
-if (text == "Hora On R1") {
-  modoR1 = CONFIG;
-  modoMenu = CONFIG;
-  R1config = 4;
-  bot.sendMessage(chat_id, "Ingrese Hora On R1 en formato HH:MM (por ejemplo, 08:30):");
-} else if (R1config == 4) {
-  int sep = text.indexOf(':'); // Buscamos el separador ':'
-  if (sep != -1) {
-    horaOnR1 = text.substring(0, sep).toInt(); // Obtenemos la hora
-    minOnR1 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
-    if (horaOnR1 >= 0 && horaOnR1 < 24 && minOnR1 >= 0 && minOnR1 < 60) {
-      Serial.print("Hora On R1: ");
-      Serial.print(horaOnR1);
-      Serial.print(":");
-      Serial.println(minOnR1);
-      bot.sendMessage(chat_id, "Hora On R1 guardada correctamente");
-      Guardado_General();
-      R1config = 0; // Reiniciamos la configuración
-    } else {
-      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
-    }
-  } else {
-    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
-  }
 }
 
-if (text == "Hora Off R1") {
-  modoR1 = CONFIG;
-  modoMenu = CONFIG;
-  R1config = 5;
-  bot.sendMessage(chat_id, "Ingrese Hora Off R1 en formato HH:MM (por ejemplo, 18:45):");
-} else if (R1config == 5) {
-  int sep = text.indexOf(':'); // Buscamos el separador ':'
-  if (sep != -1) {
-    horaOffR1 = text.substring(0, sep).toInt(); // Obtenemos la hora
-    minOffR1 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
-    if (horaOffR1 >= 0 && horaOffR1 < 24 && minOffR1 >= 0 && minOffR1 < 60) {
-      Serial.print("Hora Off R1: ");
-      Serial.print(horaOffR1);
-      Serial.print(":");
-      Serial.println(minOffR1);
-      bot.sendMessage(chat_id, "Hora Off R1 guardada correctamente");
-      Guardado_General();
-      R1config = 0; // Reiniciamos la configuración
-    } else {
-      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+// Configurar el valor máximo
+if (text == "Max " + getRelayName(R1name)) {
+    modoR1 = CONFIG;
+    modoMenu = CONFIG;
+    R1config = 2;
+    bot.sendMessage(chat_id, "Ingrese valor Max " + getRelayName(R1name) + ":");
+}
+if (R1config == 2) {
+    maxR1 = text.toFloat();
+    if (maxR1 > 0) {
+        Serial.print("Valor max " + getRelayName(R1name) + ": ");
+        Serial.println(maxR1);
+        bot.sendMessage(chat_id, "Valor max " + getRelayName(R1name) + " guardado");
+        Guardado_General();
+        R1config = 0;
     }
-  } else {
-    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
-  }
+}
+
+// Configurar el parámetro
+if (text == "Parametro " + getRelayName(R1name)) {
+    modoR1 = CONFIG;
+    modoMenu = CONFIG;
+    R1config = 3;
+    bot.sendMessage(chat_id, "Ingrese parámetro para " + getRelayName(R1name) + ":\n1- Humedad\n2- Temperatura\n3- DPV.");
+}
+if (R1config == 3) {
+    paramR1 = text.toInt();
+    if (paramR1 > 0) {
+        Serial.print("Parametro " + getRelayName(R1name) + ": ");
+        Serial.println(paramR1);
+        bot.sendMessage(chat_id, "Valor parametro " + getRelayName(R1name) + " guardado");
+        Guardado_General();
+        R1config = 0;
+    }
+}
+
+
+// Configurar Hora On y Hora Off (sin cambios)
+if (text == "Hora On " + getRelayName(R1name)) {
+    modoR1 = CONFIG;
+    modoMenu = CONFIG;
+    R1config = 4;
+    bot.sendMessage(chat_id, "Ingrese Hora On " + getRelayName(R1name) + " en formato HH:MM (por ejemplo, 08:30):");
+} else if (R1config == 4) {
+    int sep = text.indexOf(':');
+    if (sep != -1) {
+        horaOnR1 = text.substring(0, sep).toInt();
+        minOnR1 = text.substring(sep + 1).toInt();
+        if (horaOnR1 >= 0 && horaOnR1 < 24 && minOnR1 >= 0 && minOnR1 < 60) {
+            Serial.print("Hora On " + getRelayName(R1name) + ": ");
+            Serial.print(horaOnR1);
+            Serial.print(":");
+            Serial.println(minOnR1);
+            bot.sendMessage(chat_id, "Hora On " + getRelayName(R1name) + " guardada correctamente");
+            Guardado_General();
+            R1config = 0;
+        } else {
+            bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        }
+    } else {
+        bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+    }
+}
+
+if (text == "Hora Off " + getRelayName(R1name)) {
+    modoR1 = CONFIG;
+    modoMenu = CONFIG;
+    R1config = 5;
+    bot.sendMessage(chat_id, "Ingrese Hora Off " + getRelayName(R1name) + " en formato HH:MM (por ejemplo, 18:45):");
+} else if (R1config == 5) {
+    int sep = text.indexOf(':'); // Buscamos el separador ':'
+    if (sep != -1) {
+        horaOffR1 = text.substring(0, sep).toInt(); // Obtenemos la hora
+        minOffR1 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
+        if (horaOffR1 >= 0 && horaOffR1 < 24 && minOffR1 >= 0 && minOffR1 < 60) {
+            Serial.print("Hora Off " + getRelayName(R1name) + ": ");
+            Serial.print(horaOffR1);
+            Serial.print(":");
+            Serial.println(minOffR1);
+            bot.sendMessage(chat_id, "Hora Off " + getRelayName(R1name) + " guardada correctamente");
+            Guardado_General(); // Guardar los valores configurados
+            R1config = 0; // Reiniciamos la configuración
+        } else {
+            bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        }
+    } else {
+        bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+    }
+}
+
+// Configurar el nombre dinámico
+if (text == "Config " + getRelayName(R1name) + " Name") {
+    String options = "Ingrese un número para el nuevo nombre de " + getRelayName(R1name) + ":\n"
+                     "1 - Extraccion\n"
+                     "2 - Intraccion\n"
+                     "3 - Humidificador\n"
+                     "4 - Caloventor\n"
+                     "5 - Luz\n"
+                     "6 - Riego";
+    bot.sendMessage(chat_id, options);
+    R1config = 6; // Cambiar el estado del menú para esperar un valor
+}
+if (R1config == 6) {
+    int newIndex = text.toInt();
+    if (newIndex >= 1 && newIndex <= 6) {
+        R1name = newIndex - 1; // Actualizar el índice del nombre
+        bot.sendMessage(chat_id, "Nombre cambiado a: " + getRelayName(R1name));
+        Guardado_General();
+        R1config = 0;
+    } else {
+        bot.sendMessage(chat_id, "Número inválido. Intente de nuevo.");
+    }
 }
 
 
     /// R2
 
-    if (text == "Min R2") {
-      modoR2 = CONFIG;
-      modoMenu = CONFIG;
-      R2config = 1;
-      bot.sendMessage(chat_id, "Ingrese valor Min R2: ");
-    }
-    if (R2config == 1) {
-      minR2 = text.toFloat();
-
-      if (minR2 > 0) {
-        Serial.print("Valor min R2: ");
-        Serial.println(minR2);
-        bot.sendMessage(chat_id, "Valor min R2 guardado");
+    // Configurar el nombre dinámico de R2
+if (text == "Config " + getRelayName(R2name) + " Name") {
+    String options = "Ingrese un número para el nuevo nombre de " + getRelayName(R2name) + ":\n"
+                     "1 - Extraccion\n"
+                     "2 - Intraccion\n"
+                     "3 - Humidificador\n"
+                     "4 - Caloventor\n"
+                     "5 - Luz\n"
+                     "6 - Riego";
+    bot.sendMessage(chat_id, options);
+    R2config = 4; // Cambiar el estado del menú para esperar un valor
+}
+if (R2config == 4) {
+    int newIndex = text.toInt();
+    if (newIndex >= 1 && newIndex <= 6) {
+        R2name = newIndex - 1; // Actualizar el índice del nombre
+        bot.sendMessage(chat_id, "Nombre cambiado a: " + getRelayName(R2name));
         Guardado_General();
         R2config = 0;
-      }
+    } else {
+        bot.sendMessage(chat_id, "Número inválido. Intente de nuevo.");
     }
+}
 
 
-    if (text == "Max R2") {
-      modoR2 = CONFIG;
-      modoMenu = CONFIG;
-      R2config = 2;
-      bot.sendMessage(chat_id, "Ingrese valor Max R2: ");
-    }
-    if (R2config == 2) {
-      maxR2 = text.toFloat();
-
-      if (maxR2 > 0) {
-        Serial.print("Valor max R2: ");
-        Serial.println(maxR2);
-        bot.sendMessage(chat_id, "Valor max R2 guardado");
-        Guardado_General();
-        R2config = 0;
-      }
-    }
-
-        if (text == "Param R2") {
-      modoR2 = CONFIG;
-      modoMenu = CONFIG;
-      R2config = 3;
-      bot.sendMessage(chat_id, "Ingrese parametro R2: \n1- Humedad.\n2- Temperatura.\n3- DPV.\n");
-    }
-    if (R2config == 3) {
-      paramR2 = text.toInt();
-
-      if (paramR2 > 0) {
-        Serial.print("Param R2: ");
-        Serial.println(paramR2);
-        bot.sendMessage(chat_id, "Valor param R2 guardado");
-        Guardado_General();
-        R2config = 0;
-      }
-    }
-
-
-    // R2 IR
+    /*// R2 IR
 
     if (text == "Min IR R2") {
       modoR2ir = CONFIG;
@@ -571,113 +574,101 @@ if (text == "Hora Off R1") {
         R2irconfig = 0;
       }
     }
+*/
+/// RELE 3 CONFIG
 
-  /// RELE 3 CONFIG
-
-if (text == "Tiempo Riego") {
-      modoR3 = CONFIG;
-      modoMenu = CONFIG;
-      R3config = 3;
-      bot.sendMessage(chat_id, "Ingrese Tiempo de Riego (en segundos)");
-    }
-    if (R3config == 3) {
-      tiempoRiego = text.toInt();
-
-      if (tiempoRiego > 0) {
-        Serial.print("tiempoRiego: ");
+// Configurar Duración de Riego
+if (text == "Duración de Riego") {
+    modoR3 = CONFIG;
+    modoMenu = CONFIG;
+    R3config = 3;
+    bot.sendMessage(chat_id, "Ingrese la duración del riego (en segundos):");
+}
+if (R3config == 3) {
+    tiempoRiego = text.toInt();
+    if (tiempoRiego > 0) {
+        Serial.print("Duración de riego: ");
         Serial.println(tiempoRiego);
-        bot.sendMessage(chat_id, "Valor tiempoRiego guardado");
+        bot.sendMessage(chat_id, "Duración del riego guardada correctamente");
         Guardado_General();
-        R3config = 0;
-      }
-    }
-
-    if (text == "Tiempo No Riego") {
-      modoR3 = CONFIG;
-      modoMenu = CONFIG;
-      R3config = 4;
-      bot.sendMessage(chat_id, "Ingrese Tiempo de intervalo (en segundos)");
-    }
-    if (R3config == 4) {
-      tiempoNoRiego = text.toInt();
-
-      if (tiempoNoRiego > 0) {
-        Serial.print("tiempoNoRiego: ");
-        Serial.println(tiempoNoRiego);
-        bot.sendMessage(chat_id, "Valor tiempoNoRiego guardado");
-        Guardado_General();
-        R3config = 0;
-      }
-    }
-
-        if (text == "Cantidad Riegos") {
-      modoR3 = CONFIG;
-      modoMenu = CONFIG;
-      R3config = 5;
-      bot.sendMessage(chat_id, "Ingrese Cantidad de riegos");
-    }
-    if (R3config == 5) {
-      cantidadRiegos = text.toInt();
-
-      if (cantidadRiegos > 0) {
-        Serial.print("cantidadRiegos: ");
-        Serial.println(cantidadRiegos);
-        bot.sendMessage(chat_id, "Valor cantidadRiegos guardado");
-        Guardado_General();
-        R3config = 0;
-      }
-    }
-
-if (text == "Hora On R3") {
-  modoR3 = CONFIG;
-  modoMenu = CONFIG;
-  R3config = 1;
-  bot.sendMessage(chat_id, "Ingrese Hora de Encendido R3 en formato HH:MM (por ejemplo, 08:30):");
-} else if (R3config == 1) {
-  int sep = text.indexOf(':'); // Buscamos el separador ':'
-  if (sep != -1) {
-    horaOnR3 = text.substring(0, sep).toInt(); // Obtenemos la hora
-    minOnR3 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
-    if (horaOnR3 >= 0 && horaOnR3 < 24 && minOnR3 >= 0 && minOnR3 < 60) {
-      Serial.print("Hora encendido R3: ");
-      Serial.print(horaOnR3);
-      Serial.print(":");
-      Serial.println(minOnR3);
-      bot.sendMessage(chat_id, "Hora de encendido R3 guardada correctamente");
-      Guardado_General();
-      R3config = 0; // Reiniciamos la configuración
+        R3config = 0; // Reiniciar configuración
     } else {
-      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        bot.sendMessage(chat_id, "Error: El valor debe ser un número mayor a 0.");
     }
-  } else {
-    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
-  }
 }
 
-if (text == "Hora Off R3") {
-  modoR3 = CONFIG;
-  modoMenu = CONFIG;
-  R3config = 2;
-  bot.sendMessage(chat_id, "Ingrese Hora de Apagado R3 en formato HH:MM (por ejemplo, 18:45):");
-} else if (R3config == 2) {
-  int sep = text.indexOf(':'); // Buscamos el separador ':'
-  if (sep != -1) {
-    horaOffR3 = text.substring(0, sep).toInt(); // Obtenemos la hora
-    minOffR3 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
-    if (horaOffR3 >= 0 && horaOffR3 < 24 && minOffR3 >= 0 && minOffR3 < 60) {
-      Serial.print("Hora apagado R3: ");
-      Serial.print(horaOffR3);
-      Serial.print(":");
-      Serial.println(minOffR3);
-      bot.sendMessage(chat_id, "Hora de apagado R3 guardada correctamente");
-      Guardado_General();
-      R3config = 0; // Reiniciamos la configuración
+// Configurar Intervalo de Riego
+if (text == "Intervalo de Riego") {
+    modoR3 = CONFIG;
+    modoMenu = CONFIG;
+    R3config = 4;
+    bot.sendMessage(chat_id, "Ingrese el intervalo entre riegos (en segundos):");
+}
+if (R3config == 4) {
+    tiempoNoRiego = text.toInt();
+    if (tiempoNoRiego > 0) {
+        Serial.print("Intervalo de riego: ");
+        Serial.println(tiempoNoRiego);
+        bot.sendMessage(chat_id, "Intervalo de riego guardado correctamente");
+        Guardado_General();
+        R3config = 0; // Reiniciar configuración
     } else {
-      bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        bot.sendMessage(chat_id, "Error: El valor debe ser un número mayor a 0.");
     }
-  } else {
-    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
-  }
+}
+
+// Configurar Hora On
+if (text == "Hora On " + getRelayName(R3name)) {
+    modoR3 = CONFIG;
+    modoMenu = CONFIG;
+    R3config = 1;
+    bot.sendMessage(chat_id, "Ingrese Hora de Encendido " + getRelayName(R3name) + " en formato HH:MM (por ejemplo, 08:30):");
+} else if (R3config == 1) {
+    int sep = text.indexOf(':');
+    if (sep != -1) {
+        horaOnR3 = text.substring(0, sep).toInt();
+        minOnR3 = text.substring(sep + 1).toInt();
+        if (horaOnR3 >= 0 && horaOnR3 < 24 && minOnR3 >= 0 && minOnR3 < 60) {
+            Serial.print("Hora encendido " + getRelayName(R3name) + ": ");
+            Serial.print(horaOnR3);
+            Serial.print(":");
+            Serial.println(minOnR3);
+            bot.sendMessage(chat_id, "Hora de encendido " + getRelayName(R3name) + " guardada correctamente");
+            Guardado_General();
+            R3config = 0; // Reiniciar configuración
+        } else {
+            bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        }
+    } else {
+        bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+    }
+}
+
+// Configurar Hora Off
+if (text == "Hora Off " + getRelayName(R3name)) {
+    modoR3 = CONFIG;
+    modoMenu = CONFIG;
+    R3config = 2;
+    bot.sendMessage(chat_id, "Ingrese Hora de Apagado " + getRelayName(R3name) + " en formato HH:MM (por ejemplo, 18:45):");
+} else if (R3config == 2) {
+    int sep = text.indexOf(':');
+    if (sep != -1) {
+        horaOffR3 = text.substring(0, sep).toInt();
+        minOffR3 = text.substring(sep + 1).toInt();
+        if (horaOffR3 >= 0 && horaOffR3 < 24 && minOffR3 >= 0 && minOffR3 < 60) {
+            Serial.print("Hora apagado " + getRelayName(R3name) + ": ");
+            Serial.print(horaOffR3);
+            Serial.print(":");
+            Serial.println(minOffR3);
+            bot.sendMessage(chat_id, "Hora de apagado " + getRelayName(R3name) + " guardada correctamente");
+            Guardado_General();
+            R3config = 0; // Reiniciar configuración
+        } else {
+            bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        }
+    } else {
+        bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+    }
 }
 
 
@@ -780,140 +771,176 @@ if (text == "Dias de riego") {
 
    // RELE 4 CONFIG
 
-// RELE 4 CONFIG
+// Menú dinámico de configuración para R4
+if (text == getRelayName(R4name) + " config") {
+    // Crear botones dinámicos para las opciones de R4
+    String r4KeyboardJson = "[[\"Hora On " + getRelayName(R4name) + "\", \"Hora Off " + getRelayName(R4name) + "\"], "
+                            "[\"Hora Amanecer " + getRelayName(R4name) + "\", \"Hora Atardecer " + getRelayName(R4name) + "\"], "
+                            "[\"Config " + getRelayName(R4name) + " Name\", \"Menu Principal\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R4name) + ":", "", r4KeyboardJson, true);
+}
 
-if (text == "Hora On R4") {
-  modoR4 = CONFIG;
-  modoMenu = CONFIG;
-  R4config = 1;
-  bot.sendMessage(chat_id, "Ingrese Hora de Encendido R4 en formato HH:MM (por ejemplo, 08:30):");
+// Configurar Hora On R4
+if (text == "Hora On " + getRelayName(R4name)) {
+    modoR4 = CONFIG;
+    modoMenu = CONFIG;
+    R4config = 1;
+    bot.sendMessage(chat_id, "Ingrese Hora de Encendido " + getRelayName(R4name) + " en formato HH:MM (por ejemplo, 08:30):");
 } else if (R4config == 1) {
-  int sep = text.indexOf(':'); // Buscamos el separador ':'
-  if (sep != -1) {
-    horaOnR4 = text.substring(0, sep).toInt(); // Obtenemos la hora
-    minOnR4 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
-    if (horaOnR4 >= 0 && horaOnR4 < 24 && minOnR4 >= 0 && minOnR4 < 60) {
-      Serial.print("Hora encendido R4: ");
-      Serial.print(horaOnR4);
-      Serial.print(":");
-      Serial.println(minOnR4);
-      bot.sendMessage(chat_id, "Hora de encendido R4 guardada correctamente");
-      Guardado_General();
-      R4config = 0; // Reseteamos la configuración
-    } else {
-      bot.sendMessage(chat_id, "Error: Formato incorrecto. La hora debe estar entre 00:00 y 23:59.");
+    int sep = text.indexOf(':');
+    if (sep != -1) {
+        horaOnR4 = text.substring(0, sep).toInt();
+        minOnR4 = text.substring(sep + 1).toInt();
+        if (horaOnR4 >= 0 && horaOnR4 < 24 && minOnR4 >= 0 && minOnR4 < 60) {
+            Serial.print("Hora encendido " + getRelayName(R4name) + ": ");
+            Serial.print(horaOnR4);
+            Serial.print(":");
+            Serial.println(minOnR4);
+            bot.sendMessage(chat_id, "Hora de encendido " + getRelayName(R4name) + " guardada correctamente");
+            Guardado_General();
+            R4config = 0; // Reseteamos la configuración
+
+            } else {
+        bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
-  } else {
-    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
-  }
 }
 
-
-if (text == "Hora Off R4") {
-  modoR4 = CONFIG;
-  modoMenu = CONFIG;
-  R4config = 2;
-  bot.sendMessage(chat_id, "Ingrese Hora de Apagado R4 en formato HH:MM (por ejemplo, 18:45):");
+// Configurar Hora Off R4
+if (text == "Hora Off " + getRelayName(R4name)) {
+    modoR4 = CONFIG;
+    modoMenu = CONFIG;
+    R4config = 2;
+    bot.sendMessage(chat_id, "Ingrese Hora de Apagado " + getRelayName(R4name) + " en formato HH:MM (por ejemplo, 18:45):");
 } else if (R4config == 2) {
-  int sep = text.indexOf(':'); // Buscamos el separador ':'
-  if (sep != -1) {
-    horaOffR4 = text.substring(0, sep).toInt(); // Obtenemos la hora
-    minOffR4 = text.substring(sep + 1).toInt(); // Obtenemos los minutos
-    if (horaOffR4 >= 0 && horaOffR4 < 24 && minOffR4 >= 0 && minOffR4 < 60) {
-      Serial.print("Hora apagado R4: ");
-      Serial.print(horaOffR4);
-      Serial.print(":");
-      Serial.println(minOffR4);
-      bot.sendMessage(chat_id, "Hora de apagado R4 guardada correctamente");
-      Guardado_General();
-      R4config = 0; // Reseteamos la configuración
+    int sep = text.indexOf(':');
+    if (sep != -1) {
+        horaOffR4 = text.substring(0, sep).toInt();
+        minOffR4 = text.substring(sep + 1).toInt();
+        if (horaOffR4 >= 0 && horaOffR4 < 24 && minOffR4 >= 0 && minOffR4 < 60) {
+            Serial.print("Hora apagado " + getRelayName(R4name) + ": ");
+            Serial.print(horaOffR4);
+            Serial.print(":");
+            Serial.println(minOffR4);
+            bot.sendMessage(chat_id, "Hora de apagado " + getRelayName(R4name) + " guardada correctamente");
+            Guardado_General();
+            R4config = 0; // Reseteamos la configuración
+        } else {
+            bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        }
     } else {
-      bot.sendMessage(chat_id, "Error: Formato incorrecto. La hora debe estar entre 00:00 y 23:59.");
+        bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
-  } else {
-    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
-  }
 }
 
-if (text == "Hora Amanecer R4") {
-  modoR4 = CONFIG;
-  modoMenu = CONFIG;
-  R4config = 3;
-  bot.sendMessage(chat_id, "Ingrese la hora del amanecer en formato HH:MM (por ejemplo, 06:30):");
+// Configurar Hora Amanecer R4
+if (text == "Hora Amanecer " + getRelayName(R4name)) {
+    modoR4 = CONFIG;
+    modoMenu = CONFIG;
+    R4config = 3;
+    bot.sendMessage(chat_id, "Ingrese la hora del amanecer para " + getRelayName(R4name) + " en formato HH:MM (por ejemplo, 06:30):");
 } else if (R4config == 3) {
-  int sep = text.indexOf(':'); // Buscamos el separador ':'
-  if (sep != -1) {
-    int hora = text.substring(0, sep).toInt(); // Obtenemos la hora
-    int minuto = text.substring(sep + 1).toInt(); // Obtenemos los minutos
-    if (hora >= 0 && hora < 24 && minuto >= 0 && minuto < 60) {
-      horaAmanecer = hora * 60 + minuto; // Convertimos a minutos totales
-      Serial.print("Hora amanecer (en minutos totales): ");
-      Serial.println(horaAmanecer);
-      bot.sendMessage(chat_id, "Hora del amanecer guardada correctamente");
-      Guardado_General();
-      R4config = 0; // Reseteamos la configuración
+    int sep = text.indexOf(':');
+    if (sep != -1) {
+        int hora = text.substring(0, sep).toInt();
+        int minuto = text.substring(sep + 1).toInt();
+        if (hora >= 0 && hora < 24 && minuto >= 0 && minuto < 60) {
+            horaAmanecer = hora * 60 + minuto; // Convertimos a minutos totales
+            Serial.print("Hora amanecer para " + getRelayName(R4name) + " (en minutos totales): ");
+            Serial.println(horaAmanecer);
+            bot.sendMessage(chat_id, "Hora del amanecer guardada correctamente");
+            Guardado_General();
+            R4config = 0; // Reseteamos la configuración
+        } else {
+            bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        }
     } else {
-      bot.sendMessage(chat_id, "Error: Formato incorrecto. La hora debe estar entre 00:00 y 23:59.");
+        bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
-  } else {
-    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
-  }
 }
 
-if (text == "Hora Atardecer R4") {
-  modoR4 = CONFIG;
-  modoMenu = CONFIG;
-  R4config = 4;
-  bot.sendMessage(chat_id, "Ingrese la hora del atardecer en formato HH:MM (por ejemplo, 06:30):");
+// Configurar Hora Atardecer R4
+if (text == "Hora Atardecer " + getRelayName(R4name)) {
+    modoR4 = CONFIG;
+    modoMenu = CONFIG;
+    R4config = 4;
+    bot.sendMessage(chat_id, "Ingrese la hora del atardecer para " + getRelayName(R4name) + " en formato HH:MM (por ejemplo, 18:30):");
 } else if (R4config == 4) {
-  int sep = text.indexOf(':'); // Buscamos el separador ':'
-  if (sep != -1) {
-    int hora = text.substring(0, sep).toInt(); // Obtenemos la hora
-    int minuto = text.substring(sep + 1).toInt(); // Obtenemos los minutos
-    if (hora >= 0 && hora < 24 && minuto >= 0 && minuto < 60) {
-      horaAtardecer = hora * 60 + minuto; // Convertimos a minutos totales
-      Serial.print("Hora atardecer (en minutos totales): ");
-      Serial.println(horaAtardecer);
-      bot.sendMessage(chat_id, "Hora del atardecer guardada correctamente");
-      Guardado_General();
-      R4config = 0; // Reseteamos la configuración
+    int sep = text.indexOf(':');
+    if (sep != -1) {
+        int hora = text.substring(0, sep).toInt();
+        int minuto = text.substring(sep + 1).toInt();
+        if (hora >= 0 && hora < 24 && minuto >= 0 && minuto < 60) {
+            horaAtardecer = hora * 60 + minuto; // Convertimos a minutos totales
+            Serial.print("Hora atardecer para " + getRelayName(R4name) + " (en minutos totales): ");
+            Serial.println(horaAtardecer);
+            bot.sendMessage(chat_id, "Hora del atardecer guardada correctamente");
+            Guardado_General();
+            R4config = 0; // Reseteamos la configuración
+        } else {
+            bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        }
     } else {
-      bot.sendMessage(chat_id, "Error: Formato incorrecto. La hora debe estar entre 00:00 y 23:59.");
+        bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
-  } else {
-    bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
-  }
+}
+
+// Configurar el nombre dinámico de R4
+if (text == "Config " + getRelayName(R4name) + " Name") {
+    String options = "Ingrese un número para el nuevo nombre de " + getRelayName(R4name) + ":\n"
+                     "1 - Extraccion\n"
+                     "2 - Intraccion\n"
+                     "3 - Humidificador\n"
+                     "4 - Caloventor\n"
+                     "5 - Luz\n"
+                     "6 - Riego";
+    bot.sendMessage(chat_id, options);
+    R4config = 5; // Cambiar el estado del menú para esperar un valor
+}
+if (R4config == 5) {
+    int newIndex = text.toInt();
+    if (newIndex >= 1 && newIndex <= 6) {
+        R4name = newIndex - 1; // Actualizar el índice del nombre
+        bot.sendMessage(chat_id, "Nombre cambiado a: " + getRelayName(R4name));
+        Guardado_General();
+        R4config = 0;
+    } else {
+        bot.sendMessage(chat_id, "Número inválido. Intente de nuevo.");
+    }
 }
 
 
 
 
-    //  MOSTRAR PARAMETROS
+// MOSTRAR PARAMETROS
 
-    if (text == "INFO CONFIG") {
-    // Crear botones para mostrar la información de cada relé
-    String infoKeyboardJson = "[[\"Rele 1 Info\", \"Rele 2 Info\"], [\"Rele 3 Info\", \"Rele 4 Info\"], [\"Menu Principal\"]]";
+if (text == "INFO CONFIG") {
+    // Crear botones para mostrar la información de cada relé con nombres dinámicos
+    String infoKeyboardJson = "[[\"" + getRelayName(R1name) + " Info\", \"" + getRelayName(R2name) + " Info\"], "
+                              "[\"" + getRelayName(R3name) + " Info\", \"" + getRelayName(R4name) + " Info\"], "
+                              "[\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione un relé para ver la información:", "", infoKeyboardJson, true);
 }
 
-if (text == "Rele 1 Info") {
-    String infoR1 = "Rele 1: \n";
+// Información de R1
+if (text == getRelayName(R1name) + " Info") {
+    String infoR1 = getRelayName(R1name) + ": \n";
     infoR1 += "Límite Inferior: " + String(minR1) + ".\n";
     infoR1 += "Límite Superior: " + String(maxR1) + ".\n";
     infoR1 += "Parametro: " + convertirParametro(paramR1) + ".\n";
     infoR1 += "Hora de encendido: " + formatoHora(horaOnR1, minOnR1) + "\n";
-    infoR1 += "Hora de apagado: " + formatoHora(horaOffR1, minOffR1) + "\n"; 
+    infoR1 += "Hora de apagado: " + formatoHora(horaOffR1, minOffR1) + "\n";
     infoR1 += "Modo: " + convertirModo(modoR1) + ".\n";
     bot.sendMessage(chat_id, infoR1, "Markdown");
 }
 
-if (text == "Rele 2 Info") {
-    String infoR2 = "Rele 2: \n";
+// Información de R2
+if (text == getRelayName(R2name) + " Info") {
+    String infoR2 = getRelayName(R2name) + ": \n";
     infoR2 += "Límite Inferior: " + String(minR2) + ".\n";
     infoR2 += "Límite Superior: " + String(maxR2) + ".\n";
     infoR2 += "Parametro: " + convertirParametro(paramR2) + ".\n";
     infoR2 += "Modo: " + convertirModo(modoR2) + ".\n";
-    infoR2 += "Rele 2 (IR): \n";
+    infoR2 += getRelayName(R2name) + " (IR): \n";
     infoR2 += "Límite Inferior: " + String(minR2ir) + ".\n";
     infoR2 += "Límite Superior: " + String(maxR2ir) + ".\n";
     infoR2 += "Parametro: " + convertirParametro(paramR2ir) + ".\n";
@@ -921,16 +948,17 @@ if (text == "Rele 2 Info") {
     bot.sendMessage(chat_id, infoR2, "Markdown");
 }
 
-if (text == "Rele 3 Info") {
-    String infoR3 = "Rele 3: \n";
+// Información de R3
+if (text == getRelayName(R3name) + " Info") {
+    String infoR3 = getRelayName(R3name) + ": \n";
     infoR3 += "Hora de encendido: " + formatoHora(horaOnR3, minOnR3) + "\n";
     infoR3 += "Hora de apagado: " + formatoHora(horaOffR3, minOffR3) + "\n";
-    infoR3 += "Tiempo Riego: " + String(tiempoRiego) + ".\n";
-    infoR3 += "Tiempo No Riego: " + String(tiempoNoRiego) + ".\n";
-    infoR3 += "Cantidad de Riegos: " + String(cantidadRiegos) + ".\n";
+    infoR3 += "Duración de riego: " + String(tiempoRiego) + " segundos.\n";
+    infoR3 += "Intervalo de riego: " + String(tiempoNoRiego) + " segundos.\n";
+    infoR3 += "Cantidad de riegos: " + String(cantidadRiegos) + ".\n";
     infoR3 += "Modo: " + convertirModo(modoR3) + ".\n";
 
-    // Agregar la información de los días de riego
+    // Agregar información de los días de riego
     String diasRiegoInfo = "Días de riego:\n";
     bool hayRiego = false;
 
@@ -950,21 +978,21 @@ if (text == "Rele 3 Info") {
     bot.sendMessage(chat_id, infoR3, "Markdown");
 }
 
-if (text == "Menu Principal") {
-    // Volver al menú principal
-    String mainKeyboardJson = "[[\"STATUS\"], [\"MANUAL\", \"AUTO\"], [\"CONFIG\", \"INFO CONFIG\"], [\"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
-    bot.sendMessageWithReplyKeyboard(chat_id, "Has vuelto al menú principal. Selecciona una opción:", "", mainKeyboardJson, true);
-}
-
-
-if (text == "Rele 4 Info") {
-    String infoR4 = "Rele 4: \n";
+// Información de R4
+if (text == getRelayName(R4name) + " Info") {
+    String infoR4 = getRelayName(R4name) + ": \n";
     infoR4 += "Hora de encendido: " + formatoHora(horaOnR4, minOnR4) + "\n";
     infoR4 += "Hora de apagado: " + formatoHora(horaOffR4, minOffR4) + "\n";
     infoR4 += "Hora de amanecer: " + formatoHora(horaAmanecer / 60, horaAmanecer % 60) + "\n";
     infoR4 += "Hora de atardecer: " + formatoHora(horaAtardecer / 60, horaAtardecer % 60) + "\n";
     infoR4 += "Modo: " + convertirModo(modoR4) + ".\n";
     bot.sendMessage(chat_id, infoR4, "Markdown");
+}
+
+// Volver al menú principal
+if (text == "Menu Principal") {
+    String mainKeyboardJson = "[[\"STATUS\"], [\"MANUAL\", \"AUTO\"], [\"CONFIG\", \"INFO CONFIG\"], [\"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Has vuelto al menú principal. Selecciona una opción:", "", mainKeyboardJson, true);
 }
 
 
@@ -996,9 +1024,6 @@ if (text == "STATUS" ) {
     String statusMessage = "🌡️ Temperatura: " + String(temperature, 1) + " °C\n";
     statusMessage += "💧 Humedad: " + String(humedad, 1) + " %\n";
     statusMessage += "🌬️ DPV: " + String(DPV, 1) + " hPa\n";
-    //statusMessage += "💧Humedad Suelo: " + String(sensor1Value) + " %\n";
-    //statusMessage += "Humedad Suelo (2): " + String(sensor2Value) + " %\n";
-    //statusMessage += "Humedad Suelo (3): " + String(sensor3Value) + " %\n";
 
     statusMessage += dateTime;  // Agrega la fecha y hora al mensaje
     bot.sendMessage(chat_id, statusMessage, "");
@@ -1018,6 +1043,7 @@ if (text == "STATUS" ) {
       delay(500);
       sendDataToGoogleSheets();
     }
+}
     delay(500);
   }
 }
