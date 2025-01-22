@@ -42,53 +42,58 @@ void setup() {
   dimmerServo.attach(SERVO); // 
   moveServoSlowly(currentPosition); // Mover a la última posición guardada
 
-mostrarMensajeBienvenida();
+  mostrarMensajeBienvenida();
 
 
-  connectToWiFi(ssid.c_str(), password.c_str());
+  if (modoWiFi == 1) {
+    // Modo WiFi cliente
+    connectToWiFi(ssid.c_str(), password.c_str());
 
-  secured_client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("Conectado a Wi-Fi exitosamente.");
 
+        secured_client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
-  if (WiFi.status() == WL_CONNECTED) {
-    String motivoReinicio = obtenerMotivoReinicio();
-  
-  // Enviar mensaje con el motivo del reinicio
-  String message = "Druida Bot is ON (" + motivoReinicio + ")";
-  bot.sendMessage(chat_id, message);
-    String keyboardJson = "[[\"STATUS\"], [\"MANUAL\", \"AUTO\"], [\"CONFIG\", \"INFO CONFIG\"], [\"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
-    bot.sendMessageWithReplyKeyboard(chat_id, "MENU PRINCIPAL:", "", keyboardJson, true);
-    configTime(0, 0, "pool.ntp.org");
+        String motivoReinicio = obtenerMotivoReinicio();
+        String message = "Druida Bot is ON (" + motivoReinicio + ")";
+        bot.sendMessage(chat_id, message);
 
-    time_t now = time(nullptr);
-    while (now < 24 * 3600 && millis() - startMillis < 15000) {
-      Serial.print(".");
-      delay(100);
-      now = time(nullptr);
-    }
+        String keyboardJson = "[[\"STATUS\"], [\"CONTROL\"], [\"CONFIG\"]]";
+        bot.sendMessageWithReplyKeyboard(chat_id, "MENU PRINCIPAL:", "", keyboardJson, true);
 
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo)) {
-      Serial.println("No se pudo obtener la hora de Internet.");
+        // Configurar NTP y RTC
+        configTime(0, 0, "pool.ntp.org");
+        time_t now = time(nullptr);
+        while (now < 24 * 3600 && millis() - startMillis < 15000) {
+            Serial.print(".");
+            delay(100);
+            now = time(nullptr);
+        }
+
+        struct tm timeinfo;
+        if (getLocalTime(&timeinfo)) {
+            rtc.adjust(DateTime(timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
+            Serial.println("Hora de Internet obtenida y ajustada en el reloj RTC.");
+        } else {
+            Serial.println("No se pudo obtener la hora de Internet.");
+        }
+
+        const char* days[] = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" };
+        diaNumero = timeinfo.tm_wday;
+
+        Serial.print("Día de hoy: ");
+        Serial.println(days[diaNumero]);
     } else {
-      rtc.adjust(DateTime(timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
-      Serial.println("Hora de Internet obtenida y ajustada en el reloj RTC.");
+        Serial.println("No se pudo conectar a Wi-Fi. Verifique las credenciales.");
     }
+} else {
+    // Modo AP
+    Serial.println("\nModo AP activado para configuración.");
+    startAccessPoint();
+}
 
-    const char* days[] = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" };
-    int dayNumber = timeinfo.tm_wday;
-    diaNumero = dayNumber;
 
-    Serial.print("Dia de hoy: ");
-    Serial.println(days[dayNumber]);
-  } else {
-    Serial.println("\nNo se pudo conectar a Wi-Fi. Iniciando modo AP para configuración.");
-
-    // Iniciar el modo AP para configuración
-
-  // Inicia el servidor web
-    startAccessPoint();}
-
+  //startAccessPoint();
   Serial.println("Menu Serial: ");
   Serial.println("1. Modificar Red WiFi");
   Serial.println("2. Modificar Chat ID");
@@ -99,12 +104,11 @@ mostrarMensajeBienvenida();
 void loop() {
     if (WiFi.getMode() == WIFI_AP) {
     server.handleClient();
-    esp_task_wdt_reset(); // Maneja las solicitudes HTTP en modo AP
   }
   unsigned long currentMillis = millis();
 
   // Verifica la conexión WiFi a intervalos regulares
-  if (currentMillis - previousMillis >= wifiCheckInterval) {
+  if (currentMillis - previousMillis >= wifiCheckInterval && modoWiFi == 1) {
     previousMillis = currentMillis;
     checkWiFiConnection();
   }
@@ -116,7 +120,6 @@ void loop() {
         Serial.println("got response");
         handleNewMessages(numNewMessages);
         numNewMessages = bot.getUpdates(bot.last_message_received + 1);
-        esp_task_wdt_reset();
         delay(10);
       }
       bot_lasttime = millis();
@@ -239,13 +242,11 @@ void loop() {
     if (estadoR1 == 1 && R1estado == HIGH) {
       digitalWrite(RELAY1, LOW);
       R1estado = LOW;
-      esp_task_wdt_reset();
     }
 
     if (estadoR1 == 0 && R1estado == LOW) {
       digitalWrite(RELAY1, HIGH);
       R1estado = HIGH;
-      esp_task_wdt_reset();
     }
   }
 
@@ -254,12 +255,10 @@ void loop() {
     if (estadoR2 == 1 && R2estado == HIGH) {
       digitalWrite(RELAY2, LOW);
       R2estado = LOW;
-      esp_task_wdt_reset();
     }
     if (estadoR2 == 0 && R2estado == LOW) {
       digitalWrite(RELAY2, HIGH);
       R2estado = HIGH;
-      esp_task_wdt_reset();
     }
   }
 
@@ -282,12 +281,10 @@ void loop() {
     if (estadoR3 == 1 && R3estado == HIGH) {
       digitalWrite(RELAY3, LOW);
       R3estado = LOW;
-      esp_task_wdt_reset();
     }
     if (estadoR3 == 0 && R3estado == LOW) {
       digitalWrite(RELAY3, HIGH);
       R3estado = HIGH;
-      esp_task_wdt_reset();
     }
   }
 
@@ -296,12 +293,10 @@ void loop() {
     if (estadoR4 == 1 && R4estado == HIGH) {
       digitalWrite(RELAY4, LOW);
       R4estado = LOW;
-      esp_task_wdt_reset();
     }
     if (estadoR4 == 0 && R4estado == LOW) {
       digitalWrite(RELAY4, HIGH);
       R4estado = HIGH;
-      esp_task_wdt_reset();
     }
   }
 
@@ -314,24 +309,20 @@ void loop() {
       if (humedad < minR1 && R1estado == HIGH) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
-        esp_task_wdt_reset();
       }
       if (humedad > maxR1 && R1estado == LOW) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
-        esp_task_wdt_reset();
       }
     }
     if (paramR1 == T) {
       if (temperature < minR1 && R1estado == HIGH) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
-        esp_task_wdt_reset();
       }
       if (temperature > minR1 && R1estado == LOW) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
-        esp_task_wdt_reset();
       }
     }
 
@@ -339,14 +330,12 @@ void loop() {
       if (DPV < minR1 && R1estado == HIGH) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
-        esp_task_wdt_reset();
       }
 
 
         if (DPV > maxR1 && R1estado == LOW) {
           digitalWrite(RELAY1, HIGH);
           R1estado = HIGH;
-          esp_task_wdt_reset();
         }
       
     }
@@ -397,13 +386,11 @@ void loop() {
       if (R1estado == HIGH){ 
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
-        esp_task_wdt_reset();
       }
     } else {
       if (R1estado == LOW) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
-        esp_task_wdt_reset();
       }
     }
   } else { 
@@ -412,13 +399,11 @@ void loop() {
       if (R1estado == HIGH){ 
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
-        esp_task_wdt_reset();
       }
     } else {
       if (R1estado == LOW) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
-        esp_task_wdt_reset();
       }
     }
   }
@@ -433,13 +418,11 @@ void loop() {
       if (humedad > maxR2 && R2estado == HIGH) {
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
-        esp_task_wdt_reset();
         delay(200);
       }
       if (humedad < minR2 && R2estado == LOW) {
         digitalWrite(RELAY2, HIGH);
         R2estado = HIGH;
-        esp_task_wdt_reset();
         delay(200);
       }
     }
@@ -447,13 +430,11 @@ void loop() {
       if (temperature > maxR2 && R2estado == HIGH) {
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
-        esp_task_wdt_reset();
         delay(200);
       }
       if (temperature < minR2 && R2estado == LOW) {
         digitalWrite(RELAY2, HIGH);
         R2estado = HIGH;
-        esp_task_wdt_reset();
         delay(200);
       }
     }
@@ -462,13 +443,11 @@ void loop() {
       if (DPV > maxR2 && R2estado == HIGH) {
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
-        esp_task_wdt_reset();
         delay(200);
       }
       if (DPV < minR2 && R2estado == LOW) {
         digitalWrite(RELAY2, HIGH);
         R2estado = HIGH;
-        esp_task_wdt_reset();
         delay(200);
       }
     }
@@ -604,7 +583,6 @@ if (modoR3 == AUTO) {
             // Apagar el relé fuera del horario
             digitalWrite(RELAY3, HIGH);
             R3estado = HIGH;
-            esp_task_wdt_reset();
             enRiego = false; // Reiniciar flag
           }
         } else { 
@@ -615,7 +593,6 @@ if (modoR3 == AUTO) {
             // Apagar el relé fuera del horario
             digitalWrite(RELAY3, HIGH);
             R3estado = HIGH;
-            esp_task_wdt_reset();
             enRiego = false; // Reiniciar flag
           }
         }
@@ -634,13 +611,11 @@ if (modoR4 == AUTO) {
       if (R4estado == HIGH) {
         digitalWrite(RELAY4, LOW);
         R4estado = LOW;
-        esp_task_wdt_reset();
       }
     } else {
       if (R4estado == LOW) {
         digitalWrite(RELAY4, HIGH);
         R4estado = HIGH;
-        esp_task_wdt_reset();
       }
     }
   } else {
@@ -649,13 +624,11 @@ if (modoR4 == AUTO) {
       if (R4estado == HIGH) {
         digitalWrite(RELAY4, LOW);
         R4estado = LOW;
-        esp_task_wdt_reset();
       }
     } else {
       if (R4estado == LOW) {
         digitalWrite(RELAY4, HIGH);
         R4estado = HIGH;
-        esp_task_wdt_reset();
       }
     }
   }
@@ -667,10 +640,8 @@ if (modoR4 == AUTO) {
 
   if (dentroAmanecer) {
     moveServoSlowly(180); // Simula el mediodía
-    esp_task_wdt_reset();
   } else {
     moveServoSlowly(0); // Simula amanecer o atardecer
-    esp_task_wdt_reset();
   }
 }
 
@@ -681,6 +652,7 @@ if (modoR4 == AUTO) {
 String hora = formatoHora(hour, now.minute());
 
 mostrarEnPantallaOLED(temperature, humedad, DPV, hora);
+esp_task_wdt_reset();
   delay(2000);
 
 }
@@ -810,6 +782,7 @@ void Carga_General() {
   currentPosition = EEPROM.get(304, currentPosition);
   horaAmanecer = EEPROM.get(308, horaAmanecer);
   horaAtardecer = EEPROM.get(312, horaAtardecer);
+  modoWiFi = EEPROM.get(316, modoWiFi);
 
   for (int i = 0; i < 100; i++) {
     IRsignal[i] = EEPROM.get(350 + i * sizeof(uint16_t), IRsignal[i]);
@@ -875,6 +848,7 @@ void Guardado_General() {
   EEPROM.put(304, currentPosition);
   EEPROM.put(308, horaAmanecer);
   EEPROM.put(312, horaAtardecer);
+  EEPROM.put(316, modoWiFi);
 
   
   for (int i = 0; i < 100; i++) {
@@ -975,7 +949,7 @@ void connectToWiFi(const char* ssid, const char* password) {
   bool isConnected = false;
 
   // Intentar conectar durante 20 segundos
-  while (millis() - startAttemptTime < 20000) {
+  while (millis() - startAttemptTime < 15000) {
     if (WiFi.status() == WL_CONNECTED) {
       isConnected = true;
       break;
@@ -1009,7 +983,7 @@ void connectToWiFi(const char* ssid, const char* password) {
     Serial.println("\nNo se pudo conectar a WiFi. Reintentando...");
 
     // Reintentar conexión
-    for (int attempt = 1; attempt <= 3; ++attempt) {
+    for (int attempt = 1; attempt <= 4; ++attempt) {
       Serial.print("Intento ");
       Serial.print(attempt);
       Serial.println(" de reconexión...");
@@ -1239,7 +1213,6 @@ void encenderRele3PorTiempo(int tiempoSegundos) {
   estadoR3 = 0;
   R3estado = HIGH;
   Guardado_General();
-  esp_task_wdt_reset();
 }
 
 void encenderRele4PorTiempo(int tiempoSegundos) {
@@ -1290,6 +1263,13 @@ void startAccessPoint() {
   server.on("/configR2", handleConfigR2);
   server.on("/configR3", handleConfigR3);
   server.on("/configR4", handleConfigR4);
+  server.on("/configWiFi", handleConfigWiFi);
+  server.on("/saveConfigR1", saveConfigR1);
+  server.on("/saveConfigR2", saveConfigR2);
+  server.on("/saveConfigR3", saveConfigR3);
+  server.on("/saveConfigR4", saveConfigR4);
+  server.on("/saveConfigWiFi", saveConfigWiFi);
+  server.on("/connectWiFi", connectWiFi);
 
 
 
@@ -1329,7 +1309,7 @@ void handleRoot() {
         horaBot = 24 + horaBot;
 
     // Construir fecha y hora
-    String dateTime = "Fecha y Hora: " + String(now.day()) + "/" + String(now.month()) + "/" + String(now.year()) + " " + horaBot + ":" + String(now.minute()) + ":" + String(now.second());
+    String dateTime = String(now.day()) + "/" + String(now.month()) + "/" + String(now.year()) + " " + horaBot + ":" + String(now.minute()) + ":" + String(now.second());
 
     // Construir mensaje de estado
     String statusMessage = "<div class='line'>Temp: " + String(temperature, 1) + " °C</div>";
@@ -1337,29 +1317,30 @@ void handleRoot() {
     statusMessage += "<div class='line'>DPV: " + String(DPV, 1) + " hPa</div>";
     statusMessage += "<div class='line'>" + dateTime + "</div>";
 
-    // Generar el HTML
-    String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; }";
-    html += "header { margin-top: 20px; }";
-    html += "header h1 { font-size: 8rem; margin: 0; line-height: 1.2; color: white; font-family: 'Press Start 2P', monospace; animation: fadeIn 2s ease-in-out; }";
-    html += "@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }";
-    html += ".info-box { background-color: #004080; border: 2px solid #00bfff; padding: 15px; border-radius: 10px; position: absolute; top: 25%; transform: translateY(-50%); font-size: 1.5rem; line-height: 1.5; text-align: center; width: 80%; max-width: 600px; }";
-    html += ".info-box .line { opacity: 0; animation: fadeInLine 2s ease-in-out forwards; margin-bottom: 10px; }";
-    html += ".info-box .line:nth-child(1) { animation-delay: 0.5s; }";
-    html += ".info-box .line:nth-child(2) { animation-delay: 1s; }";
-    html += ".info-box .line:nth-child(3) { animation-delay: 1.5s; }";
-    html += ".info-box .line:nth-child(4) { animation-delay: 2s; }";
-    html += "@keyframes fadeInLine { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }";
-    html += "main { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }";
-    html += "main a button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 30px 80px; font-size: 48px; border-radius: 20px; cursor: pointer; margin: 20px; display: inline-block; animation: fadeInScale 1s ease-in-out forwards; }";
-    html += "main a button:hover { background-color: #004080; border-color: #00cc00; }";
-    html += "@keyframes fadeInScale { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }";
-    html += "footer { margin-bottom: 30px; font-size: 1.5rem; color: #00bfff; }";
-    html += "</style>";
-    html += "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>";
-    html += "</head><body>";
+// Generar el HTML
+String html = "<html><head><style>";
+html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; }";
+html += "header { margin-top: 100px; }"; // Separador superior
+html += "header h1 { font-size: 4rem; margin: 0; line-height: 1.2; color: #00ff00; font-family: 'Courier New', Courier, monospace; background-color: #000000; padding: 10px 20px; border: 2px solid #00ff00; border-radius: 10px; text-align: center; white-space: pre-line; opacity: 0; animation: fadeInHeader 2s ease-in-out forwards; }";
+html += "@keyframes fadeInHeader { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }"; // Efecto de aparición
+html += ".info-box { background-color: #004080; border: 2px solid #00bfff; padding: 15px; border-radius: 10px; position: absolute; top: 25%; transform: translateY(-50%); font-size: 1.5rem; line-height: 1.5; text-align: center; width: 80%; max-width: 600px; }";
+html += ".info-box .line { opacity: 0; animation: fadeInLine 2s ease-in-out forwards; margin-bottom: 10px; }";
+html += ".info-box .line:nth-child(1) { animation-delay: 0.5s; }";
+html += ".info-box .line:nth-child(2) { animation-delay: 1s; }";
+html += ".info-box .line:nth-child(3) { animation-delay: 1.5s; }";
+html += ".info-box .line:nth-child(4) { animation-delay: 2s; }";
+html += "@keyframes fadeInLine { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }";
+html += "main { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }";
+html += "main a button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 30px 80px; font-size: 48px; border-radius: 20px; cursor: pointer; margin: 20px; display: inline-block; animation: fadeInScale 1s ease-in-out forwards; }";
+html += "main a button:hover { background-color: #004080; border-color: #00cc00; }";
+html += "@keyframes fadeInScale { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }";
+html += "footer { margin-bottom: 30px; font-size: 1.5rem; color: #00bfff; }";
+html += "</style>";
+html += "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>";
+html += "</head><body>";
 
-    html += "<header><h1>Data Druida</h1></header>";
+html += "<header><h1>Druida\nBot</h1></header>"; // Manteniendo el formato tabulado
+
     html += "<div class=\"info-box\">";
     html += statusMessage;
     html += "</div>";
@@ -1386,25 +1367,39 @@ void handleRoot() {
 
 void handleControl() {
     String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: center; }";
-    html += "h1 { color: #00bfff; margin-bottom: 30px; }";
-    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 30px 80px; font-size: 48px; border-radius: 20px; cursor: pointer; margin: 15px; display: inline-block; }";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; text-align: center; }";
+    html += "header { margin-top: 100px; }"; // Separador superior reducido
+    html += "header h1 { font-size: 4rem; margin: 0; line-height: 1.2; color: #00ff00; font-family: 'Courier New', Courier, monospace; background-color: #000000; padding: 10px 20px; border: 2px solid #00ff00; border-radius: 10px; text-align: center; white-space: pre-line; opacity: 0; animation: fadeInHeader 2s ease-in-out forwards; }";
+    html += "@keyframes fadeInHeader { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }"; // Efecto de aparición
+    html += "h1 { color: #00bfff; margin: 20px 0; font-size: 2.5rem; }"; // Espaciado ajustado para el título
+    html += ".button-container { display: flex; flex-direction: column; align-items: center; gap: 100px; margin-top: 20px; }"; // Separador de 100px entre botones
+    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 30px 80px; font-size: 36px; border-radius: 20px; cursor: pointer; }";
     html += "button:hover { background-color: #004080; border-color: #00cc00; }";
-    html += "</style></head><body>";
+    html += "</style>";
+    html += "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>";
+    html += "</head><body>";
+
+    // Encabezado "Data Druida"
+    html += "<header><h1>Druida\nBot</h1></header>";
+
     html += "<h1>Panel de Control</h1>";
 
-    // Botones dinámicos para cada relé
+    // Contenedor de botones
+    html += "<div class=\"button-container\">";
     html += "<a href=\"/controlR1\"><button>Control de " + getRelayName(R1name) + "</button></a>";
     html += "<a href=\"/controlR2\"><button>Control de " + getRelayName(R2name) + "</button></a>";
     html += "<a href=\"/controlR3\"><button>Control de " + getRelayName(R3name) + "</button></a>";
     html += "<a href=\"/controlR4\"><button>Control de " + getRelayName(R4name) + "</button></a>";
+    html += "<a href=\"/\"><button>Volver</button></a>"; // Botón de volver incluido en el mismo contenedor
+    html += "</div>";
 
-    // Botón para volver al menú principal
-    html += "<a href=\"/\"><button>Volver</button></a>";
     html += "</body></html>";
 
     server.send(200, "text/html", html);
 }
+
+
+
 
 
 void handleConfirmation(const String& mensaje, const String& redireccion) {
@@ -1668,30 +1663,139 @@ void handleControlR4Auto() {
 
 void handleConfig() {
     String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; }";
-    html += "h1 { color: #00bfff; margin-bottom: 30px; font-size: 36px; }";
-    html += ".container { text-align: center; }";
-    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 20px 60px; font-size: 36px; border-radius: 20px; cursor: pointer; margin: 20px; display: inline-block; }";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; }";
+    html += "header { margin-top: 100px; }"; // Separador superior
+    html += "header h1 { font-size: 4rem; margin: 0; line-height: 1.2; color: #00ff00; font-family: 'Courier New', Courier, monospace; background-color: #000000; padding: 10px 20px; border: 2px solid #00ff00; border-radius: 10px; text-align: center; white-space: pre-line; opacity: 0; animation: fadeInHeader 2s ease-in-out forwards; }";
+    html += "@keyframes fadeInHeader { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }"; // Efecto de aparición
+    html += "h1 { color: #00bfff; margin: 20px 0; font-size: 2.5rem; }"; // Título de la página
+    html += ".container { display: flex; flex-direction: column; align-items: center; gap: 100px; margin-top: 20px; }"; // Espaciado entre botones
+    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 30px 80px; font-size: 36px; border-radius: 20px; cursor: pointer; }";
     html += "button:hover { background-color: #004080; border-color: #00cc00; }";
-    html += "</style></head><body>";
+    html += "</style>";
+    html += "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>";
+    html += "</head><body>";
 
-    
+    // Encabezado "Druida Bot"
+    html += "<header><h1>Druida\nBot</h1></header>";
+
+    // Contenedor de botones
     html += "<div class=\"container\">";
     html += "<h1>Configuracion de Druida BOT</h1>";
 
     // Botones de submenú para cada relé
-    html += "<a href=\"/configR1\"><button>" + getRelayName(R1name) + "</button></a><br>";
-    html += "<a href=\"/configR2\"><button>" + getRelayName(R2name) + "</button></a><br>";
-    html += "<a href=\"/configR3\"><button>" + getRelayName(R3name) + "</button></a><br>";
-    html += "<a href=\"/configR4\"><button>" + getRelayName(R4name) + "</button></a><br>";
+    html += "<a href=\"/configR1\"><button>" + getRelayName(R1name) + "</button></a>";
+    html += "<a href=\"/configR2\"><button>" + getRelayName(R2name) + "</button></a>";
+    html += "<a href=\"/configR3\"><button>" + getRelayName(R3name) + "</button></a>";
+    html += "<a href=\"/configR4\"><button>" + getRelayName(R4name) + "</button></a>";
+
+    // Botón para configurar WiFi
+    html += "<a href=\"/configWiFi\"><button>WiFi</button></a>";
 
     // Botón de volver
     html += "<a href=\"/\"><button>Volver</button></a>";
     html += "</div>";
 
     html += "</body></html>";
+
     server.send(200, "text/html", html);
 }
+
+void handleConfigWiFi() {
+    String html = "<html><head><style>";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; }";
+    html += ".container { background-color: #004080; border: 2px solid #00bfff; border-radius: 20px; padding: 30px; width: 50%; max-width: 600px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); }";
+    html += "h1 { color: #00bfff; font-size: 2.5rem; margin-bottom: 20px; }";
+    html += "form { display: flex; flex-direction: column; align-items: center; }";
+    html += "form label { font-size: 1.2rem; margin: 15px 0 5px; text-align: left; width: 100%; }";
+    html += "input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #00bfff; border-radius: 10px; font-size: 1.2rem; box-sizing: border-box; }";
+    html += "input[type=\"submit\"], button { background-color: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.5rem; cursor: pointer; border-radius: 10px; margin-top: 20px; }";
+    html += "input[type=\"submit\"]:hover, button:hover { background-color: #0056b3; }";
+    html += "</style></head><body>";
+
+    html += "<div class=\"container\">";
+    html += "<h1>Configuracion WiFi</h1>";
+    html += "<form action=\"/saveConfigWiFi\" method=\"POST\">";
+    html += "<label for=\"ssid\">SSID:</label>";
+    html += "<input type=\"text\" id=\"ssid\" name=\"ssid\" value=\"" + ssid + "\">";
+
+    html += "<label for=\"password\">Password:</label>";
+    html += "<input type=\"password\" id=\"password\" name=\"password\" value=\"" + password + "\">";
+
+    html += "<label for=\"chat_id\">Chat ID:</label>";
+    html += "<input type=\"text\" id=\"chat_id\" name=\"chat_id\" value=\"" + chat_id + "\">";
+
+    html += "<input type=\"submit\" value=\"Guardar\">";
+
+    html += "</form>";
+
+    // Botón "Conectar WiFi"
+    html += "<form action=\"/connectWiFi\" method=\"POST\">";
+    html += "<button type=\"submit\">Conectar WiFi</button>";
+    html += "</form>";
+
+    html += "<button onclick=\"window.location.href='/config'\">Volver</button>";
+    html += "</div>";
+
+    html += "</body></html>";
+
+    server.send(200, "text/html", html);
+}
+
+void connectWiFi() {
+    // Cambiar las variables al presionar "Conectar WiFi"
+    modoWiFi = 1;
+    reset = 1;
+    Guardado_General();
+
+    // Mostrar mensaje con la misma estética
+    String mensaje = "Conectando a WiFi...";
+    String redireccion = "/config"; // Cambiar a la ruta deseada después de 3 segundos
+    String html = "<html><head><style>";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding-top: 20%; margin: 0; }";
+    html += "h1 { font-size: 800%; margin: 0 auto; line-height: 1.2; animation: fadeIn 2s ease-in-out; }";
+    html += "div { background-color: #004080; border: 2px solid #00bfff; border-radius: 10px; padding: 20px; display: inline-block; text-align: center; }";
+    html += "@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }";
+    html += "</style>";
+    html += "<meta http-equiv=\"refresh\" content=\"3; url=" + redireccion + "\">"; // Redirección automática después de 3 segundos
+    html += "</head><body>";
+
+    html += "<div><h1><span>" + mensaje + "</span></h1></div>";
+
+    html += "<script>setTimeout(function(){ window.location.href='" + redireccion + "'; }, 3000);</script>";
+
+    html += "</body></html>";
+
+    server.send(200, "text/html", html);
+
+
+}
+
+
+
+void saveConfigWiFi() {
+    if (server.method() == HTTP_POST) {
+        // Verificar y asignar cada parámetro recibido
+        if (server.hasArg("ssid")) {
+            ssid = server.arg("ssid");
+        }
+        if (server.hasArg("password")) {
+            password = server.arg("password");
+        }
+        if (server.hasArg("chat_id")) {
+            chat_id = server.arg("chat_id");
+        }
+
+        // Guardar cambios y mostrar confirmación
+        handleSaveConfig();
+    } else {
+        // Si no es un método POST, devolver error
+        server.send(405, "text/plain", "Método no permitido");
+    }
+}
+
+
+
+
 
 String formatTwoDigits(int number) {
     if (number < 10) {
@@ -1699,6 +1803,7 @@ String formatTwoDigits(int number) {
     }
     return String(number);
 }
+
 
 
 // Cambios en handleConfig
@@ -1750,6 +1855,34 @@ void handleConfigR1() {
 
     server.send(200, "text/html", html);
 }
+
+void saveConfigR2() {
+    if (server.method() == HTTP_POST) {
+        // Verificar y asignar cada parámetro recibido
+        if (server.hasArg("modoR2")) {
+            modoR2 = server.arg("modoR2").toInt();
+        }
+        if (server.hasArg("minR2")) {
+            minR2 = server.arg("minR2").toFloat();
+        }
+        if (server.hasArg("maxR2")) {
+            maxR2 = server.arg("maxR2").toFloat();
+        }
+        if (server.hasArg("paramR2")) {
+            paramR2 = server.arg("paramR2").toInt();
+        }
+        if (server.hasArg("estadoR2")) {
+            estadoR2 = server.arg("estadoR2").toInt();
+        }
+
+        // Guardar cambios y mostrar confirmación
+        handleSaveConfig();
+    } else {
+        // Si no es un método POST, devolver error
+        server.send(405, "text/plain", "Método no permitido");
+    }
+}
+
 
 
 
@@ -1818,6 +1951,46 @@ void handleConfigR3() {
     server.send(200, "text/html", html);
 }
 
+void saveConfigR3() {
+    if (server.method() == HTTP_POST) {
+        // Verificar y asignar cada parámetro recibido
+        if (server.hasArg("modoR3")) {
+            modoR3 = server.arg("modoR3").toInt();
+        }
+        if (server.hasArg("horaOnR3")) {
+            String horaOn = server.arg("horaOnR3");
+            int sepIndex = horaOn.indexOf(':');
+            if (sepIndex != -1) {
+                horaOnR3 = horaOn.substring(0, sepIndex).toInt();
+                minOnR3 = horaOn.substring(sepIndex + 1).toInt();
+            }
+        }
+        if (server.hasArg("horaOffR3")) {
+            String horaOff = server.arg("horaOffR3");
+            int sepIndex = horaOff.indexOf(':');
+            if (sepIndex != -1) {
+                horaOffR3 = horaOff.substring(0, sepIndex).toInt();
+                minOffR3 = horaOff.substring(sepIndex + 1).toInt();
+            }
+        }
+        if (server.hasArg("tiempoRiego")) {
+            tiempoRiego = server.arg("tiempoRiego").toInt();
+        }
+        if (server.hasArg("tiempoNoRiego")) {
+            tiempoNoRiego = server.arg("tiempoNoRiego").toInt();
+        }
+        if (server.hasArg("estadoR3")) {
+            estadoR3 = server.arg("estadoR3").toInt();
+        }
+
+        // Guardar cambios y mostrar confirmación
+        handleSaveConfig();
+    } else {
+        // Si no es un método POST, devolver error
+        server.send(405, "text/plain", "Método no permitido");
+    }
+}
+
 void handleConfigR4() {
     String html = "<html><head><style>";
     html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; }";
@@ -1849,6 +2022,40 @@ void handleConfigR4() {
     server.send(200, "text/html", html);
 }
 
+void saveConfigR4() {
+    if (server.method() == HTTP_POST) {
+        // Verificar y asignar cada parámetro recibido
+        if (server.hasArg("modoR4")) {
+            modoR4 = server.arg("modoR4").toInt();
+        }
+        if (server.hasArg("horaOnR4")) {
+            String horaOn = server.arg("horaOnR4");
+            int sepIndex = horaOn.indexOf(':');
+            if (sepIndex != -1) {
+                horaOnR4 = horaOn.substring(0, sepIndex).toInt();
+                minOnR4 = horaOn.substring(sepIndex + 1).toInt();
+            }
+        }
+        if (server.hasArg("horaOffR4")) {
+            String horaOff = server.arg("horaOffR4");
+            int sepIndex = horaOff.indexOf(':');
+            if (sepIndex != -1) {
+                horaOffR4 = horaOff.substring(0, sepIndex).toInt();
+                minOffR4 = horaOff.substring(sepIndex + 1).toInt();
+            }
+        }
+        if (server.hasArg("estadoR4")) {
+            estadoR4 = server.arg("estadoR4").toInt();
+        }
+
+        // Guardar cambios y mostrar confirmación
+        handleSaveConfig();
+    } else {
+        // Si no es un método POST, devolver error
+        server.send(405, "text/plain", "Método no permitido");
+    }
+}
+
 
 
 
@@ -1860,6 +2067,44 @@ void handleSaveConfig() {
     // Mostrar mensaje de confirmación
     handleConfirmation("Configuracion guardada correctamente", "/config");
 }
+
+void saveConfigR1() {
+    if (server.method() == HTTP_POST) {
+        // Verificar y asignar cada parámetro recibido
+        if (server.hasArg("modoR1")) {
+            modoR1 = server.arg("modoR1").toInt();
+        }
+        if (server.hasArg("minR1")) {
+            minR1 = server.arg("minR1").toFloat();
+        }
+        if (server.hasArg("maxR1")) {
+            maxR1 = server.arg("maxR1").toFloat();
+        }
+        if (server.hasArg("paramR1")) {
+            paramR1 = server.arg("paramR1").toInt();
+        }
+        if (server.hasArg("horaOnR1")) {
+            String horaOn = server.arg("horaOnR1");
+            horaOnR1 = horaOn.substring(0, horaOn.indexOf(":")).toInt();
+            minOnR1 = horaOn.substring(horaOn.indexOf(":") + 1).toInt();
+        }
+        if (server.hasArg("horaOffR1")) {
+            String horaOff = server.arg("horaOffR1");
+            horaOffR1 = horaOff.substring(0, horaOff.indexOf(":")).toInt();
+            minOffR1 = horaOff.substring(horaOff.indexOf(":") + 1).toInt();
+        }
+        if (server.hasArg("estadoR1")) {
+            estadoR1 = server.arg("estadoR1").toInt();
+        }
+
+        // Guardar cambios y mostrar confirmación
+        handleSaveConfig();
+    } else {
+        // Si no es un método POST, devolver error
+        server.send(405, "text/plain", "Método no permitido");
+    }
+}
+
 
 // Mensaje de confirmación
 
@@ -2068,7 +2313,6 @@ void riegoIntermitente() {
       // Encender el relé
       digitalWrite(RELAY3, LOW);
       R3estado = LOW;
-      esp_task_wdt_reset();
       previousMillisRiego = currentMillis;
       enRiego = true;
     }
@@ -2077,7 +2321,6 @@ void riegoIntermitente() {
       // Apagar el relé
       digitalWrite(RELAY3, HIGH);
       R3estado = HIGH;
-      esp_task_wdt_reset();
       previousMillisRiego = currentMillis;
       enRiego = false;
     }

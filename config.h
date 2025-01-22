@@ -93,7 +93,7 @@ Chenge Log:
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
-#define WDT_TIMEOUT 600  // Tiempo en segundos (10 minutos)
+#define WDT_TIMEOUT 84800  // Tiempo en segundos (10 minutos)
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 Servo dimmerServo; // Objeto del servomotor
@@ -270,3 +270,5 @@ int R1name = 0; // Índice inicial (Extraccion)
 int R2name = 1; // Índice inicial (Intraccion)
 int R3name = 2; // Índice inicial (Humidificador)
 int R4name = 3; // Índice inicial (Caloventor)
+
+int modoWiFi = 0;

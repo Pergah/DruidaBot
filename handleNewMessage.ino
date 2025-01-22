@@ -20,341 +20,288 @@ if (text == "/start") {
     String welcome = "Bienvenido al Druida Bot " + from_name + ".\n";
     bot.sendMessage(chat_id, welcome, "Markdown");
 
-    // Crear botones de menú
-    String keyboardJson = "[[\"STATUS\"], [\"MANUAL\", \"AUTO\"], [\"CONFIG\", \"INFO CONFIG\"], [\"RESET DRUIDA\"]]";
+    // Crear nuevo menú principal con los 3 botones principales
+    String keyboardJson = "[[\"STATUS\"], [\"CONTROL\"], [\"CONFIG\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "MENU PRINCIPAL:", "", keyboardJson, true);
     delay(500);
 }
 
 
-    //MODO MANUAL
 
+    //MODO CONTROL
 
-if (text == "MANUAL") {
-    modoMenu = MANUAL;
-
-    // Crear botones dinámicamente
-    String manualKeyboardJson = "[[\"" + getRelayName(R1name) + " On\", \"" + getRelayName(R1name) + " Off\", \"" + getRelayName(R1name) + " On Time\"], " +
-                                "[\"" + getRelayName(R2name) + " On\", \"" + getRelayName(R2name) + " Off\", \"" + getRelayName(R2name) + " On Time\"], " +
-                                "[\"" + getRelayName(R3name) + " On\", \"" + getRelayName(R3name) + " Off\", \"" + getRelayName(R3name) + " On Time\"], " +
-                                "[\"" + getRelayName(R4name) + " On\", \"" + getRelayName(R4name) + " Off\", \"" + getRelayName(R4name) + " On Time\"], " +
-                                "[\"Menu Principal\"]]";
-    bot.sendMessageWithReplyKeyboard(chat_id, "MODO MANUAL:", "", manualKeyboardJson, true);
-}
-
-
-
-
-
-      if (text == "R1 On") {
-
-        modoR1 = MANUAL;
-        estadoR1 = 1;
-
-
-        bot.sendMessage(chat_id, "Rele 1 is ON", "");
-        Guardado_General();
-        delay(500);
-      }
-
-      if (text == "R1 Off") {
-        modoR1 = MANUAL;
-        estadoR1 = 0;
-        bot.sendMessage(chat_id, "Rele 1 is OFF", "");
-        Guardado_General();
-        delay(500);
-      }
-
-
-      if (text == "R2 On") {
-
-        modoR2 = MANUAL;
-        estadoR2 = 1;
-        bot.sendMessage(chat_id, "Rele 2 is ON", "");
-        Guardado_General();
-        delay(500);
-      }
-
-        if (text == "R2 IR On") {
-
-        modoR2ir = MANUAL;
-        estadoR2ir = 1;
-        bot.sendMessage(chat_id, "Rele 2 (IR) is ON", "");
-        Guardado_General();
-        delay(500);
-      }
-
-      if (text == "R2 Off") {
-        modoR2 = MANUAL;
-        estadoR2 = 0;
-        bot.sendMessage(chat_id, "Rele 2 is OFF", "");
-        Guardado_General();
-        delay(500);
-      }
-
-            if (text == "R2 IR Off") {
-        modoR2ir = MANUAL;
-        estadoR2ir = 0;
-        bot.sendMessage(chat_id, "Rele 2 (IR) is OFF", "");
-        Guardado_General();
-        delay(500);
-      }
-
-      if (text == "R3 On") {
-
-        modoR3 = MANUAL;
-        estadoR3 = 1;
-        bot.sendMessage(chat_id, "Rele 3 is ON", "");
-        Guardado_General();
-        delay(500);
-      }
-
-      if (text == "R3 Off") {
-        modoR3 = MANUAL;
-        estadoR3 = 0;
-        bot.sendMessage(chat_id, "Rele 3 is OFF", "");
-        Guardado_General();
-        delay(500);
-      }
-
-      if (text == "R4 On") {
-
-        modoR4 = MANUAL;
-        estadoR4 = 1;
-        bot.sendMessage(chat_id, "Rele 4 is ON", "");
-        Guardado_General();
-        delay(500);
-      }
-
-      if (text == "R4 Off") {
-        modoR4 = MANUAL;
-        estadoR4 = 0;
-        bot.sendMessage(chat_id, "Rele 4 is OFF", "");
-        Guardado_General();
-        delay(500);
-      }
-
-      if (text == "Control Remoto") {
-        Serial.println("enviando señal IR...");
-        irsend.sendRaw(IRsignal, 72, 38);  // Envía la señal IR ajustada con frecuencia de 38 kHz
-        delay(1000);                       // Espera 10 segundos antes de volver a emitir la señal
-        bot.sendMessage(chat_id, "Señal IR enviada", "");
-        delay(500);
-      }
-
-      // Lógica para encender los relés por un tiempo determinado
-      if (text == "R1 On Time") {
-        esperandoTiempoR1 = true; // Establece que estamos esperando el tiempo de encendido para R1
-        bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 1?", "");
-        delay(500);
-      }
-
-      if (text == "R2 On Time") {
-        esperandoTiempoR2 = true; // Establece que estamos esperando el tiempo de encendido para R2
-        bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 2?", "");
-        delay(500);
-      }
-
-      if (text == "R2 IR On Time") {
-        esperandoTiempoR2ir = true; // Establece que estamos esperando el tiempo de encendido para R2
-        bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 2 (IR)?", "");
-        delay(500);
-      }
-
-      if (text == "R3 On Time") {
-        esperandoTiempoR3 = true; // Establece que estamos esperando el tiempo de encendido para R3
-        bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 3?", "");
-        delay(500);
-      }
-
-      if (text == "R4 On Time") {
-        esperandoTiempoR4 = true; // Establece que estamos esperando el tiempo de encendido para R4
-        bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender el Rele 4?", "");
-        delay(500);
-      }
-
-      // Espera un nuevo mensaje del usuario para ingresar el tiempo
-      if (esperandoTiempoR1 && text != "R1 On Time") {
-        tiempoR1 = text.toInt(); // Convierte el texto ingresado en un número entero
-        if (tiempoR1 > 0) { // Si el valor ingresado es válido
-          esperandoTiempoR1 = false; // Resetea la variable
-          encenderRele1PorTiempo(tiempoR1); // Enciende el relé 1 por el tiempo indicado
-        } else {
-          bot.sendMessage(chat_id, "Por favor ingresa un valor válido en segundos.", "");
-        }
-        delay(500);
-      }
-
-      if (esperandoTiempoR2 && text != "R2 On Time") {
-        tiempoR2 = text.toInt(); // Convierte el texto ingresado en un número entero
-        if (tiempoR2 > 0) { // Si el valor ingresado es válido
-          esperandoTiempoR2 = false; // Resetea la variable
-          encenderRele2PorTiempo(tiempoR2); // Enciende el relé 2 por el tiempo indicado
-        } else {
-          bot.sendMessage(chat_id, "Por favor ingresa un valor válido en segundos.", "");
-        }
-        delay(500);
-      }
-
-            if (esperandoTiempoR2ir && text != "R2 IR On Time") {
-        tiempoR2ir = text.toInt(); // Convierte el texto ingresado en un número entero
-        if (tiempoR2ir > 0) { // Si el valor ingresado es válido
-          esperandoTiempoR2ir = false; // Resetea la variable
-          encenderRele2irPorTiempo(tiempoR2ir); // Enciende el relé 2 por el tiempo indicado
-        } else {
-          bot.sendMessage(chat_id, "Por favor ingresa un valor válido en segundos.", "");
-        }
-        delay(500);
-      }
-
-      if (esperandoTiempoR3 && text != "R3 On Time") {
-        tiempoR3 = text.toInt(); // Convierte el texto ingresado en un número entero
-        if (tiempoR3 > 0) { // Si el valor ingresado es válido
-          esperandoTiempoR3 = false; // Resetea la variable
-          encenderRele3PorTiempo(tiempoR3); // Enciende el relé 3 por el tiempo indicado
-        } else {
-          bot.sendMessage(chat_id, "Por favor ingresa un valor válido en segundos.", "");
-        }
-        delay(500);
-      }
-
-      if (esperandoTiempoR4 && text != "R4 On Time") {
-        tiempoR4 = text.toInt(); // Convierte el texto ingresado en un número entero
-        if (tiempoR4 > 0) { // Si el valor ingresado es válido
-          esperandoTiempoR4 = false; // Resetea la variable
-          encenderRele4PorTiempo(tiempoR4); // Enciende el relé 4 por el tiempo indicado
-        } else {
-          bot.sendMessage(chat_id, "Por favor ingresa un valor válido en segundos.", "");
-        }
-        delay(500);
-      }
-    
-
-
-    // MODO AUTOMATICO
-
-    if (text == "AUTO") {
+    if (text == "CONTROL") {
     modoMenu = AUTO;
-    
-    // Crear botones para el modo automático
-    String autoKeyboardJson = "[[\"R1 Auto\", \"R1 Timer\"], [\"R2 Auto\", \"R2 IR Auto\"], [\"R3 Auto\"], [\"R4 Auto\"], [\"Menu Principal\"]]";
 
-    bot.sendMessageWithReplyKeyboard(chat_id, "MODO AUTOMATICO:", "", autoKeyboardJson, true);
+    // Crear botones dinámicos basados en los nombres de los relés
+    String controlKeyboardJson = 
+        "[[\"Controlar " + getRelayName(R1name) + "\"], " +
+        "[\"Controlar " + getRelayName(R2name) + "\"], " +
+        "[\"Controlar " + getRelayName(R3name) + "\"], " +
+        "[\"Controlar " + getRelayName(R4name) + "\"], " +
+        "[\"Menu Principal\"]]";
+
+    bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione el dispositivo que desea controlar:", "", controlKeyboardJson, true);
+}
+
+if (text == "Menu Control") {
+    String controlKeyboardJson = 
+        "[[\"Controlar " + getRelayName(R1name) + "\"], " +
+        "[\"Controlar " + getRelayName(R2name) + "\"], " +
+        "[\"Controlar " + getRelayName(R3name) + "\"], " +
+        "[\"Controlar " + getRelayName(R4name) + "\"], " +
+        "[\"Menu Principal\"]]";
+
+    bot.sendMessageWithReplyKeyboard(chat_id, "Volviendo al menú CONTROL:", "", controlKeyboardJson, true);
+}
+
+// Submenú para R1
+if (text == "Controlar " + getRelayName(R1name)) {
+    String relayControlKeyboardJson = 
+        "[[\"Encender " + getRelayName(R1name) + "\", \"Apagar " + getRelayName(R1name) + "\"], " +
+        "[\"Automatizar " + getRelayName(R1name) + "\"], " +
+        "[\"Menu Control\"], [\"Menu Principal\"]]";
+    
+    bot.sendMessageWithReplyKeyboard(chat_id, "Controlando " + getRelayName(R1name) + ":", "", relayControlKeyboardJson, true);
+}
+
+// Submenú para R2
+if (text == "Controlar " + getRelayName(R2name)) {
+    String relayControlKeyboardJson = 
+        "[[\"Encender " + getRelayName(R2name) + "\", \"Apagar " + getRelayName(R2name) + "\"], " +
+        "[\"Automatizar " + getRelayName(R2name) + "\"], " +
+        "[\"Menu Control\"], [\"Menu Principal\"]]";
+    
+    bot.sendMessageWithReplyKeyboard(chat_id, "Controlando " + getRelayName(R2name) + ":", "", relayControlKeyboardJson, true);
+}
+
+// Submenú para R3
+if (text == "Controlar " + getRelayName(R3name)) {
+    String relayControlKeyboardJson = 
+        "[[\"Encender " + getRelayName(R3name) + "\", \"Apagar " + getRelayName(R3name) + "\"], " +
+        "[\"Automatizar " + getRelayName(R3name) + "\"], " +
+        "[\"Encender " + getRelayName(R3name) + " (segundos)\"], " + // Botón adicional
+        "[\"Menu Control\"], [\"Menu Principal\"]]";
+    
+    bot.sendMessageWithReplyKeyboard(chat_id, "Controlando " + getRelayName(R3name) + ":", "", relayControlKeyboardJson, true);
+}
+
+
+// Submenú para R4
+if (text == "Controlar " + getRelayName(R4name)) {
+    String relayControlKeyboardJson = 
+        "[[\"Encender " + getRelayName(R4name) + "\", \"Apagar " + getRelayName(R4name) + "\"], " +
+        "[\"Automatizar " + getRelayName(R4name) + "\"], " +
+        "[\"Menu Control\"], [\"Menu Principal\"]]";
+    
+    bot.sendMessageWithReplyKeyboard(chat_id, "Controlando " + getRelayName(R4name) + ":", "", relayControlKeyboardJson, true);
 }
 
 
 
-      if (text == "R1 Auto") {
 
-        modoR1 = AUTO;
-        bot.sendMessage(chat_id, "Rele 1 Automatico", "");
-        Guardado_General();
-        delay(500);
-      }
+// CONTROL MANUAL Y AUTOMÁTICO
 
-        if (text == "R1 Timer") {
+// Encender R1
+if (text == "Encender " + getRelayName(R1name)) {
+    modoR1 = MANUAL;
+    estadoR1 = 1;
+    bot.sendMessage(chat_id, getRelayName(R1name) + " está encendido.", "");
+    Guardado_General();
+    delay(500);
+}
 
-        modoR1 = TIMER;
-        bot.sendMessage(chat_id, "Rele 1 Automatico (TIMER)", "");
-        Guardado_General();
-        delay(500);
-      }
+// Apagar R1
+if (text == "Apagar " + getRelayName(R1name)) {
+    modoR1 = MANUAL;
+    estadoR1 = 0;
+    bot.sendMessage(chat_id, getRelayName(R1name) + " está apagado.", "");
+    Guardado_General();
+    delay(500);
+}
 
-      if (text == "R2 Auto") {
-        modoR2 = AUTO;
-        bot.sendMessage(chat_id, "Rele 2 Automatico", "");
-        Guardado_General();
-        delay(500);
-      }
+// Automatizar R1
+if (text == "Automatizar " + getRelayName(R1name)) {
+    modoR1 = AUTO;
+    bot.sendMessage(chat_id, getRelayName(R1name) + " está en modo automático.", "");
+    Guardado_General();
+    delay(500);
+}
 
-            if (text == "R2 IR Auto") {
-        modoR2ir = AUTO;
-        bot.sendMessage(chat_id, "Rele 2 (IR) Automatico", "");
-        Guardado_General();
-        delay(500);
-      }
+// Repetir para R2
+if (text == "Encender " + getRelayName(R2name)) {
+    modoR2 = MANUAL;
+    estadoR2 = 1;
+    bot.sendMessage(chat_id, getRelayName(R2name) + " está encendido.", "");
+    Guardado_General();
+    delay(500);
+}
 
-      if (text == "R3 Auto")
+if (text == "Apagar " + getRelayName(R2name)) {
+    modoR2 = MANUAL;
+    estadoR2 = 0;
+    bot.sendMessage(chat_id, getRelayName(R2name) + " está apagado.", "");
+    Guardado_General();
+    delay(500);
+}
 
-      {
+if (text == "Automatizar " + getRelayName(R2name)) {
+    modoR2 = AUTO;
+    bot.sendMessage(chat_id, getRelayName(R2name) + " está en modo automático.", "");
+    Guardado_General();
+    delay(500);
+}
 
-        modoR3 = AUTO;
-        bot.sendMessage(chat_id, "Rele 3 Automatico", "");
-        Guardado_General();
-        delay(500);
-      }
+// Repetir para R3
+if (text == "Encender " + getRelayName(R3name)) {
+    modoR3 = MANUAL;
+    estadoR3 = 1;
+    bot.sendMessage(chat_id, getRelayName(R3name) + " está encendido.", "");
+    Guardado_General();
+    delay(500);
+}
 
-      if (text == "R3 Riego")
+if (text == "Apagar " + getRelayName(R3name)) {
+    modoR3 = MANUAL;
+    estadoR3 = 0;
+    bot.sendMessage(chat_id, getRelayName(R3name) + " está apagado.", "");
+    Guardado_General();
+    delay(500);
+}
 
-      {
+if (text == "Automatizar " + getRelayName(R3name)) {
+    modoR3 = AUTO;
+    bot.sendMessage(chat_id, getRelayName(R3name) + " está en modo automático.", "");
+    Guardado_General();
+    delay(500);
+}
 
-        modoR3 = RIEGO;
-        bot.sendMessage(chat_id, "Rele 3 Automatico (Riego)", "");
-        Guardado_General();
-        delay(500);
-      }
+// Repetir para R4
+if (text == "Encender " + getRelayName(R4name)) {
+    modoR4 = MANUAL;
+    estadoR4 = 1;
+    bot.sendMessage(chat_id, getRelayName(R4name) + " está encendido.", "");
+    Guardado_General();
+    delay(500);
+}
 
-      if (text == "R4 Auto") {
-        modoR4 = AUTO;
-        bot.sendMessage(chat_id, "Rele 4 Automatico", "");
-        Guardado_General();
+if (text == "Apagar " + getRelayName(R4name)) {
+    modoR4 = MANUAL;
+    estadoR4 = 0;
+    bot.sendMessage(chat_id, getRelayName(R4name) + " está apagado.", "");
+    Guardado_General();
+    delay(500);
+}
 
-        delay(500);
-      }
-    
+if (text == "Automatizar " + getRelayName(R4name)) {
+    modoR4 = AUTO;
+    bot.sendMessage(chat_id, getRelayName(R4name) + " está en modo automático.", "");
+    Guardado_General();
+    delay(500);
+}
+
+
+// Opción para encender R3 por un tiempo en segundos
+if (text == "Encender " + getRelayName(R3name) + " (segundos)") {
+    esperandoTiempoR3 = true; // Establece que estamos esperando el tiempo de encendido para R3
+    bot.sendMessage(chat_id, "¿Por cuánto tiempo (en segundos) quieres encender " + getRelayName(R3name) + "?", "");
+    delay(500);
+}
+
+// Procesar el tiempo ingresado por el usuario
+if (esperandoTiempoR3 && text != "Encender " + getRelayName(R3name) + " (segundos)") {
+    tiempoR3 = text.toInt(); // Convierte el texto ingresado en un número entero
+    if (tiempoR3 > 0) { // Si el valor ingresado es válido
+        esperandoTiempoR3 = false; // Resetea la variable
+        encenderRele3PorTiempo(tiempoR3); // Enciende el relé 3 por el tiempo indicado
+        bot.sendMessage(chat_id, getRelayName(R3name) + " estará encendido por " + String(tiempoR3) + " segundos.", "");
+    } else {
+        bot.sendMessage(chat_id, "Por favor ingresa un valor válido en segundos.", "");
+    }
+    delay(500);
+}
 
 
 
 if (text == "CONFIG") {
-    // Crear botones dinámicos para cada relé según sus nombres actuales
-    String configKeyboardJson = "[[\"" + getRelayName(R1name) + " config\", \"" + getRelayName(R2name) + " config\"], " +
-                                "[\"" + getRelayName(R3name) + " config\", \"" + getRelayName(R4name) + " config\"], " +
-                                "[\"Menu Principal\"]]";
-    bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione un relé para configurar:", "", configKeyboardJson, true);
+    // Crear botones dinámicos para la configuración de cada relé
+    String configKeyboardJson = 
+        "[[\"Configurar " + getRelayName(R1name) + "\"], " +
+        "[\"Configurar " + getRelayName(R2name) + "\"], " +
+        "[\"Configurar " + getRelayName(R3name) + "\"], " +
+        "[\"Configurar " + getRelayName(R4name) + "\"], " +
+        "[\"INFO CONFIG\"], " +
+        "[\"RESET DRUIDA\"], " +
+        "[\"RESET WIFI (AP)\"], " +
+        "[\"Menu Principal\"]]";
+
+    bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione una opción para configurar:", "", configKeyboardJson, true);
 }
 
 
 
-// Configuración del relé 1
-if (text == getRelayName(R1name) + " config") { // Menú principal de configuración para R1
-    String r1KeyboardJson = "[[\"Min " + getRelayName(R1name) + "\", \"Max " + getRelayName(R1name) + "\"], "
-                            "[\"Hora On " + getRelayName(R1name) + "\", \"Hora Off " + getRelayName(R1name) + "\"], "
-                            "[\"Parametro " + getRelayName(R1name) + "\", \"Config " + getRelayName(R1name) + " Name\"], "
-                            "[\"Menu Principal\"]]";
+
+// Menú de configuración para R1
+if (text == "Configurar " + getRelayName(R1name)) {
+    String r1KeyboardJson = "[[\"Min " + getRelayName(R1name) + "\", \"Max " + getRelayName(R1name) + "\"], " +
+                            "[\"Hora On " + getRelayName(R1name) + "\", \"Hora Off " + getRelayName(R1name) + "\"], " +
+                            //"[\"Parametro " + getRelayName(R1name) + "\", \"Config " + getRelayName(R1name) + " Name\"], " +
+                            "[\"Menu CONFIG\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R1name) + ":", "", r1KeyboardJson, true);
 }
 
-
-if (text == getRelayName(R2name) + " config") {
-    // Crear botones dinámicos para las opciones de R2
-    String r2KeyboardJson = "[[\"Min " + getRelayName(R2name) + "\", \"Max " + getRelayName(R2name) + "\"], "
-                            "[\"Parametro " + getRelayName(R2name) + "\"], [\"Config " + getRelayName(R2name) + " Name\"], [\"Menu Principal\"]]";
+// Menú de configuración para R2
+if (text == "Configurar " + getRelayName(R2name)) {
+    String r2KeyboardJson = "[[\"Min " + getRelayName(R2name) + "\", \"Max " + getRelayName(R2name) + "\"], " +
+                            "[\"Parametro " + getRelayName(R2name) + "\"], " +
+                            //"[\"Config " + getRelayName(R2name) + " Name\"], " +
+                            "[\"Menu CONFIG\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R2name) + ":", "", r2KeyboardJson, true);
 }
 
-
-
-if (text == getRelayName(R3name) + " config") {
-    // Crear botones dinámicos para las opciones de R3
-    String r3KeyboardJson = "[[\"Hora On " + getRelayName(R3name) + "\", \"Hora Off " + getRelayName(R3name) + "\"], "
-                            "[\"Dias de Riego\", \"Duración de Riego\"], "
-                            "[\"Intervalo de Riego\"], "
-                            "[\"Config " + getRelayName(R3name) + " Name\", \"Menu Principal\"]]";
+// Menú de configuración para R3
+if (text == "Configurar " + getRelayName(R3name)) {
+    String r3KeyboardJson = "[[\"Hora On " + getRelayName(R3name) + "\", \"Hora Off " + getRelayName(R3name) + "\"], " +
+                            "[\"Dias de Riego\", \"Duración de Riego\"], " +
+                            "[\"Intervalo de Riego\"], " +
+                            //"[\"Config " + getRelayName(R3name) + " Name\",
+                             "[\"Menu CONFIG\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R3name) + ":", "", r3KeyboardJson, true);
 }
 
-
-
-
-// Menú dinámico de configuración para R4
-if (text == getRelayName(R4name) + " config") {
-    // Crear botones dinámicos para las opciones de R4
-    String r4KeyboardJson = "[[\"Hora On " + getRelayName(R4name) + "\", \"Hora Off " + getRelayName(R4name) + "\"], "
-                            "[\"Hora Amanecer " + getRelayName(R4name) + "\", \"Hora Atardecer " + getRelayName(R4name) + "\"], "
-                            "[\"Config " + getRelayName(R4name) + " Name\", \"Menu Principal\"]]";
+// Menú de configuración para R4
+if (text == "Configurar " + getRelayName(R4name)) {
+    String r4KeyboardJson = "[[\"Hora On " + getRelayName(R4name) + "\", \"Hora Off " + getRelayName(R4name) + "\"], " +
+                            //"[\"Hora Amanecer " + getRelayName(R4name) + "\", \"Hora Atardecer " + getRelayName(R4name) + "\"], " +
+                            //"[\"Config " + getRelayName(R4name) + " Name\", 
+                            "[\"Menu CONFIG\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R4name) + ":", "", r4KeyboardJson, true);
 }
 
+// Volver al menú CONFIG
+if (text == "Menu CONFIG") {
+    String configKeyboardJson = 
+        "[[\"Configurar " + getRelayName(R1name) + "\"], " +
+        "[\"Configurar " + getRelayName(R2name) + "\"], " +
+        "[\"Configurar " + getRelayName(R3name) + "\"], " +
+        "[\"Configurar " + getRelayName(R4name) + "\"], " +
+        "[\"INFO CONFIG\"], " +
+        "[\"RESET DRUIDA\"], " +
+        "[\"RESET WIFI (AP)\"], " +
+        "[\"Menu Principal\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione una opción para configurar:", "", configKeyboardJson, true);
+}
+
+if (text == "RESET WIFI (AP)"){
+  modoWiFi = 0;
+  Guardado_General();
+  String resetMsg = "Reiniciando druida..\n";
+  bot.sendMessage(chat_id, resetMsg, "Markdown");
+  delay(2000);
+  reset = 1;
+
+
+}
 
 
     // Configurar el valor mínimo
@@ -465,116 +412,7 @@ if (text == "Hora Off " + getRelayName(R1name)) {
     }
 }
 
-// Configurar el nombre dinámico
-if (text == "Config " + getRelayName(R1name) + " Name") {
-    String options = "Ingrese un número para el nuevo nombre de " + getRelayName(R1name) + ":\n"
-                     "1 - Extraccion\n"
-                     "2 - Intraccion\n"
-                     "3 - Humidificador\n"
-                     "4 - Caloventor\n"
-                     "5 - Luz\n"
-                     "6 - Riego";
-    bot.sendMessage(chat_id, options);
-    R1config = 6; // Cambiar el estado del menú para esperar un valor
-}
-if (R1config == 6) {
-    int newIndex = text.toInt();
-    if (newIndex >= 1 && newIndex <= 6) {
-        R1name = newIndex - 1; // Actualizar el índice del nombre
-        bot.sendMessage(chat_id, "Nombre cambiado a: " + getRelayName(R1name));
-        Guardado_General();
-        R1config = 0;
-    } else {
-        bot.sendMessage(chat_id, "Número inválido. Intente de nuevo.");
-    }
-}
 
-
-    /// R2
-
-    // Configurar el nombre dinámico de R2
-if (text == "Config " + getRelayName(R2name) + " Name") {
-    String options = "Ingrese un número para el nuevo nombre de " + getRelayName(R2name) + ":\n"
-                     "1 - Extraccion\n"
-                     "2 - Intraccion\n"
-                     "3 - Humidificador\n"
-                     "4 - Caloventor\n"
-                     "5 - Luz\n"
-                     "6 - Riego";
-    bot.sendMessage(chat_id, options);
-    R2config = 4; // Cambiar el estado del menú para esperar un valor
-}
-if (R2config == 4) {
-    int newIndex = text.toInt();
-    if (newIndex >= 1 && newIndex <= 6) {
-        R2name = newIndex - 1; // Actualizar el índice del nombre
-        bot.sendMessage(chat_id, "Nombre cambiado a: " + getRelayName(R2name));
-        Guardado_General();
-        R2config = 0;
-    } else {
-        bot.sendMessage(chat_id, "Número inválido. Intente de nuevo.");
-    }
-}
-
-
-    /*// R2 IR
-
-    if (text == "Min IR R2") {
-      modoR2ir = CONFIG;
-      modoMenu = CONFIG;
-      R2irconfig = 1;
-      bot.sendMessage(chat_id, "Ingrese valor Min R2 (IR): ");
-    }
-    if (R2irconfig == 1) {
-      minR2ir = text.toFloat();
-
-      if (minR2ir > 0) {
-        Serial.print("Valor min R2 (IR): ");
-        Serial.println(minR2ir);
-        bot.sendMessage(chat_id, "Valor min R2 (IR) guardado");
-        Guardado_General();
-        R2irconfig = 0;
-      }
-    }
-
-    if (text == "Max IR R2") {
-      modoR2ir = CONFIG;
-      modoMenu = CONFIG;
-      R2irconfig = 2;
-      bot.sendMessage(chat_id, "Ingrese valor Max R2 (IR): ");
-    }
-    if (R2irconfig == 2) {
-      maxR2ir = text.toFloat();
-
-      if (maxR2ir > 0) {
-        Serial.print("Valor max R2 (IR): ");
-        Serial.println(maxR2ir);
-        bot.sendMessage(chat_id, "Valor max R2 (IR) guardado");
-        Guardado_General();
-        R2irconfig = 0;
-      }
-    }
-
-    ///
-
-    if (text == "Param IR R2") {
-      modoR2ir = CONFIG;
-      modoMenu = CONFIG;
-      R2irconfig = 3;
-      bot.sendMessage(chat_id, "Ingrese parametro IR: \n1- Humedad.\n2- Temperatura.\n3- DPV.");
-    }
-    if (R2irconfig == 3) {
-      paramR2ir = text.toInt();
-
-      if (paramR2ir > 0) {
-        Serial.print("Param R2 (IR): ");
-        Serial.println(paramR2ir);
-        bot.sendMessage(chat_id, "Valor param R2 (IR) guardado");
-        Guardado_General();
-        R2irconfig = 0;
-      }
-    }
-*/
 /// RELE 3 CONFIG
 
 // Configurar Duración de Riego
@@ -675,14 +513,26 @@ if (text == "Hora Off " + getRelayName(R3name)) {
 
 
 
-if (text == "Dias de riego") {
-    // Crear un teclado con botones para los días de riego
-    String riegoKeyboardJson = "[[\"Lunes Riego\", \"Lunes No Riego\"], [\"Martes Riego\", \"Martes No Riego\"],"
+if (text == "Dias de Riego") {
+    // Crear un teclado con botones para los días de riego, incluyendo "Riego todos los días"
+    String riegoKeyboardJson = "[[\"Riego todos los dias\"],"
+                               "[\"Lunes Riego\", \"Lunes No Riego\"], [\"Martes Riego\", \"Martes No Riego\"],"
                                "[\"Miercoles Riego\", \"Miercoles No Riego\"], [\"Jueves Riego\", \"Jueves No Riego\"],"
                                "[\"Viernes Riego\", \"Viernes No Riego\"], [\"Sabado Riego\", \"Sabado No Riego\"],"
                                "[\"Domingo Riego\", \"Domingo No Riego\"], [\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione los días de riego:", "", riegoKeyboardJson, true);
 }
+
+if (text == "Riego todos los dias") {
+    // Configurar todos los días para riego
+    for (int i = 0; i < 7; i++) {
+        diasRiego[i] = 1; // Asignar 1 a cada día
+    }
+    bot.sendMessage(chat_id, "Todos los días configurados: Riego", "");
+    Guardado_General(); // Guardar configuración
+}
+
+
 
 
     if (text == "Lunes Riego") {
@@ -802,6 +652,7 @@ if (text == "Hora On " + getRelayName(R4name)) {
 
             } else {
         bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+    }
     }
 }
 
@@ -955,7 +806,7 @@ if (text == getRelayName(R3name) + " Info") {
     infoR3 += "Hora de apagado: " + formatoHora(horaOffR3, minOffR3) + "\n";
     infoR3 += "Duración de riego: " + String(tiempoRiego) + " segundos.\n";
     infoR3 += "Intervalo de riego: " + String(tiempoNoRiego) + " segundos.\n";
-    infoR3 += "Cantidad de riegos: " + String(cantidadRiegos) + ".\n";
+    //infoR3 += "Cantidad de riegos: " + String(cantidadRiegos) + ".\n";
     infoR3 += "Modo: " + convertirModo(modoR3) + ".\n";
 
     // Agregar información de los días de riego
@@ -991,7 +842,7 @@ if (text == getRelayName(R4name) + " Info") {
 
 // Volver al menú principal
 if (text == "Menu Principal") {
-    String mainKeyboardJson = "[[\"STATUS\"], [\"MANUAL\", \"AUTO\"], [\"CONFIG\", \"INFO CONFIG\"], [\"ENVIAR DATA GOOGLE\"], [\"RESET DRUIDA\"]]";
+    String mainKeyboardJson = "[[\"STATUS\"], [\"CONTROL\"], [\"CONFIG\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Has vuelto al menú principal. Selecciona una opción:", "", mainKeyboardJson, true);
 }
 
@@ -1043,104 +894,8 @@ if (text == "STATUS" ) {
       delay(500);
       sendDataToGoogleSheets();
     }
-}
-    delay(500);
+
+
   }
+  delay(500);
 }
-
-
-/*const int NUM_COMMANDS = 70; // Cambia este número según tus comandos
-String commands[NUM_COMMANDS] = {
-  "/start",//1
-  "/config",//2
-  "/manual",//3
-  "/auto",//4
-  "/status", //4
-  "/infoconfig",//5 
-  "/DiasRiego", //6
-  "/resetDruidaBot",//7 
-  "/enviarData",//8
-  "/R1on", //9
-  "/R1off", //10
-  "/R1onTime", //11
-  "/R2on", //12
-  "/R2off", //13
-  "/R2onTime", //14
-  "/R2iron", //15
-  "/R2iroff", //16
-  "/R2ironTime",//17
-  "/R3on", //18
-  "/R3off", //19
-  "/R3onTime", //20
-  "/R4on", //21
-  "/R4off", //22
-  "/R4onTime", //23
-  "/controlRemoto",//24
-  "/R1auto", //25
-  "/R1timer", //26
-  "/R2auto", //27
-  "/R2irauto", //28
-  "/R3auto", //29
-  "/R3autoParam",//30 
-  "/R4auto",//31
-  "/minR1config",//32 
-  "/maxR1config", //33
-  "/paramR1config", //34
-  "/horaOnR1config", //35
-  "/minOnR1config", //36
-  "/horaOffR1config", //37
-  "/minOffR1config",//38
-  "/minR2config", //39
-  "/maxR2config", //40
-  "/paramR2config", //41
-  "/minR2irconfig", //42
-  "/maxR2irconfig", //43
-  "/paramR2irconfig",//44
-  "/horaOnR3config", //45
-  "/minOnR3config", //46
-  "/horaOffR3config", //47
-  "/minOffR3config", //48
-  "/minR3config", //49
-  "/maxR3config",//50
-  "/horaOnR4config", //51
-  "/minOnR4config", //52
-  "/horaOffR4config", //53
-  "/minOffR4config",//54
-  "/DiasRiegoInfo", //55
-  "/LunesRiego", //56
-  "/LunesNoRiego", //57
-  "/MartesRiego", //58
-  "/MartesNoRiego", //59
-  "/MiercolesRiego", //60
-  "/MiercolesNoRiego",//61
-  "/JuevesRiego", //62
-  "/JuevesNoRiego", //63
-  "/ViernesRiego", //64
-  "/ViernesNoRiego", //65
-  "/SabadoRiego", //66
-  "/SabadoNoRiego", //67
-  "/DomingoRiego", //68
-  "/DomingoNoRiego"//69
-};
-
-int commandCodes[NUM_COMMANDS] = {
-  1, 2, 3, 4, 5, 6, 7, 8, 9,
-  10, 11, 12, 13, 14, 15, 16, 17, 18,
-  19, 20, 21, 22, 23, 24, 25,
-  26, 27, 28, 29, 30, 31, 32,
-  33, 34, 35, 36, 37, 38, 39,
-  40, 41, 42, 43, 44, 45,
-  46, 47, 48, 49, 50, 51,
-  52, 53, 54, 55,
-  56, 57, 58, 59, 60, 61, 62,
-  63, 64, 65, 66, 67, 68, 69, 70
-};
-
-int getCommandCode(const String& command) {
-  for (int i = 0; i < NUM_COMMANDS; i++) {
-    if (command == commands[i]) {
-      return commandCodes[i];
-    }
-  }
-  return -1; // Comando no reconocido
-}*/
