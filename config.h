@@ -62,6 +62,7 @@ Chenge Log:
 #include <Adafruit_SSD1306.h>
 #include <ESP32Servo.h>
 //#include <ArduinoJson.h>
+#include "esp_task_wdt.h"
 
 
 
@@ -92,6 +93,7 @@ Chenge Log:
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
+#define WDT_TIMEOUT 600  // Tiempo en segundos (10 minutos)
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 Servo dimmerServo; // Objeto del servomotor

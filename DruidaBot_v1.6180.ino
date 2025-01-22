@@ -12,6 +12,8 @@ void setup() {
   irsend.begin();
   irrecv.enableIRIn();
   aht.begin();
+  esp_task_wdt_init(WDT_TIMEOUT, true);  // Reinicio automático habilitado
+  esp_task_wdt_add(NULL);
 
   esp_reset_reason_t resetReason = esp_reset_reason();
 
@@ -96,7 +98,8 @@ mostrarMensajeBienvenida();
 
 void loop() {
     if (WiFi.getMode() == WIFI_AP) {
-    server.handleClient(); // Maneja las solicitudes HTTP en modo AP
+    server.handleClient();
+    esp_task_wdt_reset(); // Maneja las solicitudes HTTP en modo AP
   }
   unsigned long currentMillis = millis();
 
@@ -113,13 +116,14 @@ void loop() {
         Serial.println("got response");
         handleNewMessages(numNewMessages);
         numNewMessages = bot.getUpdates(bot.last_message_received + 1);
+        esp_task_wdt_reset();
         delay(10);
       }
       bot_lasttime = millis();
     }
   }
 
-  requestSensorData();
+  //requestSensorData();
 
   sensors_event_t humidity, temp;
   aht.getEvent(&humidity, &temp);
@@ -235,11 +239,13 @@ void loop() {
     if (estadoR1 == 1 && R1estado == HIGH) {
       digitalWrite(RELAY1, LOW);
       R1estado = LOW;
+      esp_task_wdt_reset();
     }
 
     if (estadoR1 == 0 && R1estado == LOW) {
       digitalWrite(RELAY1, HIGH);
       R1estado = HIGH;
+      esp_task_wdt_reset();
     }
   }
 
@@ -248,34 +254,40 @@ void loop() {
     if (estadoR2 == 1 && R2estado == HIGH) {
       digitalWrite(RELAY2, LOW);
       R2estado = LOW;
+      esp_task_wdt_reset();
     }
     if (estadoR2 == 0 && R2estado == LOW) {
       digitalWrite(RELAY2, HIGH);
       R2estado = HIGH;
+      esp_task_wdt_reset();
     }
   }
 
     //MODO MANUAL R2 IR
-  if (modoR2ir == MANUAL) {
+ /* if (modoR2ir == MANUAL) {
     if (estadoR2ir == 1 && R2irestado == HIGH) {
       irsend.sendRaw(IRsignal, 72, 38);  // Envía la señal IR ajustada con frecuencia de 38 kHz
       R2irestado = LOW;
+      esp_task_wdt_reset();
     }
     if (estadoR2ir == 0 && R2irestado == LOW) {
       irsend.sendRaw(IRsignal, 72, 38);  // Envía la señal IR ajustada con frecuencia de 38 kHz
       R2irestado = HIGH;
+      esp_task_wdt_reset();
     }
-  }
+  }*/
 
   //MODO MANUAL R3
   if (modoR3 == MANUAL) {
     if (estadoR3 == 1 && R3estado == HIGH) {
       digitalWrite(RELAY3, LOW);
       R3estado = LOW;
+      esp_task_wdt_reset();
     }
     if (estadoR3 == 0 && R3estado == LOW) {
       digitalWrite(RELAY3, HIGH);
       R3estado = HIGH;
+      esp_task_wdt_reset();
     }
   }
 
@@ -284,10 +296,12 @@ void loop() {
     if (estadoR4 == 1 && R4estado == HIGH) {
       digitalWrite(RELAY4, LOW);
       R4estado = LOW;
+      esp_task_wdt_reset();
     }
     if (estadoR4 == 0 && R4estado == LOW) {
       digitalWrite(RELAY4, HIGH);
       R4estado = HIGH;
+      esp_task_wdt_reset();
     }
   }
 
@@ -297,23 +311,27 @@ void loop() {
     //Serial.print("Rele (UP) Automatico");
 
     if (paramR1 == H) {
-      if (humedad < minR1 && R4estado == HIGH) {
+      if (humedad < minR1 && R1estado == HIGH) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
+        esp_task_wdt_reset();
       }
-      if (humedad > maxR1 && R4estado == LOW) {
+      if (humedad > maxR1 && R1estado == LOW) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
+        esp_task_wdt_reset();
       }
     }
     if (paramR1 == T) {
       if (temperature < minR1 && R1estado == HIGH) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
+        esp_task_wdt_reset();
       }
       if (temperature > minR1 && R1estado == LOW) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
+        esp_task_wdt_reset();
       }
     }
 
@@ -321,12 +339,14 @@ void loop() {
       if (DPV < minR1 && R1estado == HIGH) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
+        esp_task_wdt_reset();
       }
 
 
         if (DPV > maxR1 && R1estado == LOW) {
           digitalWrite(RELAY1, HIGH);
           R1estado = HIGH;
+          esp_task_wdt_reset();
         }
       
     }
@@ -377,11 +397,13 @@ void loop() {
       if (R1estado == HIGH){ 
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
+        esp_task_wdt_reset();
       }
     } else {
       if (R1estado == LOW) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
+        esp_task_wdt_reset();
       }
     }
   } else { 
@@ -390,11 +412,13 @@ void loop() {
       if (R1estado == HIGH){ 
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
+        esp_task_wdt_reset();
       }
     } else {
       if (R1estado == LOW) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
+        esp_task_wdt_reset();
       }
     }
   }
@@ -409,11 +433,13 @@ void loop() {
       if (humedad > maxR2 && R2estado == HIGH) {
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
+        esp_task_wdt_reset();
         delay(200);
       }
       if (humedad < minR2 && R2estado == LOW) {
         digitalWrite(RELAY2, HIGH);
         R2estado = HIGH;
+        esp_task_wdt_reset();
         delay(200);
       }
     }
@@ -421,11 +447,13 @@ void loop() {
       if (temperature > maxR2 && R2estado == HIGH) {
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
+        esp_task_wdt_reset();
         delay(200);
       }
       if (temperature < minR2 && R2estado == LOW) {
         digitalWrite(RELAY2, HIGH);
         R2estado = HIGH;
+        esp_task_wdt_reset();
         delay(200);
       }
     }
@@ -434,11 +462,13 @@ void loop() {
       if (DPV > maxR2 && R2estado == HIGH) {
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
+        esp_task_wdt_reset();
         delay(200);
       }
       if (DPV < minR2 && R2estado == LOW) {
         digitalWrite(RELAY2, HIGH);
         R2estado = HIGH;
+        esp_task_wdt_reset();
         delay(200);
       }
     }
@@ -458,7 +488,7 @@ void loop() {
   }
 
 
-  //MODO AUTO R2   IR    (DOWN)
+  /*//MODO AUTO R2   IR    (DOWN)
 
   if (modoR2ir == AUTO) {
     //Serial.print("Rele 2 (Down) Automatico");
@@ -512,13 +542,11 @@ void loop() {
         irsend.sendRaw(IRsignal, 72, 38);
         delay(200);
       }
-    }*/
-  }
+    }
+  }*/
 
 
-  
-
-  if (modoR3 == AUTO) {
+  /*if (modoR3 == AUTO) {
     for (c = 0; c < 7; c++) {
       if (diasRiego[c] == 1) {
         if (c == day) {
@@ -528,11 +556,13 @@ void loop() {
               if (R3estado == HIGH){ 
                 digitalWrite(RELAY3, LOW);
                 R3estado = LOW;
+                esp_task_wdt_reset();
               }
             } else {
               if (R3estado == LOW) {
                 digitalWrite(RELAY3, HIGH);
                 R3estado = HIGH;
+                esp_task_wdt_reset();
               }
             }
           } else { 
@@ -541,29 +571,31 @@ void loop() {
               if (R3estado == HIGH){ 
                 digitalWrite(RELAY3, LOW);
                 R3estado = LOW;
+                esp_task_wdt_reset();
               }
             } else {
               if (R3estado == LOW) {
                 digitalWrite(RELAY3, HIGH);
                 R3estado = HIGH;
+                esp_task_wdt_reset();
               }
             }
           }
         }
       }
     }
-  }
+  }*/
 
 //MODO RIEGO R3
 
+// MODO RIEGO R3
 unsigned long previousMillisRiego = 0;  // Variable para manejar el tiempo
-int cicloRiegoActual = 0;               // Contador de ciclos de riego
 bool enRiego = false;                   // Flag para saber si está en riego
 
-if (modoR3 == RIEGO) {
-  for (c = 0; c < 7; c++) {
-    if (diasRiego[c] == 1) {
-      if (c == day) {
+if (modoR3 == AUTO) {
+  for (int c = 0; c < 7; c++) {
+    if (diasRiego[c] == 1) { // Verificar si el día actual está habilitado para riego
+      if (c == day) { // Comprobar si hoy es el día de riego
         if (startR3 < offR3) { 
           // Caso normal: encendido antes que apagado
           if (currentTime >= startR3 && currentTime < offR3) {
@@ -572,8 +604,8 @@ if (modoR3 == RIEGO) {
             // Apagar el relé fuera del horario
             digitalWrite(RELAY3, HIGH);
             R3estado = HIGH;
-            cicloRiegoActual = 0; // Reiniciar ciclos
-            enRiego = false;
+            esp_task_wdt_reset();
+            enRiego = false; // Reiniciar flag
           }
         } else { 
           // Caso cruzando medianoche: encendido después que apagado
@@ -583,8 +615,8 @@ if (modoR3 == RIEGO) {
             // Apagar el relé fuera del horario
             digitalWrite(RELAY3, HIGH);
             R3estado = HIGH;
-            cicloRiegoActual = 0; // Reiniciar ciclos
-            enRiego = false;
+            esp_task_wdt_reset();
+            enRiego = false; // Reiniciar flag
           }
         }
       }
@@ -602,11 +634,13 @@ if (modoR4 == AUTO) {
       if (R4estado == HIGH) {
         digitalWrite(RELAY4, LOW);
         R4estado = LOW;
+        esp_task_wdt_reset();
       }
     } else {
       if (R4estado == LOW) {
         digitalWrite(RELAY4, HIGH);
         R4estado = HIGH;
+        esp_task_wdt_reset();
       }
     }
   } else {
@@ -615,11 +649,13 @@ if (modoR4 == AUTO) {
       if (R4estado == HIGH) {
         digitalWrite(RELAY4, LOW);
         R4estado = LOW;
+        esp_task_wdt_reset();
       }
     } else {
       if (R4estado == LOW) {
         digitalWrite(RELAY4, HIGH);
         R4estado = HIGH;
+        esp_task_wdt_reset();
       }
     }
   }
@@ -631,8 +667,10 @@ if (modoR4 == AUTO) {
 
   if (dentroAmanecer) {
     moveServoSlowly(180); // Simula el mediodía
+    esp_task_wdt_reset();
   } else {
     moveServoSlowly(0); // Simula amanecer o atardecer
+    esp_task_wdt_reset();
   }
 }
 
@@ -1201,6 +1239,7 @@ void encenderRele3PorTiempo(int tiempoSegundos) {
   estadoR3 = 0;
   R3estado = HIGH;
   Guardado_General();
+  esp_task_wdt_reset();
 }
 
 void encenderRele4PorTiempo(int tiempoSegundos) {
@@ -1235,18 +1274,25 @@ void startAccessPoint() {
   server.on("/controlR1Off", handleControlR1Off); // Cambiar estado a apagado
   server.on("/controlR1Auto", handleControlR1Auto);   // Activar modo automático
   server.on("/controlR2", handleControlR2);       // Menú de control para R2
-server.on("/controlR2On", handleControlR2On);   // Cambiar estado a encendido
-server.on("/controlR2Off", handleControlR2Off); // Cambiar estado a apagado
-server.on("/controlR2Auto", handleControlR2Auto);   // Activar modo automático
-server.on("/controlR3", handleControlR3);       // Menú de control para R3
-server.on("/controlR3On", handleControlR3On);   // Cambiar estado a encendido
-server.on("/controlR3Off", handleControlR3Off); // Cambiar estado a apagado
-server.on("/controlR3Auto", handleControlR3Auto);   // Activar modo automático
-server.on("/controlR3OnFor", handleControlR3OnFor); // Encender por tiempo
-server.on("/controlR4", handleControlR4);       // Menú de control para R4
-server.on("/controlR4On", handleControlR4On);   // Cambiar estado a encendido
-server.on("/controlR4Off", handleControlR4Off); // Cambiar estado a apagado
-server.on("/controlR4Auto", handleControlR4Auto);   // Activar modo automático
+  server.on("/controlR2On", handleControlR2On);   // Cambiar estado a encendido
+  server.on("/controlR2Off", handleControlR2Off); // Cambiar estado a apagado
+  server.on("/controlR2Auto", handleControlR2Auto);   // Activar modo automático
+  server.on("/controlR3", handleControlR3);       // Menú de control para R3
+  server.on("/controlR3On", handleControlR3On);   // Cambiar estado a encendido
+  server.on("/controlR3Off", handleControlR3Off); // Cambiar estado a apagado
+  server.on("/controlR3Auto", handleControlR3Auto);   // Activar modo automático
+  server.on("/controlR3OnFor", handleControlR3OnFor); // Encender por tiempo
+  server.on("/controlR4", handleControlR4);       // Menú de control para R4
+  server.on("/controlR4On", handleControlR4On);   // Cambiar estado a encendido
+  server.on("/controlR4Off", handleControlR4Off); // Cambiar estado a apagado
+  server.on("/controlR4Auto", handleControlR4Auto);   // Activar modo automático
+  server.on("/configR1", handleConfigR1);
+  server.on("/configR2", handleConfigR2);
+  server.on("/configR3", handleConfigR3);
+  server.on("/configR4", handleConfigR4);
+
+
+
 
 
 
@@ -1274,8 +1320,6 @@ void handleRoot() {
     float temperature = temp.temperature;
     float humedad = humidity.relative_humidity;
 
-    requestSensorData();
-
     DateTime now = rtc.now();
     int horaBot = now.hour();
 
@@ -1288,29 +1332,42 @@ void handleRoot() {
     String dateTime = "Fecha y Hora: " + String(now.day()) + "/" + String(now.month()) + "/" + String(now.year()) + " " + horaBot + ":" + String(now.minute()) + ":" + String(now.second());
 
     // Construir mensaje de estado
-    String statusMessage = "Temperatura: " + String(temperature, 1) + " °C<br>";
-    statusMessage += "Humedad: " + String(humedad, 1) + " %<br>";
-    statusMessage += "DPV: " + String(DPV, 1) + " hPa<br>";
-    statusMessage += dateTime;
+    String statusMessage = "<div class='line'>Temp: " + String(temperature, 1) + " °C</div>";
+    statusMessage += "<div class='line'>Hum: " + String(humedad, 1) + " %</div>";
+    statusMessage += "<div class='line'>DPV: " + String(DPV, 1) + " hPa</div>";
+    statusMessage += "<div class='line'>" + dateTime + "</div>";
 
     // Generar el HTML
     String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding-top: 10%; margin: 0; }";
-    html += "h1 { font-size: 800%; margin: 0 auto; line-height: 1.2; animation: fadeIn 2s ease-in-out; }";
-    html += "h1 span { display: block; }";
-    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 30px 80px; font-size: 48px; border-radius: 20px; cursor: pointer; display: inline-block; opacity: 0; transform: scale(0.9); animation: fadeInScale 1s ease-in-out forwards; margin-top: 50px; }";
-    html += "button:hover { background-color: #004080; border-color: #00cc00; }";
-    html += "p { font-size: 24px; margin-top: 20px; color: #00bfff; }";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; }";
+    html += "header { margin-top: 20px; }";
+    html += "header h1 { font-size: 8rem; margin: 0; line-height: 1.2; color: white; font-family: 'Press Start 2P', monospace; animation: fadeIn 2s ease-in-out; }";
     html += "@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }";
+    html += ".info-box { background-color: #004080; border: 2px solid #00bfff; padding: 15px; border-radius: 10px; position: absolute; top: 25%; transform: translateY(-50%); font-size: 1.5rem; line-height: 1.5; text-align: center; width: 80%; max-width: 600px; }";
+    html += ".info-box .line { opacity: 0; animation: fadeInLine 2s ease-in-out forwards; margin-bottom: 10px; }";
+    html += ".info-box .line:nth-child(1) { animation-delay: 0.5s; }";
+    html += ".info-box .line:nth-child(2) { animation-delay: 1s; }";
+    html += ".info-box .line:nth-child(3) { animation-delay: 1.5s; }";
+    html += ".info-box .line:nth-child(4) { animation-delay: 2s; }";
+    html += "@keyframes fadeInLine { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }";
+    html += "main { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }";
+    html += "main a button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 30px 80px; font-size: 48px; border-radius: 20px; cursor: pointer; margin: 20px; display: inline-block; animation: fadeInScale 1s ease-in-out forwards; }";
+    html += "main a button:hover { background-color: #004080; border-color: #00cc00; }";
     html += "@keyframes fadeInScale { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }";
-    html += "</style></head><body>";
+    html += "footer { margin-bottom: 30px; font-size: 1.5rem; color: #00bfff; }";
+    html += "</style>";
+    html += "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>";
+    html += "</head><body>";
 
-    html += "<h1><span>Data</span><span>Druida</span></h1>";
-    html += "<a href=\"/config\"><button>Configuracion</button></a><br>"; // Botón de configuración
-    html += "<a href=\"/control\"><button>Control</button></a><br>"; // Botón de control
-
-    // Mostrar datos del sensor y fecha/hora
-    html += "<p>" + statusMessage + "</p>";
+    html += "<header><h1>Data Druida</h1></header>";
+    html += "<div class=\"info-box\">";
+    html += statusMessage;
+    html += "</div>";
+    html += "<main>";
+    html += "<a href=\"/config\"><button>Configuracion</button></a>";
+    html += "<a href=\"/control\"><button>Control</button></a>";
+    html += "</main>";
+    html += "<footer><p>bmurphy1.618@gmail.com<br>BmuRphY</p></footer>";
 
     html += "</body></html>";
 
@@ -1318,20 +1375,29 @@ void handleRoot() {
 }
 
 
+
+
+
+
+
+
+
+
+
 void handleControl() {
     String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: 0; }";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: center; }";
     html += "h1 { color: #00bfff; margin-bottom: 30px; }";
-    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 30px 80px; font-size: 48px; border-radius: 20px; cursor: pointer; margin: 30px; display: inline-block; }";
+    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 30px 80px; font-size: 48px; border-radius: 20px; cursor: pointer; margin: 15px; display: inline-block; }";
     html += "button:hover { background-color: #004080; border-color: #00cc00; }";
     html += "</style></head><body>";
     html += "<h1>Panel de Control</h1>";
 
     // Botones dinámicos para cada relé
-    html += "<a href=\"/controlR1\"><button>Control de " + getRelayName(R1name) + "</button></a><br>";
-    html += "<a href=\"/controlR2\"><button>Control de " + getRelayName(R2name) + "</button></a><br>";
-    html += "<a href=\"/controlR3\"><button>Control de " + getRelayName(R3name) + "</button></a><br>";
-    html += "<a href=\"/controlR4\"><button>Control de " + getRelayName(R4name) + "</button></a><br>";
+    html += "<a href=\"/controlR1\"><button>Control de " + getRelayName(R1name) + "</button></a>";
+    html += "<a href=\"/controlR2\"><button>Control de " + getRelayName(R2name) + "</button></a>";
+    html += "<a href=\"/controlR3\"><button>Control de " + getRelayName(R3name) + "</button></a>";
+    html += "<a href=\"/controlR4\"><button>Control de " + getRelayName(R4name) + "</button></a>";
 
     // Botón para volver al menú principal
     html += "<a href=\"/\"><button>Volver</button></a>";
@@ -1339,6 +1405,7 @@ void handleControl() {
 
     server.send(200, "text/html", html);
 }
+
 
 void handleConfirmation(const String& mensaje, const String& redireccion) {
     String html = "<html><head><style>";
@@ -1363,7 +1430,7 @@ void handleConfirmation(const String& mensaje, const String& redireccion) {
 
 void handleControlR1() {
     String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: 0; }";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: center; }";
     html += "h1 { color: #00bfff; margin-bottom: 30px; }";
     html += "button, input[type='submit'] { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 20px 60px; font-size: 36px; border-radius: 20px; cursor: pointer; margin: 20px; display: inline-block; }";
     html += "button:hover, input[type='submit']:hover { background-color: #004080; border-color: #00cc00; }";
@@ -1393,6 +1460,7 @@ void handleControlR1() {
 }
 
 
+
 void handleControlR1On() {
     estadoR1 = 1; // Cambiar el estado a encendido
     modoR1 = 1; // Modo manual
@@ -1417,7 +1485,7 @@ void handleControlR1Auto() {
 
 void handleControlR2() {
     String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: 0; }";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: center; }";
     html += "h1 { color: #00bfff; margin-bottom: 30px; }";
     html += "button, input[type='submit'] { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 20px 60px; font-size: 36px; border-radius: 20px; cursor: pointer; margin: 20px; display: inline-block; }";
     html += "button:hover, input[type='submit']:hover { background-color: #004080; border-color: #00cc00; }";
@@ -1447,6 +1515,7 @@ void handleControlR2() {
 }
 
 
+
 void handleControlR2On() {
     estadoR2 = 1; // Cambiar el estado a encendido
     modoR2 = 1; // Modo manual
@@ -1470,11 +1539,11 @@ void handleControlR2Auto() {
 
 void handleControlR3() {
     String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: 0; }";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: center; }";
     html += "h1 { color: #00bfff; margin-bottom: 30px; }";
     html += "button, input[type='submit'] { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 20px 60px; font-size: 36px; border-radius: 20px; cursor: pointer; margin: 20px; display: inline-block; }";
     html += "button:hover, input[type='submit']:hover { background-color: #004080; border-color: #00cc00; }";
-    html += "input[type='number'] { padding: 10px; font-size: 24px; width: 120px; text-align: center; border: 2px solid #00bfff; border-radius: 10px; }";
+    html += "input[type='number'] { padding: 10px; font-size: 24px; width: 120px; text-align: center; border: 2px solid #00bfff; border-radius: 10px; margin: 10px 0; }";
     html += "</style></head><body>";
     html += "<h1>Control de " + getRelayName(R3name) + "</h1>";
 
@@ -1505,6 +1574,7 @@ void handleControlR3() {
 
     server.send(200, "text/html", html);
 }
+
 
 
 void handleControlR3On() {
@@ -1540,7 +1610,7 @@ void handleControlR3OnFor() {
 
 void handleControlR4() {
     String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: 0; }";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; flex-direction: column; text-align: center; }";
     html += "h1 { color: #00bfff; margin-bottom: 30px; }";
     html += "button, input[type='submit'] { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 20px 60px; font-size: 36px; border-radius: 20px; cursor: pointer; margin: 20px; display: inline-block; }";
     html += "button:hover, input[type='submit']:hover { background-color: #004080; border-color: #00cc00; }";
@@ -1570,18 +1640,19 @@ void handleControlR4() {
 }
 
 
+
 void handleControlR4On() {
     estadoR4 = 1; // Cambiar el estado a encendido
     modoR4 = 1; // Modo manual
     Guardado_General();
-    handleConfirmation(getRelayName(R4name) + " encendido", "/controlR4"); // Mostrar confirmación y redirigir
+    handleConfirmation(getRelayName(R4name) + " encendida", "/controlR4"); // Mostrar confirmación y redirigir
 }
 
 void handleControlR4Off() {
     estadoR4 = 0; // Cambiar el estado a apagado
     modoR4 = 1; // Modo manual
     Guardado_General();
-    handleConfirmation(getRelayName(R4name) + " apagado", "/controlR4"); // Mostrar confirmación y redirigir
+    handleConfirmation(getRelayName(R4name) + " apagada", "/controlR4"); // Mostrar confirmación y redirigir
 }
 
 void handleControlR4Auto() {
@@ -1595,59 +1666,199 @@ void handleControlR4Auto() {
 
 
 
-
-// Cambios en handleConfig
 void handleConfig() {
     String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; }";
-    html += "h1, h2 { color: #00bfff; }";
-    html += "form { display: inline-block; text-align: left; margin: 10px auto; padding: 20px; border: 1px solid #00bfff; border-radius: 10px; background-color: #004080; }";
-    html += "input, textarea { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #00bfff; border-radius: 5px; font-size: 16px; }";
-    html += "input[type=\"submit\"] { width: auto; background-color: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 5px; }";
-    html += "input[type=\"submit\"]:hover { background-color: #0056b3; }";
-    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 20px 60px; font-size: 20px; border-radius: 10px; cursor: pointer; margin-top: 20px; display: inline-block; }";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; }";
+    html += "h1 { color: #00bfff; margin-bottom: 30px; font-size: 36px; }";
+    html += ".container { text-align: center; }";
+    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 20px 60px; font-size: 36px; border-radius: 20px; cursor: pointer; margin: 20px; display: inline-block; }";
     html += "button:hover { background-color: #004080; border-color: #00cc00; }";
     html += "</style></head><body>";
 
+    
+    html += "<div class=\"container\">";
     html += "<h1>Configuracion de Druida BOT</h1>";
 
-    // Sección de configuración de WiFi
-    html += "<h2>Configuracion de WiFi</h2>";
-    html += "<form action=\"/saveConfig\" method=\"POST\">";
-    html += "SSID: <input type=\"text\" name=\"ssid\" value=\"" + ssid + "\"><br>";
-    html += "Password: <input type=\"password\" name=\"password\" value=\"" + password + "\"><br>";
-    html += "Chat ID: <input type=\"text\" name=\"chat_id\" value=\"" + chat_id + "\"><br>";
-    html += "<input type=\"submit\" name=\"save_wifi\" value=\"Guardar WiFi\">";
-    html += "</form><br>";
+    // Botones de submenú para cada relé
+    html += "<a href=\"/configR1\"><button>" + getRelayName(R1name) + "</button></a><br>";
+    html += "<a href=\"/configR2\"><button>" + getRelayName(R2name) + "</button></a><br>";
+    html += "<a href=\"/configR3\"><button>" + getRelayName(R3name) + "</button></a><br>";
+    html += "<a href=\"/configR4\"><button>" + getRelayName(R4name) + "</button></a><br>";
 
-    // Configuración R1
-    html += "<h2>Configuracion de " + getRelayName(R1name) + "</h2>";
-    html += "<form action=\"/saveConfig\" method=\"POST\">";
-    html += "Modo " + getRelayName(R1name) + ": <input type=\"number\" name=\"modoR1\" value=\"" + String(modoR1) + "\"><br>";
-    html += "Min " + getRelayName(R1name) + ": <input type=\"number\" step=\"0.01\" name=\"minR1\" value=\"" + String(minR1) + "\"><br>";
-    html += "Max " + getRelayName(R1name) + ": <input type=\"number\" step=\"0.01\" name=\"maxR1\" value=\"" + String(maxR1) + "\"><br>";
-    html += "Param " + getRelayName(R1name) + ": <input type=\"number\" name=\"paramR1\" value=\"" + String(paramR1) + "\"><br>";
-    html += "Hora On " + getRelayName(R1name) + " (HH:MM): <input type=\"text\" name=\"horaOnR1\" value=\"" + String(horaOnR1) + ":" + String(minOnR1) + "\"><br>";
-    html += "Hora Off " + getRelayName(R1name) + " (HH:MM): <input type=\"text\" name=\"horaOffR1\" value=\"" + String(horaOffR1) + ":" + String(minOffR1) + "\"><br>";
-    html += "Estado " + getRelayName(R1name) + ": <input type=\"number\" name=\"estadoR1\" value=\"" + String(estadoR1) + "\"><br>";
-    html += "<input type=\"submit\" name=\"save_R1\" value=\"Guardar " + getRelayName(R1name) + "\">";
-    html += "</form><br>";
-
-    // Configuración R2, R3, R4 (omitidas por brevedad; mismas mejoras aplicadas)
-
-    // Botón de Volver al final
+    // Botón de volver
     html += "<a href=\"/\"><button>Volver</button></a>";
+    html += "</div>";
 
     html += "</body></html>";
     server.send(200, "text/html", html);
 }
+
+String formatTwoDigits(int number) {
+    if (number < 10) {
+        return "0" + String(number);
+    }
+    return String(number);
+}
+
+
+// Cambios en handleConfig
+
+void handleConfigR1() {
+    String html = "<html><head><style>";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; }";
+    html += ".container { background-color: #004080; border: 2px solid #00bfff; border-radius: 20px; padding: 30px; width: 50%; max-width: 600px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); }";
+    html += "h1 { color: #00bfff; font-size: 2.5rem; margin-bottom: 20px; }";
+    html += "form { display: flex; flex-direction: column; align-items: center; }";
+    html += "form label { font-size: 1.2rem; margin: 15px 0 5px; text-align: left; width: 100%; }";
+    html += "input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #00bfff; border-radius: 10px; font-size: 1.2rem; box-sizing: border-box; }";
+    html += "input[type=\"submit\"] { background-color: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.5rem; cursor: pointer; border-radius: 10px; margin-top: 20px; }";
+    html += "input[type=\"submit\"]:hover { background-color: #0056b3; }";
+    html += "button { background-color: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.5rem; cursor: pointer; border-radius: 10px; margin-top: 20px; }";
+    html += "button:hover { background-color: #0056b3; }";
+    html += "</style></head><body>";
+
+    html += "<div class=\"container\">";
+    html += "<h1>Configuracion de " + getRelayName(R1name) + "</h1>";
+    html += "<form action=\"/saveConfigR1\" method=\"POST\">";
+    html += "<label for=\"modoR1\">Modo:</label>";
+    html += "<input type=\"number\" id=\"modoR1\" name=\"modoR1\" value=\"" + String(modoR1) + "\">";
+
+    html += "<label for=\"minR1\">Min:</label>";
+    html += "<input type=\"number\" step=\"0.01\" id=\"minR1\" name=\"minR1\" value=\"" + String(minR1) + "\">";
+
+    html += "<label for=\"maxR1\">Max:</label>";
+    html += "<input type=\"number\" step=\"0.01\" id=\"maxR1\" name=\"maxR1\" value=\"" + String(maxR1) + "\">";
+
+    html += "<label for=\"paramR1\">Param:</label>";
+    html += "<input type=\"number\" id=\"paramR1\" name=\"paramR1\" value=\"" + String(paramR1) + "\">";
+
+    html += "<label for=\"horaOnR1\">Hora On (HH:MM):</label>";
+    html += "<input type=\"text\" id=\"horaOnR1\" name=\"horaOnR1\" value=\"" + formatTwoDigits(horaOnR1) + ":" + formatTwoDigits(minOnR1) + "\">";
+
+    html += "<label for=\"horaOffR1\">Hora Off (HH:MM):</label>";
+    html += "<input type=\"text\" id=\"horaOffR1\" name=\"horaOffR1\" value=\"" + formatTwoDigits(horaOffR1) + ":" + formatTwoDigits(minOffR1) + "\">";
+
+    html += "<label for=\"estadoR1\">Estado:</label>";
+    html += "<input type=\"number\" id=\"estadoR1\" name=\"estadoR1\" value=\"" + String(estadoR1) + "\">";
+
+    html += "<input type=\"submit\" value=\"Guardar\">";
+    html += "</form>";
+    html += "<button onclick=\"window.location.href='/config'\">Volver</button>";
+    html += "</div>";
+
+    html += "</body></html>";
+
+    server.send(200, "text/html", html);
+}
+
+
+
+void handleConfigR2() {
+    String html = "<html><head><style>";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; }";
+    html += ".container { background-color: #004080; border: 2px solid #00bfff; border-radius: 20px; padding: 30px; width: 50%; max-width: 600px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); }";
+    html += "h1 { color: #00bfff; font-size: 2.5rem; margin-bottom: 20px; }";
+    html += "form { display: flex; flex-direction: column; align-items: center; }";
+    html += "form label { font-size: 1.2rem; margin: 15px 0 5px; text-align: left; width: 100%; }";
+    html += "input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #00bfff; border-radius: 10px; font-size: 1.2rem; box-sizing: border-box; }";
+    html += "input[type=\"submit\"] { background-color: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.5rem; cursor: pointer; border-radius: 10px; margin-top: 20px; }";
+    html += "input[type=\"submit\"]:hover { background-color: #0056b3; }";
+    html += "button { background-color: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.5rem; cursor: pointer; border-radius: 10px; margin-top: 20px; }";
+    html += "button:hover { background-color: #0056b3; }";
+    html += "</style></head><body>";
+
+    html += "<div class=\"container\">";
+    html += "<h1>Configuracion de " + getRelayName(R2name) + "</h1>";
+    html += "<form action=\"/saveConfigR2\" method=\"POST\">";
+    html += "<label>Modo:</label><input type=\"number\" name=\"modoR2\" value=\"" + String(modoR2) + "\">";
+    html += "<label>Min:</label><input type=\"number\" step=\"0.01\" name=\"minR2\" value=\"" + String(minR2) + "\">";
+    html += "<label>Max:</label><input type=\"number\" step=\"0.01\" name=\"maxR2\" value=\"" + String(maxR2) + "\">";
+    html += "<label>Param:</label><input type=\"number\" name=\"paramR2\" value=\"" + String(paramR2) + "\">";
+    html += "<label>Estado:</label><input type=\"number\" name=\"estadoR2\" value=\"" + String(estadoR2) + "\">";
+    html += "<input type=\"submit\" value=\"Guardar\">";
+    html += "</form>";
+    html += "<button onclick=\"window.location.href='/config'\">Volver</button>";
+    html += "</div>";
+
+    html += "</body></html>";
+
+    server.send(200, "text/html", html);
+}
+
+void handleConfigR3() {
+    String html = "<html><head><style>";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; }";
+    html += ".container { background-color: #004080; border: 2px solid #00bfff; border-radius: 20px; padding: 30px; width: 50%; max-width: 600px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); }";
+    html += "h1 { color: #00bfff; font-size: 2.5rem; margin-bottom: 20px; }";
+    html += "form { display: flex; flex-direction: column; align-items: center; }";
+    html += "form label { font-size: 1.2rem; margin: 15px 0 5px; text-align: left; width: 100%; }";
+    html += "input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #00bfff; border-radius: 10px; font-size: 1.2rem; box-sizing: border-box; }";
+    html += "input[type=\"submit\"] { background-color: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.5rem; cursor: pointer; border-radius: 10px; margin-top: 20px; }";
+    html += "input[type=\"submit\"]:hover { background-color: #0056b3; }";
+    html += "button { background-color: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.5rem; cursor: pointer; border-radius: 10px; margin-top: 20px; }";
+    html += "button:hover { background-color: #0056b3; }";
+    html += "</style></head><body>";
+
+    html += "<div class=\"container\">";
+    html += "<h1>Configuracion de " + getRelayName(R3name) + "</h1>";
+    html += "<form action=\"/saveConfigR3\" method=\"POST\">";
+    html += "<label>Modo:</label><input type=\"number\" name=\"modoR3\" value=\"" + String(modoR3) + "\">";
+    html += "<label>Hora On (HH:MM):</label><input type=\"text\" name=\"horaOnR3\" value=\"" + formatTwoDigits(horaOnR3) + ":" + formatTwoDigits(minOnR3) + "\">";
+    html += "<label>Hora Off (HH:MM):</label><input type=\"text\" name=\"horaOffR3\" value=\"" + formatTwoDigits(horaOffR3) + ":" + formatTwoDigits(minOffR3) + "\">";
+    html += "<label>Duracion de Riego (seg):</label><input type=\"number\" name=\"tiempoRiego\" value=\"" + String(tiempoRiego) + "\">";
+    html += "<label>Intervalo de Riego (seg):</label><input type=\"number\" name=\"tiempoNoRiego\" value=\"" + String(tiempoNoRiego) + "\">";
+    html += "<label>Estado:</label><input type=\"number\" name=\"estadoR3\" value=\"" + String(estadoR3) + "\">";
+    html += "<input type=\"submit\" value=\"Guardar\">";
+    html += "</form>";
+    html += "<button onclick=\"window.location.href='/config'\">Volver</button>";
+    html += "</div>";
+
+    html += "</body></html>";
+
+    server.send(200, "text/html", html);
+}
+
+void handleConfigR4() {
+    String html = "<html><head><style>";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; }";
+    html += ".container { background-color: #004080; border: 2px solid #00bfff; border-radius: 20px; padding: 30px; width: 50%; max-width: 600px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); }";
+    html += "h1 { color: #00bfff; font-size: 2.5rem; margin-bottom: 20px; }";
+    html += "form { display: flex; flex-direction: column; align-items: center; }";
+    html += "form label { font-size: 1.2rem; margin: 15px 0 5px; text-align: left; width: 100%; }";
+    html += "input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #00bfff; border-radius: 10px; font-size: 1.2rem; box-sizing: border-box; }";
+    html += "input[type=\"submit\"] { background-color: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.5rem; cursor: pointer; border-radius: 10px; margin-top: 20px; }";
+    html += "input[type=\"submit\"]:hover { background-color: #0056b3; }";
+    html += "button { background-color: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.5rem; cursor: pointer; border-radius: 10px; margin-top: 20px; }";
+    html += "button:hover { background-color: #0056b3; }";
+    html += "</style></head><body>";
+
+    html += "<div class=\"container\">";
+    html += "<h1>Configuracion de " + getRelayName(R4name) + "</h1>";
+    html += "<form action=\"/saveConfigR4\" method=\"POST\">";
+    html += "<label>Modo:</label><input type=\"number\" name=\"modoR4\" value=\"" + String(modoR4) + "\">";
+    html += "<label>Hora On (HH:MM):</label><input type=\"text\" name=\"horaOnR4\" value=\"" + formatTwoDigits(horaOnR4) + ":" + formatTwoDigits(minOnR4) + "\">";
+    html += "<label>Hora Off (HH:MM):</label><input type=\"text\" name=\"horaOffR4\" value=\"" + formatTwoDigits(horaOffR4) + ":" + formatTwoDigits(minOffR4) + "\">";
+    html += "<label>Estado:</label><input type=\"number\" name=\"estadoR4\" value=\"" + String(estadoR4) + "\">";
+    html += "<input type=\"submit\" value=\"Guardar\">";
+    html += "</form>";
+    html += "<button onclick=\"window.location.href='/config'\">Volver</button>";
+    html += "</div>";
+
+    html += "</body></html>";
+
+    server.send(200, "text/html", html);
+}
+
+
+
+
 
 void handleSaveConfig() {
     // Guardar configuraciones (ya definido en tu código)
     Guardado_General();
 
     // Mostrar mensaje de confirmación
-    handleConfirmation("Configuración guardada correctamente", "/config");
+    handleConfirmation("Configuracion guardada correctamente", "/config");
 }
 
 // Mensaje de confirmación
@@ -1852,31 +2063,27 @@ String formatoHora(int hora, int minuto) {
 void riegoIntermitente() {
   unsigned long currentMillis = millis();
 
-  if (cicloRiegoActual < cantidadRiegos) {  // Verificar si aún no completamos los ciclos
-    if (!enRiego) { // Si está en pausa
-      if (currentMillis - previousMillisRiego >= tiempoNoRiego * 1000) {
-        // Encender el relé
-        digitalWrite(RELAY3, LOW);
-        R3estado = LOW;
-        previousMillisRiego = currentMillis;
-        enRiego = true;
-      }
-    } else { // Si está en riego
-      if (currentMillis - previousMillisRiego >= tiempoRiego * 1000) {
-        // Apagar el relé
-        digitalWrite(RELAY3, HIGH);
-        R3estado = HIGH;
-        previousMillisRiego = currentMillis;
-        enRiego = false;
-        cicloRiegoActual++;  // Incrementar el contador de ciclos
-      }
+  if (!enRiego) { // Si está en pausa
+    if (currentMillis - previousMillisRiego >= tiempoNoRiego * 1000) {
+      // Encender el relé
+      digitalWrite(RELAY3, LOW);
+      R3estado = LOW;
+      esp_task_wdt_reset();
+      previousMillisRiego = currentMillis;
+      enRiego = true;
     }
-  } else {
-    // Finalizar todos los ciclos de riego
-    digitalWrite(RELAY3, HIGH);
-    R3estado = HIGH;
+  } else { // Si está en riego
+    if (currentMillis - previousMillisRiego >= tiempoRiego * 1000) {
+      // Apagar el relé
+      digitalWrite(RELAY3, HIGH);
+      R3estado = HIGH;
+      esp_task_wdt_reset();
+      previousMillisRiego = currentMillis;
+      enRiego = false;
+    }
   }
 }
+
 
 void moveServoSlowly(int targetPosition) {
   if (targetPosition > currentPosition) {
