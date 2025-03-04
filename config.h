@@ -268,7 +268,7 @@ String relayAssignedNames[4] = {"R1", "R2", "R3", "R4"}; // Nombres actuales par
 
 int R1name = 0; // Índice inicial (Extraccion)
 int R2name = 1; // Índice inicial (Intraccion)
-int R3name = 2; // Índice inicial (Humidificador)
-int R4name = 3; // Índice inicial (Caloventor)
+int R3name = 2; // Índice inicial (Humidificacion)
+int R4name = 3; // Índice inicial (Calefaccion)
 
 int modoWiFi = 0;

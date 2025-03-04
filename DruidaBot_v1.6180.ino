@@ -165,8 +165,6 @@ void loop() {
     hour = 24 + hour;
   }
 
-
-
   /*if (rtc.now().minute() == 0 && hour != lastHourSent) {
     if (WiFi.status() == WL_CONNECTED) {
       sendDataToGoogleSheets();
@@ -233,7 +231,6 @@ void loop() {
 
   //MOSTRAR VALORES POR PANTALLA OLED:
 
-  
 
   //manejarReles();
 
@@ -355,7 +352,6 @@ void loop() {
   }
 
   // DATA TIMERS
-
 
   timeOnR3 = horaOnR3 * 60 + minOnR3;
   timeOffR3 = horaOffR3 * 60 + minOffR3;
