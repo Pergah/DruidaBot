@@ -287,12 +287,12 @@ if (text == "Menu CONFIG") {
         "[\"Configurar " + getRelayName(R4name) + "\"], " +
         "[\"INFO CONFIG\"], " +
         "[\"RESET DRUIDA\"], " +
-        "[\"RESET WIFI (AP)\"], " +
+        "[\"MODO LOCAL\"], " +
         "[\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione una opción para configurar:", "", configKeyboardJson, true);
 }
 
-if (text == "RESET WIFI (AP)"){
+if (text == "MODO LOCAL"){
   modoWiFi = 0;
   Guardado_General();
   String resetMsg = "Reiniciando druida..\n";

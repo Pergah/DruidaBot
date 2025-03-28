@@ -104,8 +104,8 @@ const uint16_t kCaptureBufferSize = 1024;
 IRrecv irrecv(kRecvPin, kCaptureBufferSize);
 decode_results results;
 
-uint16_t IRsignal[150] = { 0 };
-uint16_t IRsignalLength = 0;
+uint16_t rawData[150] = { 0 };
+uint16_t rawDataLen = 0;
 IRsend irsend(sensorIRpin);
 
 //const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba y roge)

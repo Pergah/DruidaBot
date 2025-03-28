@@ -209,7 +209,7 @@ void loop() {
   }
 
   if (serial == '5') {
-    irsend.sendRaw(IRsignal, 72, 38);
+    irsend.sendRaw(rawData, 72, 38);
     delay(200);
     serial = 0;
   }
@@ -781,7 +781,7 @@ void Carga_General() {
   modoWiFi = EEPROM.get(316, modoWiFi);
 
   for (int i = 0; i < 100; i++) {
-    IRsignal[i] = EEPROM.get(350 + i * sizeof(uint16_t), IRsignal[i]);
+    rawData[i] = EEPROM.get(350 + i * sizeof(uint16_t), rawData[i]);
   }
 
 
@@ -848,7 +848,7 @@ void Guardado_General() {
 
   
   for (int i = 0; i < 100; i++) {
-    EEPROM.put(350 + i * sizeof(uint16_t), IRsignal[i]);
+    EEPROM.put(350 + i * sizeof(uint16_t), rawData[i]);
   }
   EEPROM.commit();
   Serial.println("Guardado realizado con exito.");
@@ -1119,86 +1119,47 @@ void checkWiFiConnection() {
 
 void modificarValoresArray(bool manual) {
   if (manual) {
-    // Proceso de carga manual
-    Serial.println("Ingrese los valores del array manualmente en el monitor serial.");
-    // (El resto del código para la carga manual permanece igual)
+    // Modo manual (usando web)
   } else {
-    // Proceso de carga automática usando el sensor IR
-    Serial.println("Apunte el control remoto hacia el sensor IR y presione el botón deseado.");
-
-    // Esperar hasta que se reciba una señal IR válida
+    // Modo automático (captura IR)
     while (!irrecv.decode(&results)) {
-      delay(100);  // Pequeño delay para evitar un bucle muy rápido
+      delay(100);
     }
 
-    // Capturar los valores del buffer IR
-    IRsignalLength = results.rawlen - 1;
-    if (IRsignalLength > 150) {
-      IRsignalLength = 150;  // Limitar la longitud a 150 si es mayor
+    // Conversión a formato rawData
+    rawDataLen = results.rawlen - 1;
+    if (rawDataLen > 150) {
+      rawDataLen = 150;
     }
 
-    for (uint16_t i = 1; i <= IRsignalLength; i++) {
-      IRsignal[i - 1] = results.rawbuf[i] * kRawTick;
+    for (uint16_t i = 1; i <= rawDataLen; i++) {
+      rawData[i - 1] = results.rawbuf[i] * kRawTick;
     }
 
-    Serial.println("Valores del array capturados automáticamente.");
-    irrecv.resume();  // Preparar el receptor para la siguiente señal
+    Serial.println("Señal capturada:");
+    serialPrintUint64(results.value, HEX);
+    Serial.println("");
+    irrecv.resume();
   }
-
+  
   mostrarArray();
   Guardado_General();
 }
 
 
 
+
+
 void mostrarArray() {
-  Serial.println("Señal IR:");
-  for (int i = 0; i < 100; i++) {
-    Serial.print(IRsignal[i]);
-    if (i < 100 - 1) {
-      Serial.print(", ");
-    }
+  Serial.println("Raw Data (" + String(rawDataLen) + " elementos):");
+  for (uint16_t i = 0; i < rawDataLen; i++) {
+    Serial.print(rawData[i]);
+    if (i < rawDataLen - 1) Serial.print(", ");
+    if ((i + 1) % 10 == 0) Serial.println(); // Nueva línea cada 10 elementos
   }
-  Serial.println();
-
-  // Limpia el buffer serial para evitar lecturas erróneas
-  while (Serial.available() > 0) {
-    Serial.read();
-  }
+  Serial.println("\n---");
 }
 
-void encenderRele1PorTiempo(int tiempoSegundos) {
-  digitalWrite(RELAY1, LOW); // Enciende el relé
-  delay(tiempoSegundos * 1000); // Mantiene encendido por el tiempo indicado
-  digitalWrite(RELAY1, HIGH); // Apaga el relé
-  bot.sendMessage(chat_id, "Rele apagado después de " + String(tiempoSegundos) + " segundos", "");
-  estadoR1 = 0;
-  R1estado = HIGH;
-  modoR1 = MANUAL;
-  Guardado_General();
-}
-
-void encenderRele2PorTiempo(int tiempoSegundos) {
-  digitalWrite(RELAY2, LOW); // Enciende el relé
-  delay(tiempoSegundos * 1000); // Mantiene encendido por el tiempo indicado
-  digitalWrite(RELAY2, HIGH); // Apaga el relé
-  bot.sendMessage(chat_id, "Rele apagado después de " + String(tiempoSegundos) + " segundos", "");
-  estadoR2 = 0;
-  R2estado = HIGH;
-  modoR2 = MANUAL;
-  Guardado_General();
-}
-
-void encenderRele2irPorTiempo(int tiempoSegundos) {
-  irsend.sendRaw(IRsignal, 72, 38);  // Envía la señal IR ajustada con frecuencia de 38 kHz (Enciende el relé)
-  delay(tiempoSegundos * 1000); // Mantiene encendido por el tiempo indicado
-  irsend.sendRaw(IRsignal, 72, 38);  // Envía la señal IR ajustada con frecuencia de 38 kHz (Apaga el relé)
-  bot.sendMessage(chat_id, "Rele apagado después de " + String(tiempoSegundos) + " segundos", "");
-  estadoR2ir = 0;
-  R2irestado = HIGH;
-  modoR2ir = MANUAL;
-  Guardado_General();
-}
 
 void encenderRele3PorTiempo(int tiempoSegundos) {
   digitalWrite(RELAY3, LOW); // Enciende el relé
@@ -1211,69 +1172,57 @@ void encenderRele3PorTiempo(int tiempoSegundos) {
   Guardado_General();
 }
 
-void encenderRele4PorTiempo(int tiempoSegundos) {
-  digitalWrite(RELAY4, LOW); // Enciende el relé
-  delay(tiempoSegundos * 1000); // Mantiene encendido por el tiempo indicado
-  digitalWrite(RELAY4, HIGH); // Apaga el relé
-  bot.sendMessage(chat_id, "Rele apagado después de " + String(tiempoSegundos) + " segundos", "");
-  estadoR4 = 0;
-  R4estado = HIGH;
-  modoR4 = MANUAL;
-  Guardado_General();
-}
 
 void startAccessPoint() {
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(ssid_AP, password_AP);
-  Serial.println("Red WiFi creada con éxito");
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(ssid_AP, password_AP);
+    Serial.println("Red WiFi creada con éxito");
 
-  // Mostrar la IP del Access Point
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("IP del Access Point: ");
-  Serial.println(IP);
+    IPAddress IP = WiFi.softAPIP();
+    Serial.print("IP del Access Point: ");
+    Serial.println(IP);
 
-  // Configuración del servidor web
-  server.on("/", handleRoot);
-  server.on("/config", handleConfig);
-  server.on("/saveConfig", handleSaveConfig);
-  //server.on("/modificarValoresArray", handleModificarArray);
-  server.on("/control", handleControl); // Ruta para el panel de control
-  server.on("/controlR1", handleControlR1);       // Menú de control para R1
-  server.on("/controlR1On", handleControlR1On);   // Cambiar estado a encendido
-  server.on("/controlR1Off", handleControlR1Off); // Cambiar estado a apagado
-  server.on("/controlR1Auto", handleControlR1Auto);   // Activar modo automático
-  server.on("/controlR2", handleControlR2);       // Menú de control para R2
-  server.on("/controlR2On", handleControlR2On);   // Cambiar estado a encendido
-  server.on("/controlR2Off", handleControlR2Off); // Cambiar estado a apagado
-  server.on("/controlR2Auto", handleControlR2Auto);   // Activar modo automático
-  server.on("/controlR3", handleControlR3);       // Menú de control para R3
-  server.on("/controlR3On", handleControlR3On);   // Cambiar estado a encendido
-  server.on("/controlR3Off", handleControlR3Off); // Cambiar estado a apagado
-  server.on("/controlR3Auto", handleControlR3Auto);   // Activar modo automático
-  server.on("/controlR3OnFor", handleControlR3OnFor); // Encender por tiempo
-  server.on("/controlR4", handleControlR4);       // Menú de control para R4
-  server.on("/controlR4On", handleControlR4On);   // Cambiar estado a encendido
-  server.on("/controlR4Off", handleControlR4Off); // Cambiar estado a apagado
-  server.on("/controlR4Auto", handleControlR4Auto);   // Activar modo automático
-  server.on("/configR1", handleConfigR1);
-  server.on("/configR2", handleConfigR2);
-  server.on("/configR3", handleConfigR3);
-  server.on("/configR4", handleConfigR4);
-  server.on("/configWiFi", handleConfigWiFi);
-  server.on("/saveConfigR1", saveConfigR1);
-  server.on("/saveConfigR2", saveConfigR2);
-  server.on("/saveConfigR3", saveConfigR3);
-  server.on("/saveConfigR4", saveConfigR4);
-  server.on("/saveConfigWiFi", saveConfigWiFi);
-  server.on("/connectWiFi", connectWiFi);
+    // Configuración del servidor web
+    server.on("/", handleRoot);
+    server.on("/config", handleConfig);
+    server.on("/saveConfig", handleSaveConfig);
+    server.on("/control", handleControl);
+    server.on("/controlR1", handleControlR1);
+    server.on("/controlR1On", handleControlR1On);
+    server.on("/controlR1Off", handleControlR1Off);
+    server.on("/controlR1Auto", handleControlR1Auto);
+    server.on("/controlR2", handleControlR2);
+    server.on("/controlR2On", handleControlR2On);
+    server.on("/controlR2Off", handleControlR2Off);
+    server.on("/controlR2Auto", handleControlR2Auto);
+    server.on("/controlR3", handleControlR3);
+    server.on("/controlR3On", handleControlR3On);
+    server.on("/controlR3Off", handleControlR3Off);
+    server.on("/controlR3Auto", handleControlR3Auto);
+    server.on("/controlR3OnFor", handleControlR3OnFor);
+    server.on("/controlR4", handleControlR4);
+    server.on("/controlR4On", handleControlR4On);
+    server.on("/controlR4Off", handleControlR4Off);
+    server.on("/controlR4Auto", handleControlR4Auto);
+    server.on("/configR1", handleConfigR1);
+    server.on("/configR2", handleConfigR2);
+    server.on("/configR3", handleConfigR3);
+    server.on("/configR4", handleConfigR4);
+    server.on("/configWiFi", handleConfigWiFi);
+    server.on("/saveConfigR1", saveConfigR1);
+    server.on("/saveConfigR2", saveConfigR2);
+    server.on("/saveConfigR3", saveConfigR3);
+    server.on("/saveConfigR4", saveConfigR4);
+    server.on("/saveConfigWiFi", saveConfigWiFi);
+    server.on("/connectWiFi", connectWiFi);
+    
+    // Nuevas rutas para configuración IR
+    server.on("/configIR", handleConfigIR);
+    server.on("/captureIR", handleCaptureIR);
+    server.on("/saveIRConfig", handleSaveIRConfig);
 
-
-
-
-
-
-  server.begin();
-  Serial.println("Servidor web iniciado");
+    server.begin();
+    Serial.println("Servidor web iniciado");
 }
 
 void mostrarSensores() {
@@ -1660,40 +1609,133 @@ void handleControlR4Auto() {
 void handleConfig() {
     String html = "<html><head><style>";
     html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; }";
-    html += "header { margin-top: 100px; }"; // Separador superior
+    html += "header { margin-top: 100px; }";
     html += "header h1 { font-size: 4rem; margin: 0; line-height: 1.2; color: #00ff00; font-family: 'Courier New', Courier, monospace; background-color: #000000; padding: 10px 20px; border: 2px solid #00ff00; border-radius: 10px; text-align: center; white-space: pre-line; opacity: 0; animation: fadeInHeader 2s ease-in-out forwards; }";
-    html += "@keyframes fadeInHeader { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }"; // Efecto de aparición
-    html += "h1 { color: #00bfff; margin: 20px 0; font-size: 2.5rem; }"; // Título de la página
-    html += ".container { display: flex; flex-direction: column; align-items: center; gap: 100px; margin-top: 20px; }"; // Espaciado entre botones
+    html += "@keyframes fadeInHeader { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }";
+    html += "h1 { color: #00bfff; margin: 20px 0; font-size: 2.5rem; }";
+    html += ".container { display: flex; flex-direction: column; align-items: center; gap: 100px; margin-top: 20px; }";
     html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 30px 80px; font-size: 36px; border-radius: 20px; cursor: pointer; }";
     html += "button:hover { background-color: #004080; border-color: #00cc00; }";
     html += "</style>";
     html += "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>";
     html += "</head><body>";
 
-    // Encabezado "Druida Bot"
     html += "<header><h1>Druida\nBot</h1></header>";
 
-    // Contenedor de botones
     html += "<div class=\"container\">";
     html += "<h1>Configuracion de Druida BOT</h1>";
 
-    // Botones de submenú para cada relé
     html += "<a href=\"/configR1\"><button>" + getRelayName(R1name) + "</button></a>";
     html += "<a href=\"/configR2\"><button>" + getRelayName(R2name) + "</button></a>";
     html += "<a href=\"/configR3\"><button>" + getRelayName(R3name) + "</button></a>";
     html += "<a href=\"/configR4\"><button>" + getRelayName(R4name) + "</button></a>";
 
-    // Botón para configurar WiFi
-    html += "<a href=\"/configWiFi\"><button>WiFi</button></a>";
+    // Nuevo botón para configuración IR
+    html += "<a href=\"/configIR\"><button>IR Config</button></a>";
 
-    // Botón de volver
+    html += "<a href=\"/configWiFi\"><button>WiFi</button></a>";
     html += "<a href=\"/\"><button>Volver</button></a>";
     html += "</div>";
 
     html += "</body></html>";
 
     server.send(200, "text/html", html);
+}
+
+void handleConfigIR() {
+    String html = "<html><head><style>";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; padding: 20px; }";
+    html += "h1 { color: #00bfff; text-align: center; }";
+    html += ".container { max-width: 800px; margin: 0 auto; }";
+    html += "button { background-color: #1c75bc; color: white; border: 2px solid #00ff00; padding: 15px 30px; font-size: 18px; border-radius: 10px; cursor: pointer; margin: 10px; }";
+    html += "button:hover { background-color: #004080; }";
+    html += "textarea { width: 100%; height: 200px; margin: 20px 0; padding: 10px; font-family: monospace; }";
+    html += ".form-group { margin: 20px 0; }";
+    html += "label { display: block; margin-bottom: 5px; }";
+    html += "</style></head><body>";
+    
+    html += "<div class=\"container\">";
+    html += "<h1>Configuración de Señal IR</h1>";
+    
+    // Formulario para editar manualmente el array
+    html += "<form action=\"/saveIRConfig\" method=\"post\">";
+    html += "<div class=\"form-group\">";
+    html += "<label for=\"irArray\">Array de Señal IR (separado por comas):</label>";
+    html += "<textarea id=\"irArray\" name=\"irArray\">";
+    
+    // Mostrar los valores actuales del array
+    for (int i = 0; i < rawDataLen; i++) {
+        html += String(rawData[i]);
+        if (i < rawDataLen - 1) {
+            html += ",";
+        }
+    }
+    html += "</textarea>";
+    html += "</div>";
+    html += "<button type=\"submit\">Guardar Configuración</button>";
+    html += "</form>";
+    
+    // Botón para capturar automáticamente una señal IR
+    html += "<a href=\"/captureIR\"><button>Capturar Señal IR Automáticamente</button></a>";
+    
+    // Botón para volver
+    html += "<a href=\"/config\"><button>Volver</button></a>";
+    html += "</div>";
+    html += "</body></html>";
+    
+    server.send(200, "text/html", html);
+}
+
+void handleCaptureIR() {
+    // Mostrar página de espera para captura IR
+    String html = "<html><head><meta http-equiv=\"refresh\" content=\"2\"><style>";
+    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding: 50px; }";
+    html += "h1 { color: #00bfff; }";
+    html += ".spinner { border: 8px solid #f3f3f3; border-top: 8px solid #00ff00; border-radius: 50%; width: 60px; height: 60px; animation: spin 2s linear infinite; margin: 30px auto; }";
+    html += "@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }";
+    html += "</style></head><body>";
+    html += "<h1>Preparado para capturar señal IR</h1>";
+    html += "<p>Apunte el control remoto al sensor IR y presione un botón...</p>";
+    html += "<div class=\"spinner\"></div>";
+    html += "<p>Capturando...</p>";
+    html += "</body></html>";
+    
+    server.send(200, "text/html", html);
+    
+    // Intentar capturar la señal IR
+    if (irrecv.decode(&results)) {
+        modificarValoresArray(false); // false para modo automático
+        // Redirigir a la página de configuración IR después de capturar
+        server.sendHeader("Location", "/configIR", true);
+        server.send(302, "text/plain", "");
+    }
+}
+
+void handleSaveIRConfig() {
+  if (server.hasArg("irArray")) {
+    String arrayStr = server.arg("irArray");
+    
+    // Procesar el string
+    int index = 0;
+    int startPos = 0;
+    int endPos = arrayStr.indexOf(',');
+    
+    while (endPos != -1 && index < 150) {
+      rawData[index++] = arrayStr.substring(startPos, endPos).toInt();
+      startPos = endPos + 1;
+      endPos = arrayStr.indexOf(',', startPos);
+    }
+    
+    if (startPos < arrayStr.length() && index < 150) {
+      rawData[index++] = arrayStr.substring(startPos).toInt();
+    }
+    
+    rawDataLen = index;
+    Guardado_General();
+    
+    server.sendHeader("Location", "/configIR?success=1", true);
+    server.send(302, "text/plain", "");
+  }
 }
 
 void handleConfigWiFi() {
