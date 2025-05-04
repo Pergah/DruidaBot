@@ -75,16 +75,16 @@ Chenge Log:
 #define AUTO 2
 #define CONFIG 3
 #define STATUS 4
-#define AUTOINT 5
+#define SUPERCICLO 5
 #define TIMER 6
 #define RIEGO 7
 
 // Aca se muestra como van conectados los componentes
 
 //#define sensorTempAgua 5  //Sensor DS
-#define sensorIRpin 32    //Sensor Emisor IR
+#define sensorIRpin 13    //Sensor Emisor IR
 //#define sensorHS 2 //humedad Suelo
-#define sensorIRreceptor 33
+#define sensorIRreceptor 12
 #define RELAY4 19
 #define RELAY3 5
 #define SERVO 18
@@ -111,17 +111,22 @@ IRsend irsend(sensorIRpin);
 //const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (caba y roge)
 //const String botToken = "6867697701:AAHtaJ4YC3dDtk1RuFWD-_f72S5MYvlCV4w"; //DRUIDA DOS (matheu 2)
 //const String botToken = "7273841170:AAHxWF33cIDcIoxgBm3x9tzn9ISJIKoy7X8"; //DRUIDA TRES (nuevo matheu)
-//const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (bry e ivana)
+//const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (bry e ivana)(prueba)
 //const String botToken = "7357647743:AAFPD1Tc099-2o-E2-Ph7SZluzwHubrl700";  //DRUIDA CINCO (matheu)
-const String botToken = "7611244980:AAEQUDIUZwR4nZBsjEEHPEieyc3k90PxVxI"; //DRUIDA SEIS (nuevop)
+//const String botToken = "7611244980:AAEQUDIUZwR4nZBsjEEHPEieyc3k90PxVxI"; //DRUIDA SEIS (nuevop)
+const String botToken = "7883822127:AAHkWG4Gw2VfQDKk4UbTw8THZg2oxng3fM0"; //DRUIDA SIETE
+
 
 //const char* ssid_AP = "Druida Config";
 //const char* ssid_AP = "Druida Dos"; 
 //const char* ssid_AP = "Druida Tres"; 
 //const char* ssid_AP = "Druida Cuatro";  
 //const char* ssid_AP = "Druida Cinco";     
-const char* ssid_AP = "Druida Seis";        // Nombre de la red AP creada por el ESP32
+//const char* ssid_AP = "Druida Seis";  
+const char* ssid_AP = "Druida Siete";        // Nombre de la red AP creada por el ESP32
 const char* password_AP = "12345678";          // Contraseña de la red AP
+
+// 1308350088
 
 //String scriptId = "AKfycbwXhUu15DVEI4b1BDf8Y8Up_qKIXDUvfWgHLKppNL6rUMOnfiQRDfxGXtCt3_n0NXt_Nw"; //Druida UNO (Caba)
 String scriptId = "AKfycbwUlj-gk1NNDHwxxebIqH7vS0N8qbu9LZydo4QeyAwmULEQ8JcSGNt8RRxRLdoIRRTA";  //Druida TRES (Matheu)
@@ -131,6 +136,8 @@ const int MAX_STRING_LENGTH = 32;
 unsigned long bot_lasttime;
 const unsigned long wifiCheckInterval = 600000;  //WiFi CheckStatus cada 10 minutos
 unsigned long previousMillis = 0;
+
+bool irCaptureDone = false;
 
 
 WiFiClientSecure secured_client;
@@ -263,12 +270,23 @@ int currentPosition = 0; // Posición inicial del servo
 int previousSecondRiego = 0; // Inicialización con 0
 int previousSeconds = 0; 
 
-String relayNames[] = {"Humidificacion", "Extraccion", "Irrigacion", "Iluminacion", "extra", "extra2"};
-String relayAssignedNames[4] = {"R1", "R2", "R3", "R4"}; // Nombres actuales para cada relé
+String relayNames[] = {"Humidificacion", "Extraccion", "Irrigacion", "Iluminacion", "Aire Acondicionado", "Calefaccion"};
+String relayAssignedNames[5] = {"R1", "R2", "R3", "R4", "R2ir"}; // Nombres actuales para cada relé
 
-int R1name = 0; // Índice inicial (Extraccion)
-int R2name = 1; // Índice inicial (Intraccion)
-int R3name = 2; // Índice inicial (Humidificacion)
-int R4name = 3; // Índice inicial (Calefaccion)
+int R1name = 0;   // (Humidificacion)
+int R2name = 1;   // (Extraccion)
+int R3name = 2;   // (Irrigacion)
+int R4name = 3;   // (Iluminacion)
+int R2irname = 4; // (Aire acondicionado)
+
 
 int modoWiFi = 0;
+
+//SUPERCICLO
+int tiempoEncendidoR4 = 780; // 13 horas
+int tiempoApagadoR4 = 840;   // 14 horas
+unsigned int proximoCambioR4 = 60; // Hora del primer cambio, en minutos (ej. 01:00)
+bool luzEncendida = false;
+
+unsigned long previousMillisWD = 0;
+const unsigned long interval = 20000; // 20 segundos

@@ -232,7 +232,7 @@ if (text == "CONFIG") {
         "[\"Configurar " + getRelayName(R4name) + "\"], " +
         "[\"INFO CONFIG\"], " +
         "[\"RESET DRUIDA\"], " +
-        "[\"RESET WIFI (AP)\"], " +
+        "[\"WIFI ACCES POINT\"], " +
         "[\"Menu Principal\"]]";
 
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione una opción para configurar:", "", configKeyboardJson, true);
@@ -886,6 +886,16 @@ if (text == "STATUS" ) {
       bot.sendMessage(chat_id, resetMsg, "Markdown");
       delay(2000);
       reset = 1;
+    }
+
+    if (text == "WIFI ACCES POINT") {
+      String resetMsg = "Reiniciando Druida.. (Modo AP)\n";
+      bot.sendMessage(chat_id, resetMsg, "Markdown");
+      delay(1000);
+      modoWiFi = 0;
+      Guardado_General();
+      reset = 1;
+
     }
 
     if (text == "ENVIAR DATA GOOGLE") {
