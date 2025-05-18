@@ -1,3 +1,8 @@
+
+# Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT. Ver el archivo [LICENSE](./LICENSE) para más información.
+
 # Druida
 Gestor de Placas:
 
