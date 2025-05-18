@@ -1,4 +1,9 @@
 
+// Proyecto: Druida BOT de DataDruida
+// Autor: Bryan Murphy
+// Año: 2025
+// Licencia: MIT
+
 #include "config.h"
 
 void handleNewMessages(int numNewMessages);
@@ -93,8 +98,6 @@ void setup() {
     Serial.println("\nModo AP activado para configuración.");
     startAccessPoint();
 }
-
-
   //startAccessPoint();
   Serial.println("Menu Serial: ");
   Serial.println("1. Modificar Red WiFi");
@@ -106,6 +109,7 @@ void setup() {
 void loop() {
   server.handleClient();
   unsigned long currentMillis = millis();
+  unsigned long intervaloEnvio = intervaloDatos * 60000UL;  // de minutos a milisegundos
 
   // Verifica la conexión WiFi a intervalos regulares
   if (currentMillis - previousMillis >= wifiCheckInterval && modoWiFi == 1) {
@@ -171,23 +175,42 @@ void loop() {
     hour = 24 + hour;
   }
 
-  /*if (rtc.now().minute() == 0 && hour != lastHourSent) {
-    if (WiFi.status() == WL_CONNECTED) {
-      sendDataToGoogleSheets();
-      lastHourSent = hour;
 
-      maxHum = -999;
-      minHum = 999;
-      maxTemp = -999;
-      minTemp = 999;
-    }
-  }*/
+if (currentMillis - previousMillisEnvio >= intervaloEnvio) {
+  previousMillisEnvio = currentMillis;
+
+  if (WiFi.status() == WL_CONNECTED) {
+    // Enviar a Google Sheets
+    sendDataToGoogleSheets();
+
+    // Enviar mensaje Telegram
+    DateTime now = rtc.now();  // usar para mostrar fecha y hora
+    int hour = now.hour() - 3;
+    if (hour < 0) hour += 24;
+
+    String dateTime = "📅 Fecha y Hora: " + String(now.day()) + "/" + String(now.month()) + "/" + String(now.year()) + " " +
+                      String(hour) + ":" + String(now.minute()) + ":" + String(now.second()) + "\n";
+
+    String statusMessage = "🌡️ Temperatura: " + String(temperature, 1) + " °C\n";
+    statusMessage += "💧 Humedad: " + String(humedad, 1) + " %\n";
+    statusMessage += "🌬️ DPV: " + String(DPV, 1) + " hPa\n";
+    statusMessage += dateTime;
+
+    bot.sendMessage(chat_id, statusMessage, "");
+
+    // Resetear máximos y mínimos
+    maxHum = -999;
+    minHum = 999;
+    maxTemp = -999;
+    minTemp = 999;
+  }
+}
 
   if (temperature > 40) {
     temperature = 40;
-    //if (WiFi.status() == WL_CONNECTED) {
-    //  bot.sendMessage(chat_id, "Alerta, temperatura demasiado alta");
-    //}
+    if (WiFi.status() == WL_CONNECTED) {
+      bot.sendMessage(chat_id, "Alerta, temperatura demasiado alta");
+    }
   }
 
   DPV = calcularDPV(temperature, humedad);
@@ -304,12 +327,15 @@ void loop() {
     }
   }
 
-  //MODO AUTO R1 (UP) :
-
   if (modoR1 == AUTO) {
-    //Serial.print("Rele (UP) Automatico");
-
-    if (paramR1 == H) {
+  if (paramR1 == H) {
+    if (isnan(humedad) || humedad < 0 || humedad > 99.9) {
+      bot.sendMessage(chat_id, "⚠️ Alerta: Valor de *humedad* fuera de rango o inválido. Humidificador apagado por seguridad.", "");
+      if (R1estado == HIGH) {
+        digitalWrite(RELAY1, LOW);
+        R1estado = LOW;
+      }
+    } else {
       if (humedad < minR1 && R1estado == HIGH) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
@@ -319,7 +345,16 @@ void loop() {
         R1estado = HIGH;
       }
     }
-    if (paramR1 == T) {
+  }
+
+  if (paramR1 == T) {
+    if (isnan(temperature) || temperature < -10 || temperature > 50) {
+      bot.sendMessage(chat_id, "⚠️ Alerta: Valor de *temperatura* fuera de rango o inválido. Humidificador apagado por seguridad.", "");
+      if (R1estado == HIGH) {
+        digitalWrite(RELAY1, LOW);
+        R1estado = LOW;
+      }
+    } else {
       if (temperature < minR1 && R1estado == HIGH) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
@@ -329,34 +364,20 @@ void loop() {
         R1estado = HIGH;
       }
     }
-
-    if (paramR1 == D) {
-      if (DPV < minR1 && R1estado == HIGH) {
-        digitalWrite(RELAY1, LOW);
-        R1estado = LOW;
-      }
-
-
-        if (DPV > maxR1 && R1estado == LOW) {
-          digitalWrite(RELAY1, HIGH);
-          R1estado = HIGH;
-        }
-      
-    }
-
-    /*if (paramR1 == TA) {
-      if (temperatureC < minR1 && R1estado == HIGH) {
-        digitalWrite(RELAY1, LOW);
-        R1estado = LOW;
-      }
-
-        if (temperatureC > maxR1 && R1estado == LOW) {
-          digitalWrite(RELAY1, HIGH);
-          R1estado = HIGH;
-        }
-      
-    }*/
   }
+
+  if (paramR1 == D) {
+    if (DPV < minR1 && R1estado == HIGH) {
+      digitalWrite(RELAY1, LOW);
+      R1estado = LOW;
+    }
+    if (DPV > maxR1 && R1estado == LOW) {
+      digitalWrite(RELAY1, HIGH);
+      R1estado = HIGH;
+    }
+  }
+}
+
 
   // DATA TIMERS
 
@@ -412,12 +433,12 @@ void loop() {
   }
 }
 
-  //MODO AUTO R2 (DOWN)
-
   if (modoR2 == AUTO) {
-    //Serial.print("Rele 2 (Down) Automatico");
 
-    if (paramR2 == H) {
+  if (paramR2 == H) {
+    if (isnan(humedad) || humedad < 0 || humedad > 99.9) {
+      bot.sendMessage(chat_id, "⚠️ Alerta: Valor de *humedad* fuera de rango o inválido en R2. Revisa el sensor o el ambiente.", "");
+    } else {
       if (humedad > maxR2 && R2estado == HIGH) {
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
@@ -429,7 +450,12 @@ void loop() {
         delay(200);
       }
     }
-    if (paramR2 == T) {
+  }
+
+  if (paramR2 == T) {
+    if (isnan(temperature) || temperature < -10 || temperature > 50) {
+      bot.sendMessage(chat_id, "⚠️ Alerta: Valor de *temperatura* fuera de rango o inválido en R2. Revisa el sensor o el ambiente.", "");
+    } else {
       if (temperature > maxR2 && R2estado == HIGH) {
         digitalWrite(RELAY2, LOW);
         R2estado = LOW;
@@ -441,33 +467,136 @@ void loop() {
         delay(200);
       }
     }
+  }
 
-    if (paramR2 == D) {
-      if (DPV > maxR2 && R2estado == HIGH) {
-        digitalWrite(RELAY2, LOW);
-        R2estado = LOW;
-        delay(200);
+  if (paramR2 == D) {
+    if (DPV > maxR2 && R2estado == HIGH) {
+      digitalWrite(RELAY2, LOW);
+      R2estado = LOW;
+      delay(200);
+    }
+    if (DPV < minR2 && R2estado == LOW) {
+      digitalWrite(RELAY2, HIGH);
+      R2estado = HIGH;
+      delay(200);
+    }
+  }
+
+  if (paramR2 == HT) {
+    static byte activador = 0; // 0=nada, 1=humedad, 2=temperatura
+
+    bool humedadValida = !(isnan(humedad) || humedad < 0 || humedad > 99.9);
+    bool temperaturaValida = !(isnan(temperature) || temperature < -10 || temperature > 50);
+
+    if (!humedadValida) {
+      bot.sendMessage(chat_id, "⚠️ Alerta: Valor de *humedad* fuera de rango o inválido en R2 (HT).", "");
+    }
+
+    if (!temperaturaValida) {
+      bot.sendMessage(chat_id, "⚠️ Alerta: Valor de *temperatura* fuera de rango o inválido en R2 (HT).", "");
+    }
+
+    // Solo ejecutar lógica si ambos valores son válidos
+    if (humedadValida && temperaturaValida) {
+      if (R2estado == HIGH) {
+        if (humedad > maxR2) {
+          digitalWrite(RELAY2, LOW);
+          R2estado = LOW;
+          activador = 1;
+          delay(200);
+        } else if (temperature > maxTR2) {
+          digitalWrite(RELAY2, LOW);
+          R2estado = LOW;
+          activador = 2;
+          delay(200);
+        }
       }
-      if (DPV < minR2 && R2estado == LOW) {
-        digitalWrite(RELAY2, HIGH);
-        R2estado = HIGH;
-        delay(200);
+      else if (R2estado == LOW) {
+        if ((activador == 1 && humedad < minR2) || 
+            (activador == 2 && temperature < minTR2)) {
+          digitalWrite(RELAY2, HIGH);
+          R2estado = HIGH;
+          activador = 0;
+          delay(200);
+        }
+      }
+    }
+  }
+}
+
+if (modoR1 == AUTORIEGO) {
+
+
+  // Comprobación de si estamos dentro del horario configurado
+  bool dentroDeHorario = false;
+  if (startR1 < offR1) {
+    dentroDeHorario = (currentTime >= startR1 && currentTime < offR1);
+  } else {
+    dentroDeHorario = (currentTime >= startR1 || currentTime < offR1);
+  }
+
+  if (dentroDeHorario) {
+    bool valorInvalido = false;
+    float valorActual = 0;
+
+    // Selección del parámetro
+    if (paramR1 == H) {
+      valorActual = humedad;
+      if (isnan(valorActual) || valorActual < 0 || valorActual > 99.9) valorInvalido = true;
+    } else if (paramR1 == T) {
+      valorActual = temperature;
+      if (isnan(valorActual) || valorActual < -10 || valorActual > 50) valorInvalido = true;
+    } else if (paramR1 == D) {
+      valorActual = DPV;
+      // Suponemos que DPV siempre es válido
+    }
+
+    if (valorInvalido) {
+      bot.sendMessage(chat_id, "⚠️ Alerta: Valor de parámetro inválido. Humidificador apagado por seguridad.", "");
+      digitalWrite(RELAY1, LOW);
+      R1estado = LOW;
+      enHumidificacion = false;
+      return;
+    }
+
+    // Si el valor está por debajo del mínimo configurado, iniciamos ciclo intermitente
+    if (valorActual < minR1) {
+      unsigned long currentMillis = millis();
+      unsigned long intervalo = (enHumidificacion ? tiempoEncendidoR1 : tiempoApagadoR1) * 60000UL;
+
+      if (currentMillis - previousMillisR1 >= intervalo) {
+        previousMillisR1 = currentMillis;
+        enHumidificacion = !enHumidificacion;
+
+        if (enHumidificacion) {
+          digitalWrite(RELAY1, HIGH);
+          R1estado = HIGH;
+        } else {
+          digitalWrite(RELAY1, LOW);
+          R1estado = LOW;
+        }
+      }
+    } else {
+      // Si ya está dentro del rango, apagar el humidificador si estaba encendido
+      if (R1estado == HIGH) {
+        digitalWrite(RELAY1, LOW);
+        R1estado = LOW;
+        enHumidificacion = false;
       }
     }
 
-    /*if (paramR2 == TA) {
-      if (temperatureC > maxR2 && R2estado == HIGH) {
-        digitalWrite(RELAY2, LOW);
-        R2estado = LOW;
-        delay(200);
-      }
-      if (temperatureC < minR2 && R2estado == LOW) {
-        digitalWrite(RELAY2, HIGH);
-        R2estado = HIGH;
-        delay(200);
-      }
-    }*/
+  } else {
+    // Fuera del horario configurado: asegurarse de apagar
+    if (R1estado == HIGH) {
+      digitalWrite(RELAY1, LOW);
+      R1estado = LOW;
+    }
+    enHumidificacion = false;
   }
+}
+
+
+
 
 
   //MODO AUTO R2   IR    (DOWN)
@@ -582,32 +711,6 @@ if (modoR4 == AUTO) {
     }
   }
 
-  if (modoR4 == SUPERCICLO) {
-  if (currentTime >= proximoCambioR4) {
-    if (!luzEncendida) {
-      // Encender luz
-      digitalWrite(RELAY4, LOW);  // activo en LOW
-      R4estado = LOW;
-      luzEncendida = true;
-
-      // Próximo cambio = apagado
-      proximoCambioR4 += tiempoEncendidoR4;
-    } else {
-      // Apagar luz
-      digitalWrite(RELAY4, HIGH); // apago
-      R4estado = HIGH;
-      luzEncendida = false;
-
-      // Próximo cambio = encendido
-      proximoCambioR4 += tiempoApagadoR4;
-    }
-
-    // Normalizar si nos pasamos de 1440 min (24h)
-    proximoCambioR4 %= 1440;
-  }
-}
-
-
   // Control del servomotor (manejo de horarios cruzados)
   bool dentroAmanecer = (horaAmanecer < horaAtardecer) 
                           ? (currentTime >= horaAmanecer && currentTime < horaAtardecer)
@@ -617,6 +720,90 @@ if (modoR4 == AUTO) {
     moveServoSlowly(180); // Simula el mediodía
   } else {
     moveServoSlowly(0); // Simula amanecer o atardecer
+  }
+}
+
+if (modoR4 == SUPERCICLO) {
+  // 1. Convertir horas a minutos para cálculos
+  unsigned long inicio = horaOnR4 * 60 + minOnR4;
+  unsigned long fin = horaOffR4 * 60 + minOffR4;
+  
+  // Debug: Mostrar valores actuales
+  Serial.print("SUPERCICLO - Inicio: "); Serial.print(horaOnR4); Serial.print(":"); Serial.print(minOnR4);
+  Serial.print(" ("); Serial.print(inicio); Serial.print("), Fin: ");
+  Serial.print(horaOffR4); Serial.print(":"); Serial.print(minOffR4);
+  Serial.print(" ("); Serial.print(fin); Serial.print("), Current: "); Serial.println(currentTime);
+
+  // 2. Verificar si necesitamos calcular nuevo ciclo
+  if (R4estado == LOW) {
+    // Si está encendido, verificar si es hora de apagar
+    if ((inicio < fin && currentTime >= fin) || 
+        (inicio > fin && (currentTime >= fin && currentTime < inicio))) {
+      // Calcular nuevo encendido
+      unsigned long nuevoInicio = fin + (horasOscuridad * 60);
+      if (nuevoInicio >= 1440) nuevoInicio -= 1440;
+      
+      horaOnR4 = nuevoInicio / 60;
+      minOnR4 = nuevoInicio % 60;
+      inicio = nuevoInicio;
+      
+      // Calcular nuevo fin
+      fin = inicio + (horasLuz * 60);
+      if (fin >= 1440) fin -= 1440;
+      
+      horaOffR4 = fin / 60;
+      minOffR4 = fin % 60;
+      
+      Guardado_General();
+      Serial.println("SUPERCICLO - Calculado nuevo ciclo");
+    }
+  } else {
+    // Si está apagado, verificar si es hora de encender
+    if ((inicio < fin && currentTime >= inicio) || 
+        (inicio > fin && (currentTime >= inicio || currentTime < fin))) {
+      // Calcular nuevo fin
+      fin = inicio + (horasLuz * 60);
+      if (fin >= 1440) fin -= 1440;
+      
+      horaOffR4 = fin / 60;
+      minOffR4 = fin % 60;
+      
+      Guardado_General();
+      Serial.println("SUPERCICLO - Calculado nuevo apagado");
+    }
+  }
+
+  // 3. Control del relay (LÓGICA IDÉNTICA AL MODO AUTO)
+  if (inicio < fin) {
+    // Caso normal: encendido antes que apagado
+    if (currentTime >= inicio && currentTime < fin) {
+      if (R4estado != LOW) {
+        digitalWrite(RELAY4, LOW);
+        R4estado = LOW;
+        Serial.println("SUPERCICLO - Encendiendo (caso normal)");
+      }
+    } else {
+      if (R4estado != HIGH) {
+        digitalWrite(RELAY4, HIGH);
+        R4estado = HIGH;
+        Serial.println("SUPERCICLO - Apagando (caso normal)");
+      }
+    }
+  } else {
+    // Caso cruzando medianoche: encendido después que apagado
+    if (currentTime >= inicio || currentTime < fin) {
+      if (R4estado != LOW) {
+        digitalWrite(RELAY4, LOW);
+        R4estado = LOW;
+        Serial.println("SUPERCICLO - Encendiendo (cruce medianoche)");
+      }
+    } else {
+      if (R4estado != HIGH) {
+        digitalWrite(RELAY4, HIGH);
+        R4estado = HIGH;
+        Serial.println("SUPERCICLO - Apagando (cruce medianoche)");
+      }
+    }
   }
 }
 
@@ -759,12 +946,18 @@ void Carga_General() {
   horaAtardecer = EEPROM.get(312, horaAtardecer);
   modoWiFi = EEPROM.get(316, modoWiFi);
   R1name = EEPROM.get(320, R1name);
-  proximoCambioR4 = EEPROM.get(324, proximoCambioR4);
-  luzEncendida = EEPROM.get(328, luzEncendida);
+  //proximoCambioR4 = EEPROM.get(324, proximoCambioR4);
+  //luzEncendida = EEPROM.get(328, luzEncendida);
+  minTR2 = EEPROM.get(330, minTR2);
+  maxTR2 = EEPROM.get(334, maxTR2);
+  //proximoEncendidoR4 = EEPROM.get(338, proximoEncendidoR4);
+  //proximoApagadoR4 = EEPROM.get(342, proximoApagadoR4);
+  horasLuz = EEPROM.get(346, horasLuz);
+  horasOscuridad = EEPROM.get(350, horasOscuridad);
 
-  for (int i = 0; i < 100; i++) {
+  /*for (int i = 0; i < 100; i++) {
     rawData[i] = EEPROM.get(350 + i * sizeof(uint16_t), rawData[i]);
-  }
+  }*/
 
 
   Serial.println("Carga completa");
@@ -828,13 +1021,19 @@ void Guardado_General() {
   EEPROM.put(312, horaAtardecer);
   EEPROM.put(316, modoWiFi);
   EEPROM.put(320, R1name);
-  EEPROM.put(324, proximoCambioR4);
-  EEPROM.put(328, luzEncendida);
+  //EEPROM.put(324, proximoCambioR4);
+  //EEPROM.put(328, luzEncendida);
+  EEPROM.put(330, minTR2);
+  EEPROM.put(334, maxTR2);
+  //EEPROM.put(338, proximoEncendidoR4 );
+  //EEPROM.put(342, proximoApagadoR4 );
+  EEPROM.put(346, horasLuz );
+  EEPROM.put(350, horasOscuridad );
 
   
-  for (int i = 0; i < 100; i++) {
-    EEPROM.put(350 + i * sizeof(uint16_t), rawData[i]);
-  }
+  /*for (int i = 0; i < 100; i++) {
+    EEPROM.put(380 + i * sizeof(uint16_t), rawData[i]);
+  }*/
   EEPROM.commit();
   Serial.println("Guardado realizado con exito.");
 }
@@ -945,38 +1144,23 @@ void connectToWiFi(const char* ssid, const char* password) {
     Serial.print("Dirección IP: ");
     Serial.println(WiFi.localIP());
 
-// Mostrar mensaje de éxito en la pantalla OLED
+// Mostrar mensaje de éxito en la pantalla OLED (versión mejorada)
 display.clearDisplay();
-display.setTextSize(1);
+
+// Primero mostrar "WiFi conectado" centrado (2 segundos)
+display.setTextSize(1);  // Texto más grande
 display.setTextColor(SSD1306_WHITE);
-
-// Mensaje a mostrar
-String message1 = "WiFi conectado";
-String message2 = "IP Local: " + WiFi.localIP().toString();
-
-// Coordenadas fijas para centrar los mensajes
-int xPos1 = 32;  // Coordenada X para el primer mensaje
-int yPos1 = 10;  // Coordenada Y para el primer mensaje
-
-int xPos2 = 32;  // Coordenada X para el segundo mensaje
-int yPos2 = 20;  // Coordenada Y para el segundo mensaje
-
-// Mostrar mensaje 1
-display.setCursor(xPos1, yPos1);
-display.println(message1);
-
-// Mostrar mensaje 2
-display.setCursor(xPos2, yPos2);
-display.println(message2);
-
-// Dibujar el logo de WiFi (antena)
-display.drawCircle(110, 20, 10, SSD1306_WHITE);  // Antena externa
-display.drawCircle(110, 20, 7, SSD1306_WHITE);   // Antena externa
-display.drawCircle(110, 20, 4, SSD1306_WHITE);   // Antena externa
-display.drawLine(108, 30, 112, 30, SSD1306_WHITE); // Línea de la antena
-
-// Actualizar pantalla
+display.setCursor(16, 24);  // Centrado para texto 2x
+display.println("WiFi conectado");
 display.display();
+delay(2000);  // Mostrar durante 2 segundos
+display.clearDisplay();
+display.setCursor(12, 32);
+display.print("IP: ");
+display.println(WiFi.localIP());
+display.display();
+delay(2000);  // Mostrar durante 2 segundos
+display.clearDisplay();
 
   } else {
     Serial.println("\nNo se pudo conectar a WiFi. Reintentando...");
@@ -1013,22 +1197,31 @@ display.display();
       Serial.print("Dirección IP: ");
       Serial.println(WiFi.localIP());
 
-      // Mostrar mensaje de éxito en la pantalla OLED
-      display.clearDisplay();
-      display.setTextSize(1);
-      display.setTextColor(SSD1306_WHITE);
-      display.setCursor(0, 0);
-      display.println("WiFi conectado");
-      display.print("IP: ");
-      display.println(WiFi.localIP());
+// Mostrar mensaje de éxito en la pantalla OLED (versión mejorada)
+display.clearDisplay();
 
-      // Dibujar el logo WiFi
-      display.drawCircle(110, 20, 10, SSD1306_WHITE);
-      display.drawCircle(110, 20, 7, SSD1306_WHITE);
-      display.drawCircle(110, 20, 4, SSD1306_WHITE);
-      display.drawLine(108, 30, 112, 30, SSD1306_WHITE);
-      display.display();
-      startWebServer();
+// Primero mostrar "WiFi conectado" centrado (2 segundos)
+display.setTextSize(1);  // Texto más grande
+display.setTextColor(SSD1306_WHITE);
+display.setCursor(16, 24);  // Centrado para texto 2x
+display.println("WiFi conectado");
+display.display();
+delay(2000);  // Mostrar durante 2 segundos
+
+display.clearDisplay();
+display.setTextSize(1);  // Texto normal
+display.setCursor(16, 28);  // Centrado para texto 1x
+delay(500);
+startWebServer();
+delay(500);
+display.print("IP: ");
+display.println(WiFi.localIP());
+display.display();
+delay(2000);  // Mostrar durante 2 segundos
+
+// Limpiar pantalla al final
+display.clearDisplay();
+display.display();
 
     } else {
       Serial.println("\nError: No se pudo conectar a WiFi tras múltiples intentos.");
@@ -1721,7 +1914,7 @@ void handleControlR4Auto() {
 }
 
 void handleControlR4Superciclo() {
-    modoR4 = 5; // Modo superciclo
+    modoR4 = 4; // Modo superciclo
     Guardado_General();
     handleConfirmation(getRelayName(R4name) + " en modo Superciclo", "/controlR4"); // Mostrar confirmación y redirigir
 }
@@ -1814,7 +2007,7 @@ void handleConfigIR() {
     html += "</form>";
     
     // Botón para capturar automáticamente una señal IR
-    html += "<a href=\"/captureIR\"><button>Capturar Señal IR Automáticamente</button></a>";
+    html += "<a href=\"/captureIR\"><button>Capturar Señal IR Automaticamente</button></a>";
 
     // Boton Emitir IR
     html += "<a href=\"/emitIR\"><button style=\"background-color: #4CAF50;\">Emitir Señal IR</button></a>";
@@ -1944,6 +2137,9 @@ void handleConfigWiFi() {
     html += "<label for=\"chat_id\">Chat ID:</label>";
     html += "<input type=\"text\" id=\"chat_id\" name=\"chat_id\" value=\"" + chat_id + "\">";
 
+  html += "<label for=\"modoWiFi\">Modo WiFi:</label>";
+  html += "<input type=\"number\" id=\"modoWiFi\" name=\"modoWiFi\" value=\"" + String(modoWiFi) + "\">";
+
     html += "<input type=\"submit\" value=\"Guardar\">";
 
     html += "</form>";
@@ -2063,10 +2259,10 @@ void handleConfigR1() {
     html += "<label for=\"horaOffR1\">HORA DE APAGADO (HH:MM)</label>";
     html += "<input type=\"text\" id=\"horaOffR1\" name=\"horaOffR1\" value=\"" + formatTwoDigits(horaOffR1) + ":" + formatTwoDigits(minOffR1) + "\">";
 
-    html += "<label for=\"estadoR1\">ESTADO (0: Apagado - 1: Encendido)</label>";
-    html += "<input type=\"number\" id=\"estadoR1\" name=\"estadoR1\" value=\"" + String(estadoR1) + "\">";
+    //html += "<label for=\"estadoR1\">ESTADO (0: Apagado - 1: Encendido)</label>";
+    //html += "<input type=\"number\" id=\"estadoR1\" name=\"estadoR1\" value=\"" + String(estadoR1) + "\">";
 
-    html += "<label for=\"R1name\">ETIQUETA </label>";
+    html += "<label for=\"R1name\">ETIQUETA</label>";
     html += "<input type=\"number\" id=\"R1name\" name=\"R1name\" value=\"" + String(R1name) + "\">";
 
     html += "<input type=\"submit\" value=\"Guardar\">";
@@ -2090,6 +2286,12 @@ void saveConfigR2() {
         }
         if (server.hasArg("maxR2")) {
             maxR2 = server.arg("maxR2").toFloat();
+        }
+        if (server.hasArg("minTR2")) {
+            minTR2 = server.arg("minTR2").toFloat();
+        }
+        if (server.hasArg("maxTR2")) {
+            maxTR2 = server.arg("maxTR2").toFloat();
         }
         if (server.hasArg("paramR2")) {
             paramR2 = server.arg("paramR2").toInt();
@@ -2129,8 +2331,10 @@ void handleConfigR2() {
     html += "<label>MODO (1: Manual - 2: Automatico - 3: Config)</label><input type=\"number\" name=\"modoR2\" value=\"" + String(modoR2) + "\">";
     html += "<label>MINIMO</label><input type=\"number\" step=\"0.01\" name=\"minR2\" value=\"" + String(minR2) + "\">";
     html += "<label>MAXIMO</label><input type=\"number\" step=\"0.01\" name=\"maxR2\" value=\"" + String(maxR2) + "\">";
-    html += "<label>PARAMETRO (1: Humedad - 2: Temperatura - 3: DPV)</label><input type=\"number\" name=\"paramR2\" value=\"" + String(paramR2) + "\">";
-    html += "<label>ESTADO (0: Apagado - 1: Encendido)</label><input type=\"number\" name=\"estadoR2\" value=\"" + String(estadoR2) + "\">";
+    html += "<label>MINIMO (Temp)</label><input type=\"number\" step=\"0.01\" name=\"minTR2\" value=\"" + String(minTR2) + "\">";
+    html += "<label>MAXIMO (Temp)</label><input type=\"number\" step=\"0.01\" name=\"maxTR2\" value=\"" + String(maxTR2) + "\">";
+    html += "<label>PARAMETRO (1: Humedad - 2: Temperatura - 3: DPV - 4: H + T)</label><input type=\"number\" name=\"paramR2\" value=\"" + String(paramR2) + "\">";
+    //html += "<label>ESTADO (0: Apagado - 1: Encendido)</label><input type=\"number\" name=\"estadoR2\" value=\"" + String(estadoR2) + "\">";
     html += "<input type=\"submit\" value=\"Guardar\">";
     html += "</form>";
     html += "<button onclick=\"window.location.href='/config'\">Volver</button>";
@@ -2163,7 +2367,7 @@ void handleConfigR3() {
     html += "<label>HORA DE APAGADO (HH:MM)</label><input type=\"text\" name=\"horaOffR3\" value=\"" + formatTwoDigits(horaOffR3) + ":" + formatTwoDigits(minOffR3) + "\">";
     html += "<label>DURACION (En segundos)</label><input type=\"number\" name=\"tiempoRiego\" value=\"" + String(tiempoRiego) + "\">";
     html += "<label>INTERVALO (En segundos)</label><input type=\"number\" name=\"tiempoNoRiego\" value=\"" + String(tiempoNoRiego) + "\">";
-    html += "<label>ESTADO (0: Apagado - 1: Encendido)</label><input type=\"number\" name=\"estadoR3\" value=\"" + String(estadoR3) + "\">";
+    //html += "<label>ESTADO (0: Apagado - 1: Encendido)</label><input type=\"number\" name=\"estadoR3\" value=\"" + String(estadoR3) + "\">";
 
     html += "<div style=\"width: 100%; text-align: center; margin-top: 20px;\">";
     html += "<label><strong>DIAS DE RIEGO</strong></label>";
@@ -2247,6 +2451,18 @@ for (int i = 0; i < 7; i++) {
 }
 
 void handleConfigR4() {
+
+        // Calcular hora de apagado para mostrar
+    String horaApagado, minApagado;
+    if (modoR4 == SUPERCICLO) {
+        unsigned long apagadoReal = (horaOnR4 * 60 + minOnR4) + (horasLuz * 60);
+        if (apagadoReal >= 1440) apagadoReal -= 1440;
+        horaApagado = formatTwoDigits(apagadoReal / 60);
+        minApagado = formatTwoDigits(apagadoReal % 60);
+    } else {
+        horaApagado = formatTwoDigits(horaOffR4);
+        minApagado = formatTwoDigits(minOffR4);
+    }
     String html = "<html><head><style>";
     html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; }";
     html += ".container { background-color: #004080; border: 2px solid #00bfff; border-radius: 20px; padding: 30px; width: 50%; max-width: 600px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); }";
@@ -2263,14 +2479,34 @@ void handleConfigR4() {
     html += "<div class=\"container\">";
     html += "<h1>Configuracion de " + getRelayName(R4name) + "</h1>";
     html += "<form action=\"/saveConfigR4\" method=\"POST\">";
-    html += "<label>MODO (1: Manual - 2: Automatico - 3: Config)</label><input type=\"number\" name=\"modoR4\" value=\"" + String(modoR4) + "\">";
-    html += "<label>HORA DE ENCENDIDO (HH:MM)</label><input type=\"text\" name=\"horaOnR4\" value=\"" + formatTwoDigits(horaOnR4) + ":" + formatTwoDigits(minOnR4) + "\">";
-    html += "<label>HORA DE APAGADO (HH:MM)</label><input type=\"text\" name=\"horaOffR4\" value=\"" + formatTwoDigits(horaOffR4) + ":" + formatTwoDigits(minOffR4) + "\">";
-    html += "<label>TIEMPO DE ENCENDIDO (horas)</label><input type=\"number\" name=\"tiempoEncendidoR4\" value=\"" + String(tiempoEncendidoR4 / 60) + "\">";
-    html += "<label>TIEMPO DE APAGADO (horas)</label><input type=\"number\" name=\"tiempoApagadoR4\" value=\"" + String(tiempoApagadoR4 / 60) + "\">";
-    html += "<label>HORA AMANECER (HH:MM)</label><input type=\"text\" name=\"horaAmanecer\" value=\"" + formatTwoDigits(horaAmanecer / 60) + ":" + formatTwoDigits(horaAmanecer % 60) + "\">";
-    html += "<label>HORA ATARDECER (HH:MM)</label><input type=\"text\" name=\"horaAtardecer\" value=\"" + formatTwoDigits(horaAtardecer / 60) + ":" + formatTwoDigits(horaAtardecer % 60) + "\">";
-    html += "<label>ESTADO (0: Apagado - 1: Encendido)</label><input type=\"number\" name=\"estadoR4\" value=\"" + String(estadoR4) + "\">";
+    
+    // Modo de operación (añadido Superciclo como opción 4)
+    html += "<label>MODO (1: Manual - 2: Automatico - 3: Config - 4: Superciclo)</label>";
+    html += "<input type=\"number\" name=\"modoR4\" value=\"" + String(modoR4) + "\" min=\"1\" max=\"4\">";
+    
+    // Configuración básica
+    html += "<label>HORA DE ENCENDIDO (HH:MM)</label>";
+    html += "<input type=\"text\" name=\"horaOnR4\" value=\"" + formatTwoDigits(horaOnR4) + ":" + formatTwoDigits(minOnR4) + "\">";
+    
+    html += "<label>HORA DE APAGADO (HH:MM)</label>";
+        if (modoR4 == SUPERCICLO) {
+        html += "<input type=\"text\" name=\"horaOffR4\" value=\"" + horaApagado + ":" + minApagado + "\" readonly>";
+    } else {
+        html += "<input type=\"text\" name=\"horaOffR4\" value=\"" + horaApagado + ":" + minApagado + "\">";
+    }
+    
+    // Configuración para Superciclo
+    html += "<h3 style=\"color:#00bfff; margin-top:20px;\">SUPERCICLO</h3>";
+    html += "<label>HORAS DE LUZ (0-30)</label>";
+    html += "<input type=\"number\" name=\"horasLuz\" value=\"" + String(horasLuz) + "\" min=\"0\" max=\"30\">";
+    
+    html += "<label>HORAS DE OSCURIDAD (0-30)</label>";
+    html += "<input type=\"number\" name=\"horasOscuridad\" value=\"" + String(horasOscuridad) + "\" min=\"0\" max=\"30\">";
+    
+    // Configuración existente
+    //html += "<label>ESTADO (0: Apagado - 1: Encendido)</label>";
+    //html += "<input type=\"number\" name=\"estadoR4\" value=\"" + String(estadoR4) + "\" min=\"0\" max=\"1\">";
+    
     html += "<input type=\"submit\" value=\"Guardar\">";
     html += "</form>";
     html += "<button onclick=\"window.location.href='/config'\">Volver</button>";
@@ -2281,8 +2517,11 @@ void handleConfigR4() {
     server.send(200, "text/html", html);
 }
 
+
+
 void saveConfigR4() {
     if (server.method() == HTTP_POST) {
+        // Configuración básica
         if (server.hasArg("modoR4")) {
             modoR4 = server.arg("modoR4").toInt();
         }
@@ -2306,40 +2545,36 @@ void saveConfigR4() {
             estadoR4 = server.arg("estadoR4").toInt();
         }
 
-        if (server.hasArg("tiempoEncendidoR4")) {
-            tiempoEncendidoR4 = server.arg("tiempoEncendidoR4").toInt() * 60;
+        // Configuración del Superciclo
+        if (server.hasArg("horasLuz")) {
+            horasLuz = server.arg("horasLuz").toInt();
+            if(horasLuz < 0) horasLuz = 0;
+            if(horasLuz > 24) horasLuz = 24;
         }
-        if (server.hasArg("tiempoApagadoR4")) {
-           tiempoApagadoR4 = server.arg("tiempoApagadoR4").toInt() * 60;
+        if (server.hasArg("horasOscuridad")) {
+            horasOscuridad = server.arg("horasOscuridad").toInt();
+            if(horasOscuridad < 0) horasOscuridad = 0;
+            if(horasOscuridad > 24) horasOscuridad = 24;
         }
 
-        if (server.hasArg("horaAmanecer")) {
-    String amanecerStr = server.arg("horaAmanecer");
-    int sepIndex = amanecerStr.indexOf(':');
-    if (sepIndex != -1) {
-        int h = amanecerStr.substring(0, sepIndex).toInt();
-        int m = amanecerStr.substring(sepIndex + 1).toInt();
-        horaAmanecer = h * 60 + m;
-    }
-    }
-      if (server.hasArg("horaAtardecer")) {
-    String atardecerStr = server.arg("horaAtardecer");
-    int sepIndex = atardecerStr.indexOf(':');
-    if (sepIndex != -1) {
-        int h = atardecerStr.substring(0, sepIndex).toInt();
-        int m = atardecerStr.substring(sepIndex + 1).toInt();
-        horaAtardecer = h * 60 + m;
-    }
-    }
+                // En modo SUPERCICLO, forzar cálculo automático
+        if (modoR4 == SUPERCICLO) {
+            unsigned long nuevoApagado = (horaOnR4 * 60 + minOnR4) + (horasLuz * 60);
+            if (nuevoApagado >= 1440) nuevoApagado -= 1440;
+            horaOffR4 = nuevoApagado / 60;
+            minOffR4 = nuevoApagado % 60;
+        }
 
-
-
-        // Guardar cambios y mostrar confirmación
+        Guardado_General();
+        
+        // Mostrar confirmación
         handleSaveConfig();
     } else {
         server.send(405, "text/plain", "Método no permitido");
     }
 }
+
+
 
 
 void handleSaveConfig() {
@@ -2449,7 +2684,7 @@ void mostrarEnPantallaOLED(float temperature, float humedad, float DPV, String h
 
   // Mostrar DPV (tamaño 2)
   display.setCursor(0, 40);     // Baja más el texto
-  display.print("DPV: ");
+  display.print("VPD: ");
   display.print(dpvDisplay);
   display.setTextSize(1); 
   display.print("hPa");
@@ -2458,6 +2693,8 @@ void mostrarEnPantallaOLED(float temperature, float humedad, float DPV, String h
   display.setTextSize(1);       // Cambiar el tamaño a 1 para la hora
   display.setCursor(95, 57);     // Posición para la hora
   display.print(hora);
+  display.setCursor(0, 57);
+  display.print((WiFi.getMode() == WIFI_STA) ? WiFi.localIP() : WiFi.softAPIP());
   
   display.display();            // Actualiza la pantalla
 }

@@ -1,3 +1,8 @@
+// Proyecto: Druida BOT de DataDruida
+// Autor: Bryan Murphy
+// Año: 2025
+// Licencia: MIT
+
 void handleNewMessages(int numNewMessages) {
   Serial.print("handleNewMessages ");
   Serial.println(numNewMessages);
