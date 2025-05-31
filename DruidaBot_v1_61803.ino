@@ -109,7 +109,8 @@ void setup() {
 void loop() {
   server.handleClient();
   unsigned long currentMillis = millis();
-  unsigned long intervaloEnvio = intervaloDatos * 60000UL;  // de minutos a milisegundos
+  unsigned long intervaloGoogle = tiempoGoogle * 60UL * 1000UL;
+  unsigned long intervaloTelegram = tiempoTelegram * 60UL * 1000UL;
 
   // Verifica la conexión WiFi a intervalos regulares
   if (currentMillis - previousMillis >= wifiCheckInterval && modoWiFi == 1) {
@@ -176,20 +177,41 @@ void loop() {
   }
 
 
-if (currentMillis - previousMillisEnvio >= intervaloEnvio) {
-  previousMillisEnvio = currentMillis;
+
+
+if (currentMillis - previousMillisGoogle >= intervaloGoogle) {
+  previousMillisGoogle = currentMillis;
 
   if (WiFi.status() == WL_CONNECTED) {
-    // Enviar a Google Sheets
+    // Enviar datos a Google Sheets
     sendDataToGoogleSheets();
 
-    // Enviar mensaje Telegram
-    DateTime now = rtc.now();  // usar para mostrar fecha y hora
-    int hour = now.hour() - 3;
-    if (hour < 0) hour += 24;
+    // Resetear máximos y mínimos
+    maxHum = -999;
+    minHum = 999;
+    maxTemp = -999;
+    minTemp = 999;
+  }
+}
 
-    String dateTime = "📅 Fecha y Hora: " + String(now.day()) + "/" + String(now.month()) + "/" + String(now.year()) + " " +
-                      String(hour) + ":" + String(now.minute()) + ":" + String(now.second()) + "\n";
+if (currentMillis - previousMillisTelegram >= intervaloTelegram) {
+  previousMillisTelegram = currentMillis;
+
+  if (WiFi.status() == WL_CONNECTED) {
+    // Leer datos actualizados
+    sensors_event_t humidity, temp;
+    aht.getEvent(&humidity, &temp);
+    float temperature = temp.temperature;
+    float humedad = humidity.relative_humidity;
+    requestSensorData();
+
+    // Obtener hora ajustada
+    DateTime now = rtc.now();
+    int horaBot = now.hour() - 3;
+    if (horaBot < 0) horaBot += 24;
+
+    String dateTime = "📅 Fecha y Hora: " + String(now.day()) + "/" + String(now.month()) + "/" + String(now.year()) + " "
+                    + horaBot + ":" + String(now.minute()) + ":" + String(now.second()) + "\n";
 
     String statusMessage = "🌡️ Temperatura: " + String(temperature, 1) + " °C\n";
     statusMessage += "💧 Humedad: " + String(humedad, 1) + " %\n";
@@ -197,12 +219,6 @@ if (currentMillis - previousMillisEnvio >= intervaloEnvio) {
     statusMessage += dateTime;
 
     bot.sendMessage(chat_id, statusMessage, "");
-
-    // Resetear máximos y mínimos
-    maxHum = -999;
-    minHum = 999;
-    maxTemp = -999;
-    minTemp = 999;
   }
 }
 
@@ -233,7 +249,7 @@ if (currentMillis - previousMillisEnvio >= intervaloEnvio) {
   }
 
   if (serial == '4') {
-    mostrarSensores();
+    sendDataToGoogleSheets();
     serial = 0;
   }
 
@@ -946,7 +962,7 @@ void Carga_General() {
   horaAtardecer = EEPROM.get(312, horaAtardecer);
   modoWiFi = EEPROM.get(316, modoWiFi);
   R1name = EEPROM.get(320, R1name);
-  //proximoCambioR4 = EEPROM.get(324, proximoCambioR4);
+  //intervaloDatos = EEPROM.get(324, intervaloDatos);
   //luzEncendida = EEPROM.get(328, luzEncendida);
   minTR2 = EEPROM.get(330, minTR2);
   maxTR2 = EEPROM.get(334, maxTR2);
@@ -954,11 +970,12 @@ void Carga_General() {
   //proximoApagadoR4 = EEPROM.get(342, proximoApagadoR4);
   horasLuz = EEPROM.get(346, horasLuz);
   horasOscuridad = EEPROM.get(350, horasOscuridad);
+  tiempoGoogle = EEPROM.get(354, tiempoGoogle);
+  tiempoTelegram = EEPROM.get(358, tiempoTelegram);
 
   /*for (int i = 0; i < 100; i++) {
     rawData[i] = EEPROM.get(350 + i * sizeof(uint16_t), rawData[i]);
   }*/
-
 
   Serial.println("Carga completa");
 }
@@ -1021,14 +1038,17 @@ void Guardado_General() {
   EEPROM.put(312, horaAtardecer);
   EEPROM.put(316, modoWiFi);
   EEPROM.put(320, R1name);
-  //EEPROM.put(324, proximoCambioR4);
+  //EEPROM.put(324, intervaloDatos);
   //EEPROM.put(328, luzEncendida);
   EEPROM.put(330, minTR2);
   EEPROM.put(334, maxTR2);
-  //EEPROM.put(338, proximoEncendidoR4 );
-  //EEPROM.put(342, proximoApagadoR4 );
-  EEPROM.put(346, horasLuz );
-  EEPROM.put(350, horasOscuridad );
+  //EEPROM.put(338, proximoEncendidoR4);
+  //EEPROM.put(342, proximoApagadoR4);
+  EEPROM.put(346, horasLuz);
+  EEPROM.put(350, horasOscuridad);
+  EEPROM.put(354, tiempoGoogle);
+  EEPROM.put(358, tiempoTelegram);
+
 
   
   /*for (int i = 0; i < 100; i++) {
@@ -1455,16 +1475,6 @@ void startWebServer() {
 }
 
 
-void mostrarSensores() {
-  Serial.print("Temperatura: ");
-  Serial.print(temperature);
-  Serial.println("° C");
-  Serial.print("Humedad: ");
-  Serial.print(humedad);
-  Serial.println(" %");
-
-}
-
 //CONFIG WIFI IPLOCAL
 
 void handleRoot() {
@@ -1529,13 +1539,6 @@ html += "<header><h1>Druida\nBot</h1></header>"; // Manteniendo el formato tabul
 
     server.send(200, "text/html", html);
 }
-
-
-
-
-
-
-
 
 
 
@@ -2137,25 +2140,30 @@ void handleConfigWiFi() {
     html += "<label for=\"chat_id\">Chat ID:</label>";
     html += "<input type=\"text\" id=\"chat_id\" name=\"chat_id\" value=\"" + chat_id + "\">";
 
-  html += "<label for=\"modoWiFi\">Modo WiFi:</label>";
-  html += "<input type=\"number\" id=\"modoWiFi\" name=\"modoWiFi\" value=\"" + String(modoWiFi) + "\">";
+    html += "<label for=\"tiempoGoogle\">Intervalo Google Sheets (min):</label>";
+    html += "<input type=\"number\" id=\"tiempoGoogle\" name=\"tiempoGoogle\" value=\"" + String(tiempoGoogle) + "\">";
+
+    html += "<label for=\"tiempoTelegram\">Intervalo Telegram (min):</label>";
+    html += "<input type=\"number\" id=\"tiempoTelegram\" name=\"tiempoTelegram\" value=\"" + String(tiempoTelegram) + "\">";
+
+    html += "<label for=\"modoWiFi\">Modo WiFi:</label>";
+    html += "<input type=\"number\" id=\"modoWiFi\" name=\"modoWiFi\" value=\"" + String(modoWiFi) + "\">";
 
     html += "<input type=\"submit\" value=\"Guardar\">";
 
     html += "</form>";
 
-    // Botón "Conectar WiFi"
     html += "<form action=\"/connectWiFi\" method=\"POST\">";
     html += "<button type=\"submit\">Conectar WiFi</button>";
     html += "</form>";
 
     html += "<button onclick=\"window.location.href='/config'\">Volver</button>";
-    html += "</div>";
-
-    html += "</body></html>";
+    html += "</div></body></html>";
 
     server.send(200, "text/html", html);
 }
+
+
 
 void connectWiFi() {
     // Cambiar las variables al presionar "Conectar WiFi"
@@ -2190,7 +2198,6 @@ void connectWiFi() {
 
 void saveConfigWiFi() {
     if (server.method() == HTTP_POST) {
-        // Verificar y asignar cada parámetro recibido
         if (server.hasArg("ssid")) {
             ssid = server.arg("ssid");
         }
@@ -2200,14 +2207,25 @@ void saveConfigWiFi() {
         if (server.hasArg("chat_id")) {
             chat_id = server.arg("chat_id");
         }
+        if (server.hasArg("tiempoGoogle")) {
+            tiempoGoogle = server.arg("tiempoGoogle").toInt();
+            //intervaloGoogle = tiempoGoogle * 60 * 1000UL;
+        }
+        if (server.hasArg("tiempoTelegram")) {
+            tiempoTelegram = server.arg("tiempoTelegram").toInt();
+            //intervaloTelegram = tiempoTelegram * 60 * 1000UL;
+        }
+        if (server.hasArg("modoWiFi")) {
+            modoWiFi = server.arg("modoWiFi").toInt();
+        }
 
-        // Guardar cambios y mostrar confirmación
-        handleSaveConfig();
+        handleSaveConfig(); // Función que guarda los datos en EEPROM, archivo, etc.
     } else {
-        // Si no es un método POST, devolver error
         server.send(405, "text/plain", "Método no permitido");
     }
 }
+
+
 
 
 
