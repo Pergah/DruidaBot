@@ -797,10 +797,10 @@ if (text == getRelayName(R2name) + " Info") {
     infoR2 += "Parametro: " + convertirParametro(paramR2) + ".\n";
     infoR2 += "Modo: " + convertirModo(modoR2) + ".\n";
     infoR2 += getRelayName(R2name) + " (IR): \n";
-    infoR2 += "Límite Inferior: " + String(minR2ir) + ".\n";
-    infoR2 += "Límite Superior: " + String(maxR2ir) + ".\n";
-    infoR2 += "Parametro: " + convertirParametro(paramR2ir) + ".\n";
-    infoR2 += "Modo: " + convertirModo(modoR2ir) + ".\n";
+    //infoR2 += "Límite Inferior: " + String(minR2ir) + ".\n";
+    //infoR2 += "Límite Superior: " + String(maxR2ir) + ".\n";
+    //infoR2 += "Parametro: " + convertirParametro(paramR2ir) + ".\n";
+    //infoR2 += "Modo: " + convertirModo(modoR2ir) + ".\n";
     bot.sendMessage(chat_id, infoR2, "Markdown");
 }
 
@@ -880,6 +880,11 @@ if (text == "STATUS" ) {
     String statusMessage = "🌡️ Temperatura: " + String(temperature, 1) + " °C\n";
     statusMessage += "💧 Humedad: " + String(humedad, 1) + " %\n";
     statusMessage += "🌬️ DPV: " + String(DPV, 1) + " hPa\n";
+    statusMessage += "🌱 Humedad 1: " + String(sensor1Value) + " %\n";
+    statusMessage += "🌱 Humedad 2: " + String(sensor2Value) + " %\n";
+    statusMessage += "🌱 Humedad 3: " + String(sensor3Value) + " %\n";
+    statusMessage += "🧪 pH: " + String(sensorPH, 2) + "\n";
+
 
     statusMessage += dateTime;  // Agrega la fecha y hora al mensaje
     bot.sendMessage(chat_id, statusMessage, "");
