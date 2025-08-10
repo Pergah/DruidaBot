@@ -1849,6 +1849,15 @@ void startWebServer() {
     server.on("/saveConfigR4", saveConfigR4);
     server.on("/saveConfigWiFi", saveConfigWiFi);
     server.on("/connectWiFi", connectWiFi);
+    server.on("/disconnectWiFi", HTTP_POST, []() {
+  modoWiFi = 0;
+  Guardado_General();
+  WiFi.disconnect(true);   // corta y borra configuración actual de conexión
+  Serial.println("WiFi desconectado. modoWiFi = 0");
+  server.sendHeader("Location", "/", true);
+  server.send(302, "text/plain", "");
+});
+
     //server.on("/configIR", handleConfigIR);
     //server.on("/captureIR", handleCaptureIR);
     //server.on("/saveIRConfig", handleSaveIRConfig);
@@ -2803,9 +2812,17 @@ void handleConfigWiFi() {
   html += "</div>";
   html += "</form>";
 
+  // Botón CONECTAR WiFi
   html += "<form action='/connectWiFi' method='POST'>";
   html += "<div class='button-container'>";
   html += "<input class='btn' type='submit' value='CONECTAR WiFi'>";
+  html += "</div>";
+  html += "</form>";
+
+  // NUEVO: Botón DESCONECTAR WiFi (manteniendo la misma estructura/estilos)
+  html += "<form action='/disconnectWiFi' method='POST'>";
+  html += "<div class='button-container'>";
+  html += "<input class='btn' type='submit' value='DESCONECTAR WiFi'>";
   html += "</div>";
   html += "</form>";
 
@@ -2813,22 +2830,21 @@ void handleConfigWiFi() {
 
   html += "<footer><p>bmurphy1.618@gmail.com<br>BmuRphY</p></footer>";
 
-  // Sincronizar selector con campo de texto
-  html += R"rawliteral(
-    <script>
-      const sel = document.getElementById('ssidSelect');
-      if (sel) {
-        sel.addEventListener('change', () => {
-          document.getElementById('ssidInput').value = sel.value;
-        });
-      }
-    </script>
-  )rawliteral";
+// Sincronizar selector con campo de texto
+  html += "<script>";
+  html += "const sel = document.getElementById('ssidSelect');";
+  html += "if (sel) {";
+  html += "  sel.addEventListener('change', () => {";
+  html += "    document.getElementById('ssidInput').value = sel.value;";
+  html += "  });";
+  html += "}";
+  html += "</script>";
 
   html += "</body></html>";
 
   server.send(200, "text/html", html);
 }
+
 
 
 
