@@ -39,26 +39,29 @@ if (text == "/start") {
     modoMenu = AUTO;
 
     // Crear botones dinámicos basados en los nombres de los relés
-    String controlKeyboardJson = 
+    String controlKeyboardJson =
         "[[\"Controlar " + getRelayName(R1name) + "\"], " +
         "[\"Controlar " + getRelayName(R2name) + "\"], " +
         "[\"Controlar " + getRelayName(R3name) + "\"], " +
         "[\"Controlar " + getRelayName(R4name) + "\"], " +
+        "[\"Controlar " + getRelayName(R5name) + "\"], " +   // <- agregado R5
         "[\"Menu Principal\"]]";
 
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione el dispositivo que desea controlar:", "", controlKeyboardJson, true);
 }
 
 if (text == "Menu Control") {
-    String controlKeyboardJson = 
+    String controlKeyboardJson =
         "[[\"Controlar " + getRelayName(R1name) + "\"], " +
         "[\"Controlar " + getRelayName(R2name) + "\"], " +
         "[\"Controlar " + getRelayName(R3name) + "\"], " +
         "[\"Controlar " + getRelayName(R4name) + "\"], " +
+        "[\"Controlar " + getRelayName(R5name) + "\"], " +   // <- agregado R5
         "[\"Menu Principal\"]]";
 
     bot.sendMessageWithReplyKeyboard(chat_id, "Volviendo al menú CONTROL:", "", controlKeyboardJson, true);
 }
+
 
 // Submenú para R1
 if (text == "Controlar " + getRelayName(R1name)) {
@@ -69,6 +72,17 @@ if (text == "Controlar " + getRelayName(R1name)) {
     
     bot.sendMessageWithReplyKeyboard(chat_id, "Controlando " + getRelayName(R1name) + ":", "", relayControlKeyboardJson, true);
 }
+
+// Submenú para R5
+if (text == "Controlar " + getRelayName(R5name)) {
+    String relayControlKeyboardJson = 
+        "[[\"Encender " + getRelayName(R5name) + "\", \"Apagar " + getRelayName(R5name) + "\"], " +
+        "[\"Automatizar " + getRelayName(R5name) + "\"], " +
+        "[\"Menu Control\"], [\"Menu Principal\"]]";
+    
+    bot.sendMessageWithReplyKeyboard(chat_id, "Controlando " + getRelayName(R5name) + ":", "", relayControlKeyboardJson, true);
+}
+
 
 // Submenú para R2
 if (text == "Controlar " + getRelayName(R2name)) {
@@ -132,6 +146,33 @@ if (text == "Automatizar " + getRelayName(R1name)) {
     Guardado_General();
     delay(500);
 }
+
+// Encender R5
+if (text == "Encender " + getRelayName(R5name)) {
+    modoR5 = MANUAL;
+    estadoR5 = 1;
+    bot.sendMessage(chat_id, getRelayName(R5name) + " está encendido.", "");
+    Guardado_General();
+    delay(500);
+}
+
+// Apagar R5
+if (text == "Apagar " + getRelayName(R5name)) {
+    modoR5 = MANUAL;
+    estadoR5 = 0;
+    bot.sendMessage(chat_id, getRelayName(R5name) + " está apagado.", "");
+    Guardado_General();
+    delay(500);
+}
+
+// Automatizar R5
+if (text == "Automatizar " + getRelayName(R5name)) {
+    modoR5 = AUTO;
+    bot.sendMessage(chat_id, getRelayName(R5name) + " está en modo automático.", "");
+    Guardado_General();
+    delay(500);
+}
+
 
 // Repetir para R2
 if (text == "Encender " + getRelayName(R2name)) {
@@ -230,11 +271,12 @@ if (esperandoTiempoR3 && text != "Encender " + getRelayName(R3name) + " (segundo
 
 if (text == "CONFIG") {
     // Crear botones dinámicos para la configuración de cada relé
-    String configKeyboardJson = 
+    String configKeyboardJson =
         "[[\"Configurar " + getRelayName(R1name) + "\"], " +
         "[\"Configurar " + getRelayName(R2name) + "\"], " +
         "[\"Configurar " + getRelayName(R3name) + "\"], " +
         "[\"Configurar " + getRelayName(R4name) + "\"], " +
+        "[\"Configurar " + getRelayName(R5name) + "\"], " +  // <- agregado R5
         "[\"INFO CONFIG\"], " +
         "[\"RESET DRUIDA\"], " +
         "[\"WIFI ACCES POINT\"], " +
@@ -242,6 +284,7 @@ if (text == "CONFIG") {
 
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione una opción para configurar:", "", configKeyboardJson, true);
 }
+
 
 
 
@@ -254,6 +297,16 @@ if (text == "Configurar " + getRelayName(R1name)) {
                             "[\"Menu CONFIG\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R1name) + ":", "", r1KeyboardJson, true);
 }
+
+// Menú de configuración para R5
+if (text == "Configurar " + getRelayName(R5name)) {
+    String r5KeyboardJson = "[[\"Min " + getRelayName(R5name) + "\", \"Max " + getRelayName(R5name) + "\"], " +
+                            "[\"Hora On " + getRelayName(R5name) + "\", \"Hora Off " + getRelayName(R5name) + "\"], " +
+                            //"[\"Parametro " + getRelayName(R5name) + "\", \"Config " + getRelayName(R5name) + " Name\"], " +
+                            "[\"Menu CONFIG\"]]";
+    bot.sendMessageWithReplyKeyboard(chat_id, "Opciones de configuración para " + getRelayName(R5name) + ":", "", r5KeyboardJson, true);
+}
+
 
 // Menú de configuración para R2
 if (text == "Configurar " + getRelayName(R2name)) {
@@ -290,12 +343,15 @@ if (text == "Menu CONFIG") {
         "[\"Configurar " + getRelayName(R2name) + "\"], " +
         "[\"Configurar " + getRelayName(R3name) + "\"], " +
         "[\"Configurar " + getRelayName(R4name) + "\"], " +
+        "[\"Configurar " + getRelayName(R5name) + "\"], " +  // <- agregado R5
         "[\"INFO CONFIG\"], " +
         "[\"RESET DRUIDA\"], " +
         "[\"MODO LOCAL\"], " +
         "[\"Menu Principal\"]]";
+        
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione una opción para configurar:", "", configKeyboardJson, true);
 }
+
 
 if (text == "MODO LOCAL"){
   modoWiFi = 0;
@@ -416,6 +472,115 @@ if (text == "Hora Off " + getRelayName(R1name)) {
         bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
     }
 }
+
+// Configurar el valor mínimo R5
+if (text == "Min " + getRelayName(R5name)) {
+    modoR5 = CONFIG;
+    modoMenu = CONFIG;
+    R5config = 1;
+    bot.sendMessage(chat_id, "Ingrese valor Min " + getRelayName(R5name) + ":");
+}
+if (R5config == 1) {
+    minR5 = text.toFloat();
+    if (minR5 > 0 && minR5 < 100) {
+        Serial.print("Valor min " + getRelayName(R5name) + ": ");
+        Serial.println(minR5);
+        bot.sendMessage(chat_id, "Valor min " + getRelayName(R5name) + " guardado");
+        Guardado_General();
+        R5config = 0;
+    }
+}
+
+// Configurar el valor máximo R5
+if (text == "Max " + getRelayName(R5name)) {
+    modoR5 = CONFIG;
+    modoMenu = CONFIG;
+    R5config = 2;
+    bot.sendMessage(chat_id, "Ingrese valor Max " + getRelayName(R5name) + ":");
+}
+if (R5config == 2) {
+    maxR5 = text.toFloat();
+    if (maxR5 > 0) {
+        Serial.print("Valor max " + getRelayName(R5name) + ": ");
+        Serial.println(maxR5);
+        bot.sendMessage(chat_id, "Valor max " + getRelayName(R5name) + " guardado");
+        Guardado_General();
+        R5config = 0;
+    }
+}
+
+// Configurar el parámetro R5
+if (text == "Parametro " + getRelayName(R5name)) {
+    modoR5 = CONFIG;
+    modoMenu = CONFIG;
+    R5config = 3;
+    bot.sendMessage(chat_id, "Ingrese parámetro para " + getRelayName(R5name) + ":\n1- Humedad\n2- Temperatura\n3- DPV.");
+}
+if (R5config == 3) {
+    paramR5 = text.toInt();
+    if (paramR5 > 0) {
+        Serial.print("Parametro " + getRelayName(R5name) + ": ");
+        Serial.println(paramR5);
+        bot.sendMessage(chat_id, "Valor parametro " + getRelayName(R5name) + " guardado");
+        Guardado_General();
+        R5config = 0;
+    }
+}
+
+// Configurar Hora On R5
+if (text == "Hora On " + getRelayName(R5name)) {
+    modoR5 = CONFIG;
+    modoMenu = CONFIG;
+    R5config = 4;
+    bot.sendMessage(chat_id, "Ingrese Hora On " + getRelayName(R5name) + " en formato HH:MM (por ejemplo, 08:30):");
+} else if (R5config == 4) {
+    int sep = text.indexOf(':');
+    if (sep != -1) {
+        horaOnR5 = text.substring(0, sep).toInt();
+        minOnR5  = text.substring(sep + 1).toInt();
+        if (horaOnR5 >= 0 && horaOnR5 < 24 && minOnR5 >= 0 && minOnR5 < 60) {
+            Serial.print("Hora On " + getRelayName(R5name) + ": ");
+            Serial.print(horaOnR5);
+            Serial.print(":");
+            Serial.println(minOnR5);
+            bot.sendMessage(chat_id, "Hora On " + getRelayName(R5name) + " guardada correctamente");
+            Guardado_General();
+            R5config = 0;
+        } else {
+            bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        }
+    } else {
+        bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+    }
+}
+
+// Configurar Hora Off R5
+if (text == "Hora Off " + getRelayName(R5name)) {
+    modoR5 = CONFIG;
+    modoMenu = CONFIG;
+    R5config = 5;
+    bot.sendMessage(chat_id, "Ingrese Hora Off " + getRelayName(R5name) + " en formato HH:MM (por ejemplo, 18:45):");
+} else if (R5config == 5) {
+    int sep = text.indexOf(':');
+    if (sep != -1) {
+        horaOffR5 = text.substring(0, sep).toInt();
+        minOffR5  = text.substring(sep + 1).toInt();
+        if (horaOffR5 >= 0 && horaOffR5 < 24 && minOffR5 >= 0 && minOffR5 < 60) {
+            Serial.print("Hora Off " + getRelayName(R5name) + ": ");
+            Serial.print(horaOffR5);
+            Serial.print(":");
+            Serial.println(minOffR5);
+            bot.sendMessage(chat_id, "Hora Off " + getRelayName(R5name) + " guardada correctamente");
+            Guardado_General();
+            R5config = 0;
+        } else {
+            bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+        }
+    } else {
+        bot.sendMessage(chat_id, "Error: Formato incorrecto. Ingrese en formato HH:MM.");
+    }
+}
+
 
 
 /// RELE 3 CONFIG
@@ -770,12 +935,14 @@ if (R4config == 5) {
 // MOSTRAR PARAMETROS
 
 if (text == "INFO CONFIG") {
-    // Crear botones para mostrar la información de cada relé con nombres dinámicos
+    // Crear botones para mostrar la información de cada relé con nombres dinámicos (incluye R5)
     String infoKeyboardJson = "[[\"" + getRelayName(R1name) + " Info\", \"" + getRelayName(R2name) + " Info\"], "
                               "[\"" + getRelayName(R3name) + " Info\", \"" + getRelayName(R4name) + " Info\"], "
+                              "[\"" + getRelayName(R5name) + " Info\"], "
                               "[\"Menu Principal\"]]";
     bot.sendMessageWithReplyKeyboard(chat_id, "Seleccione un relé para ver la información:", "", infoKeyboardJson, true);
 }
+
 
 // Información de R1
 if (text == getRelayName(R1name) + " Info") {
@@ -788,6 +955,19 @@ if (text == getRelayName(R1name) + " Info") {
     infoR1 += "Modo: " + convertirModo(modoR1) + ".\n";
     bot.sendMessage(chat_id, infoR1, "Markdown");
 }
+
+// Información de R5
+if (text == getRelayName(R5name) + " Info") {
+    String infoR5 = getRelayName(R5name) + ": \n";
+    infoR5 += "Límite Inferior: " + String(minR5) + ".\n";
+    infoR5 += "Límite Superior: " + String(maxR5) + ".\n";
+    infoR5 += "Parametro: " + convertirParametro(paramR5) + ".\n";
+    infoR5 += "Hora de encendido: " + formatoHora(horaOnR5, minOnR5) + "\n";
+    infoR5 += "Hora de apagado: " + formatoHora(horaOffR5, minOffR5) + "\n";
+    infoR5 += "Modo: " + convertirModo(modoR5) + ".\n";
+    bot.sendMessage(chat_id, infoR5, "Markdown");
+}
+
 
 // Información de R2
 if (text == getRelayName(R2name) + " Info") {
