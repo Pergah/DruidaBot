@@ -25,10 +25,11 @@
 #include <Adafruit_AHTX0.h>
 #include <WebServer.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-//#include <Adafruit_SH110X.h>
+//#include <Adafruit_SSD1306.h>
+#include <Adafruit_SH110X.h>
 #include <ESP32Servo.h>
 #include "esp_task_wdt.h"
+#include "math.h"
 
 
 
@@ -46,6 +47,7 @@
 #define RIEGO 7
 #define AUTORIEGO 8
 #define AUTOINT 9
+#define SUPERCICLO1313 13
 
 
 // Aca se muestra como van conectados los componentes
@@ -55,9 +57,9 @@
 //#define sensorHS 2 //humedad Suelo
 //#define sensorIRreceptor 12
 #define SERVO 23
-#define RELAY4 19
+#define RELAY4 18
 #define RELAY3 5
-#define RELAY5 18
+#define RELAY5 19
 #define RELAY2 17
 #define RELAY1 16
 
@@ -68,10 +70,20 @@
 #define SDA_NANO 33
 #define SCL_NANO 27
 
+#define RELAY4_ACTIVE_LOW 1
+
+#define ADDR_VEGE_START    384  // uint32_t
+#define ADDR_FLORA_START   388  // uint32_t
+#define ADDR_VEGE_DAYS     392  // int32_t
+#define ADDR_FLORA_DAYS    396  // int32_t
+#define ADDR_LAST_DATEKEY  400  // uint32_t (yyyymmdd local)
+#define ADDR_VEGE_ACTIVE   404  // uint8_t
+#define ADDR_FLORA_ACTIVE  405  // uint8_t
+
 TwoWire I2CNano = TwoWire(1);  // Usamos el bus I2C número 1
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
-//Adafruit_SH1106G display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1); // -1 = sin pin RESET
+//Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+Adafruit_SH1106G display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1); // -1 = sin pin RESET
 Servo dimmerServo; // Objeto del servomotor
 
 
@@ -88,21 +100,7 @@ Servo dimmerServo; // Objeto del servomotor
 //ACA VAN LOS TOKENS
 
 
-//const String botToken = "6920896340:AAEdvJl1v67McffACbdNXLhjMe00f_ji_ag"; //DRUIDA UNO (-)
-//const String botToken = "6867697701:AAHtaJ4YC3dDtk1RuFWD-_f72S5MYvlCV4w"; //DRUIDA DOS (60x60)
-//const String botToken = "7273841170:AAHxWF33cIDcIoxgBm3x9tzn9ISJIKoy7X8"; //DRUIDA TRES (80x80)
-//const String botToken = "7314697588:AAGJdgljHPSb47EWcfYUR1Rs-7ia0_domok"; //DRUIDA CUATRO (100x100)
-//const String botToken = "7357647743:AAFPD1Tc099-2o-E2-Ph7SZluzwHubrl700";  //DRUIDA CINCO (matheu)
-//const String botToken = "7611244980:AAEQUDIUZwR4nZBsjEEHPEieyc3k90PxVxI"; //DRUIDA SEIS (nuevop)
-//const String botToken = "7883822127:AAHkWG4Gw2VfQDKk4UbTw8THZg2oxng3fM0"; //DRUIDA SIETE
-//const String botToken = "7876802825:AAEVAKdmkVRLLaCJu4nJz4230q9Wjsj1UQw"; //DRUIDA OCHO 
-//const String botToken = "7728657762:AAHfdY7BAYy4DZv5OY8_EH6962uXr6MnQRc"; //DRUIDA NUEVE(IVANA)
-const String botToken = "7775586310:AAFDG0S8gI3V_130QM5059ktEwtCw-UXQ1U"; //DRUIDA DIEZ 
-//const String botToken = "7645489798:AAEwwyvYupDuc75KQDf6zlat35fqb1pYKoU"; //DRUIDA ONCE 
-//const String botToken = "7746698472:AAG4o49c73Q7H-o1moMMmFJrcvNbBZ5Mk0Y"; //DRUIDA DOCE
-//const String botToken = "7622091905:AAGq10bmEioS73QYo7k3b_1mtMSvkHMj6aM"; //DRUIDA TRECE //(MATI PERGA)
-//const String botToken = "7715561134:AAFAKOD8MWk3Z5LsBrlnzwCczFqEr5fmvCU"; //DRUIDA CATORCE 
-
+const String botToken = "8296049013:AAHz4rHxmmY1yiqyil3sahGzNWk41ARqFE8"; //DRUIDA 18
 
 
 
@@ -110,13 +108,15 @@ const String botToken = "7775586310:AAFDG0S8gI3V_130QM5059ktEwtCw-UXQ1U"; //DRUI
 //ACA VAN LOS TOKENS
 
 
+const char* ssid_AP = "DruidaBot (02)"; // 
+
 
 const char* password_AP = "12345678";          // Contraseña de la red AP
 
 // ID: 1308350088 
 
-String scriptId = "AKfycbwUlj-gk1NNDHwxxebIqH7vS0N8qbu9LZydo4QeyAwmULEQ8JcSGNt8RRxRLdoIRRTA";  //Druida DOS (Matheu)
-//String scriptId = "AKfycbwUlj-gk1NNDHwxxebIqH7vS0N8qbu9LZydo4QeyAwmULEQ8JcSGNt8RRxRLdoIRRTA"; //Druida CUATRO (Caba)
+//String scriptId = "AKfycbwUlj-gk1NNDHwxxebIqH7vS0N8qbu9LZydo4QeyAwmULEQ8JcSGNt8RRxRLdoIRRTA"; //Druida 01 (SHASTIN)
+String scriptId = "AKfycbwUlj-gk1NNDHwxxebIqH7vS0N8qbu9LZydo4QeyAwmULEQ8JcSGNt8RRxRLdoIRRTA";  //Druida 02 (Matheu)
 
 
 const unsigned long BOT_MTBS = 1000;
@@ -156,6 +156,17 @@ int minOnR1 = 0;
 int horaOffR1 = 0;
 int minOffR1 = 0;
 
+//byte modoR5 = 0;
+float minR5 = 0;
+float maxR5 = 0;
+byte paramR5 = 0;
+int timeOnR5 = 0;
+int timeOffR5 = 0;
+int horaOnR5 = 0;
+int minOnR5 = 0;
+int horaOffR5 = 0;
+int minOffR5 = 0;
+
 byte modoR2 = 0;
 float minR2 = 0;
 float maxR2 = 0;
@@ -183,12 +194,14 @@ int timeOffR4 = 0;
 byte modoMenu = -1;
 
 int R1config = -1;
+int R5config = -1;
 int R2config = -1;
 //int R2irconfig = -1;
 int R3config = -1;
 int R4config = -1;
 
 byte estadoR1 = 0;
+//byte estadoR5 = 0;
 byte estadoR2 = 0;
 //byte estadoR2ir = 0;
 byte estadoR3 = 0;
@@ -199,6 +212,7 @@ bool R2estado = HIGH;
 //bool R2irestado = HIGH;
 bool R3estado = HIGH;
 bool R4estado = HIGH;
+//bool R5estado = HIGH;
 
 float DPV = 0;
 
@@ -222,15 +236,18 @@ int lastHourSent = -1;
 byte estadoRTC = 0;
 
 int tiempoR1 = 0;
+int tiempoR5 = 0;
 int tiempoR2 = 0;
 //int tiempoR2ir = 0;
 int tiempoR3 = 0;
 int tiempoR4 = 0; 
 bool esperandoTiempoR1 = false;
+bool esperandoTiempoR5 = false;
 bool esperandoTiempoR2 = false;
 bool esperandoTiempoR2ir = false;
 bool esperandoTiempoR3 = false;
 bool esperandoTiempoR4 = false;
+
 
 
 WebServer server(80);
@@ -256,10 +273,11 @@ int currentPosition = 0; // Posición inicial del servo
 int previousSecondRiego = 0; // Inicialización con 0
 int previousSeconds = 0; 
 
-String relayNames[] = {"Humidificacion", "Extraccion", "Irrigacion", "Iluminacion", "Aire Acondicionado", "Calefaccion"};
-String relayAssignedNames[5] = {"R1", "R2", "R3", "R4", "R2ir"}; // Nombres actuales para cada relé
+String relayNames[] = {"Humidificacion", "Extraccion", "Irrigacion", "Iluminacion", "Aire Acondicionado", "Calefaccion", "Deshumidificacion", "Intraccion"};
+String relayAssignedNames[6] = {"R1", "R5", "R2", "R3", "R4", "R2ir"}; // Nombres actuales para cada relé
 
 int R1name = 0;   // (Humidificacion)
+int R5name = 0;   // (Humidificacion)
 int R2name = 1;   // (Extraccion)
 int R3name = 2;   // (Irrigacion)
 int R4name = 3;   // (Iluminacion)
@@ -290,6 +308,10 @@ unsigned long previousMillisGoogle = 0;
 int tiempoEncendidoR1 = 5; // en minutos
 int tiempoApagadoR1 = 10;  // en minutos
 unsigned long previousMillisR1 = 0;
+// Variables para el modo AUTORIEGO del relay 1
+int tiempoEncendidoR5 = 5; // en minutos
+int tiempoApagadoR5 = 10;  // en minutos
+unsigned long previousMillisR5 = 0;
 bool enHumidificacion = false;
 
 int tiempoGoogle = -1;
@@ -300,6 +322,7 @@ int unidadRiego = 60;     // 1 = seg, 60 = min, 3600 = h
 int unidadNoRiego = 3600; // valores cargados desde EEPROM o lo que uses
 
 byte direccionR1 = 0;
+byte direccionR5 = 0;
 
 unsigned long tiempoInicioR2 = 0;
 unsigned long tiempoEsperaR2 = 0;
@@ -329,3 +352,54 @@ float sensorPH = 0.0;
 bool sensorDataValid = false;
 
 static bool superR4_Inicializado = false;
+
+// ====== Polaridad de R5 ======
+//const bool R5_ACTIVO_EN_HIGH = true;  // R5 cierra con HIGH
+
+// ====== Estado lógico y físico de R5 ======
+// Lógico (se persiste): 0 = OFF, 1 = ON
+uint8_t estadoR5 = 0;
+// Modo (se persiste): 0 = AUTO, 1 = MANUAL (ajustá si tu enum difiere)
+uint8_t modoR5   = 1; // MANUAL por defecto si no lo tenías
+// Físico (cache del último nivel escrito al pin)
+uint8_t R5estado = LOW;
+const bool R5_ACTIVO_EN_HIGH = true;
+
+static const size_t SSID_CAP   = 50; // ocupa [37..86]
+static const size_t PASS_CAP   = 50; // ocupa [87..136]
+static const size_t CHATID_CAP = 25; // ocupa [215..239]
+
+// Zona segura post-boot para persistencia (anti-brownout/escrituras con datos vacíos)
+bool canPersist = false;
+unsigned long bootMs = 0;
+
+// Validador de horarios H:M
+inline bool horarioOK(int h, int m) { return (h >= 0 && h < 24 && m >= 0 && m < 60); }
+
+// ===== SUPERCICLO R4 =====
+// Variables de scheduling SIEMPRE en minutos [0..1439]
+extern int16_t nextOnR4Abs  = -1;
+extern int16_t nextOffR4Abs = -1;
+
+// ===== Ciclos de cultivo (persistentes con Guardado_General) =====
+uint32_t vegeStartEpoch  = 0;   // 0 = no iniciado
+uint32_t floraStartEpoch = 0;   // 0 = no iniciado
+
+bool vegeActive  = false;
+bool floraActive = false;
+
+int  vegeDays    = 0;           // 0 = sin iniciar / "--" en UI
+int  floraDays   = 0;
+
+uint32_t lastDateKey = 0;       // yyyymmdd local (-3h)
+
+bool superEnabled = false;
+
+int32_t superAnchorEpochR4 = 0; // ancla absoluta del ciclo (epoch local)
+
+static int32_t nextOnEpoch_R4  = -1;
+static int32_t nextOffEpoch_R4 = -1;
+
+int32_t supercycleStartEpochR4 = 0;  // se guarda la fecha/hora de inicio en epoch
+
+const int SUPERCYCLE_13H = 13 * 60; // 780 min
