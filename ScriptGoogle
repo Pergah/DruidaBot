@@ -1,0 +1,31 @@
+function doGet(e) {
+  Logger.log(JSON.stringify(e));  // Registra los parámetros recibidos
+
+  var result = 'Ok';  // Supongamos que todo está bien por defecto
+  
+  if (!e || !e.parameter) {
+    result = 'No Parameters';
+  } else {
+    var sheetId = '1EkuDZKjqX74FkXFTZC2NHXrphwY1uWJSa_avfKzOVhc';  // ID de tu hoja de cálculo
+    var sheet = SpreadsheetApp.openById(sheetId).getActiveSheet();  // Abre la hoja activa
+    var newRow = sheet.getLastRow() + 1;  // Encuentra la última fila vacía
+
+    // Construye un array con los datos a registrar
+    var rowData = [
+      new Date(),  // Fecha y hora actual
+      e.parameter.maxHumidity,  // Valor de humedad máxima
+      e.parameter.minHumidity,  // Valor de humedad mínima
+      e.parameter.maxTemperature,  // Valor de temperatura máxima
+      e.parameter.minTemperature  // Valor de temperatura mínima
+    ];
+
+    // Escribe los datos en la hoja de cálculo
+    sheet.appendRow(rowData);
+
+    result = 'Datos escritos en la hoja de cálculo';
+  }
+
+  return ContentService.createTextOutput(result);  // Devuelve un mensaje de estado
+}
+
+
