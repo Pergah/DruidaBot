@@ -6,7 +6,7 @@ function doGet(e) {
   if (!e || !e.parameter) {
     result = 'No Parameters';
   } else {
-    var sheetId = '1EkuDZKjqX74FkXFTZC2NHXrphwY1uWJSa_avfKzOVhc';  // ID de tu hoja de cálculo
+    var sheetId = 'ACA VA EL ID DE TU HOJA DE CALCULO';  // ID de tu hoja de cálculo
     var sheet = SpreadsheetApp.openById(sheetId).getActiveSheet();  // Abre la hoja activa
     var newRow = sheet.getLastRow() + 1;  // Encuentra la última fila vacía
 
