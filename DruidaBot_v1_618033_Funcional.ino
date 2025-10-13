@@ -2556,18 +2556,18 @@ void handleRoot() {
     switch (relayIndex) {
       case 2: // R2: 1=Manual, 2=Auto, 9=Auto Inteligente
         if (modo == 1) return "MANUAL";
-        if (modo == 2) return "AUTOMATICO";
-        if (modo == 9) return "AUTO INT";
+        if (modo == 2) return "AUTO";
+        if (modo == 9) return "AUTO IA";
         return "—";
       case 4: // R4: 1=Manual, 2=Auto, 4=Superciclo, 13=Superciclo 13/13
         if (modo == 1) return "MANUAL";
-        if (modo == 2) return "AUTOMATICO";
-        if (modo == 4) return "SUPERCICLO";
-        if (modo == SUPERCICLO1313) return "SUPERCICLO 13/13";
+        if (modo == 2) return "AUTO";
+        if (modo == 4) return "SUP CIC";
+        if (modo == SUPERCICLO1313) return "13/13";
         return "—";
       default: // R1, R5, R3: 1=Manual, 2=Auto, 6=Timer (según caso)
         if (modo == 1) return "MANUAL";
-        if (modo == 2) return "AUTOMATICO";
+        if (modo == 2) return "AUTO";
         if (modo == 6) return "TIMER";
         return "—";
     }
@@ -2598,7 +2598,8 @@ void handleRoot() {
   statusMessage += "</div>";
 
   // ===== HTML =====
-  String html = "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'/>"
+  String html =
+    "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'/>"
     "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
     "<title>Estado General</title>"
     "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
@@ -2607,14 +2608,19 @@ void handleRoot() {
       "--fs-body:clamp(16px,3.5vw,18px);--fs-small:clamp(12px,2.6vw,14px);--fs-h1:clamp(22px,6vw,56px)}"
       "*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
       "html,body{height:100%}"
-      "body{margin:0;padding:10px;font-family:'Press Start 2P',monospace;background:linear-gradient(to bottom,#0a0f1e,#111927);"
-        "color:#e0e0e0;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;"
-        "line-height:1.25;gap:16px}"
+      /* Layout base: el footer no flota ni tapa contenido */
+      "body{margin:0;padding:0;font-family:'Press Start 2P',monospace;background:linear-gradient(to bottom,#0a0f1e,#111927);"
+        "color:#e0e0e0;min-height:100dvh;display:flex;flex-direction:column;align-items:stretch;line-height:1.25}"
+      ".main{flex:1;display:flex;flex-direction:column;align-items:center;gap:16px;padding:10px;"
+        "padding-bottom:calc(env(safe-area-inset-bottom) + 12px)}"
       ".cloud{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:300px;height:150px;"
         "background:radial-gradient(ellipse at center,rgba(0,240,255,.2),transparent 70%);border-radius:50%;filter:blur(40px);"
         "animation:pulse 6s ease-in-out infinite;z-index:-1}"
       "@keyframes pulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.3}50%{transform:translateX(-50%) scale(1.1);opacity:.5}}"
-      ".logo-container{margin:0 0 4px 0;position:relative;text-align:center;animation:fadeIn 1.2s ease-out}"
+      /* logo clickeable */
+      ".logo-container{margin:0 0 4px 0;position:relative;text-align:center;animation:fadeIn 1.2s ease-out;"
+        "display:inline-block;text-decoration:none;color:inherit;cursor:pointer}"
+      ".logo-container:hover .logo-text{filter:brightness(1.1)}"
       ".logo-text{font-size:var(--fs-h1);font-weight:bold;line-height:1.15;color:#00f0ff;"
         "text-shadow:0 0 12px #00f0ff,0 0 28px #00f0ff;animation:glow 3s infinite alternate}"
       "@keyframes glow{from{text-shadow:0 0 8px #00f0ff,0 0 18px #00f0ff}to{text-shadow:0 0 18px #00f0ff,0 0 36px #00f0ff}}"
@@ -2644,15 +2650,22 @@ void handleRoot() {
         "min-height:48px;flex:1 1 100%;max-width:260px}"
       "button:hover{background-color:#00c0dd;transform:translateY(-1px)}"
       "@media(min-width:600px){.button-group-vertical{flex-wrap:nowrap}button{flex:1 1 auto;max-width:none}}"
-      "footer{position:fixed;left:0;right:0;bottom:8px;text-align:center;font-size:var(--fs-small);color:#8aa;opacity:.9;"
-        "margin:0;padding:0 12px;padding-bottom:calc(env(safe-area-inset-bottom) + 4px);z-index:10}"
+      /* Footer estático (no tapa botones) */
+      "footer{position:static;text-align:center;font-size:var(--fs-small);color:#8aa;opacity:.9;margin:0;"
+        "padding:8px 12px;padding-bottom:calc(env(safe-area-inset-bottom) + 8px)}"
       "footer p{margin:0}"
       "@keyframes fadeIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}"
       "@keyframes fadeInUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}"
     "</style></head><body>";
 
+  // MAIN (crece y centra el contenido sin afectar al footer)
+  html += "<main class='main'>";
   html += "<div class='cloud'></div>";
-  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DATA DRUIDA'>DATA<br>DRUIDA</h1></div>";
+
+  // Logo: enlace a handleRoot (ruta '/')
+  html += "<a href='/' class='logo-container' aria-label='Ir a inicio'>";
+  html += "  <h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1>";
+  html += "</a>";
 
   html += "<div class='container'>";
   html += "  <div class='info-box'>";
@@ -2664,13 +2677,16 @@ void handleRoot() {
   html += "    <a href='/config'><button>CONFIG</button></a>";
   html += "  </div>";
   html += "</div>";
+  html += "</main>";
 
-  html += "<footer class='footer-fixed'><p>druidadata@gmail.com<br>DataDruida</p></footer>";
+  // Footer estático (no fijo)
+  html += "<footer><p>druidadata@gmail.com<br>DataDruida</p></footer>";
 
   // Reloj en vivo
   html += "<script>";
   html += "function startClock(){";
   html += " const div=document.getElementById('fechaHora');";
+  html += " if(!div) return;";
   html += " let [h,m,s]=div.getAttribute('data-hora').split(':').map(Number);";
   html += " setInterval(()=>{";
   html += "  s++; if(s>=60){s=0;m++;} if(m>=60){m=0;h++;} if(h>=24)h=0;";
@@ -2698,72 +2714,91 @@ void handleRoot() {
 
 
 
-void handleControl() {
-  String html = "<!DOCTYPE html><html lang='es'><head>"
-                "<meta charset='UTF-8'/>"
-                "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
-                "<title>Control</title>"
-                "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
-                "<style>"
-                /* ===== Tokens responsive ===== */
-                ":root{--radius:16px;--pad:16px;--gap:12px;--pad-lg:24px;"
-                "--fs-body:clamp(16px,3.5vw,18px);--fs-small:clamp(12px,2.6vw,14px);--fs-h1:clamp(22px,6vw,56px)}"
-                "*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
-                "html,body{height:100%}"
-                /* BODY */
-                "body{margin:0;padding:10px;font-family:'Press Start 2P',monospace;"
-                "background:linear-gradient(to bottom,#0a0f1e,#111927);color:#e0e0e0;"
-                "min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;"
-                "line-height:1.25;gap:16px;position:relative}"
-                /* Glow de fondo sutil */
-                ".cloud{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:300px;height:150px;"
-                "background:radial-gradient(ellipse at center,rgba(0,240,255,.2),transparent 70%);border-radius:50%;"
-                "filter:blur(40px);animation:pulse 6s ease-in-out infinite;z-index:-1}"
-                "@keyframes pulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.3}"
-                "50%{transform:translateX(-50%) scale(1.1);opacity:.5}}"
-                /* Logo / título */
-                ".logo-container{margin:0 0 4px 0;position:relative;text-align:center;animation:fadeIn 1.2s ease-out}"
-                ".logo-text{font-size:var(--fs-h1);font-weight:bold;line-height:1.15;color:#00f0ff;"
-                "text-shadow:0 0 12px #00f0ff,0 0 28px #00f0ff;animation:glow 3s infinite alternate}"
-                "@keyframes glow{from{text-shadow:0 0 8px #00f0ff,0 0 18px #00f0ff}"
-                "to{text-shadow:0 0 18px #00f0ff,0 0 36px #00f0ff}}"
-                /* Glitch */
-                ".glitch{position:relative;display:inline-block}"
-                ".glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;overflow:hidden;"
-                "color:#00f0ff;background:transparent;clip:rect(0,0,0,0)}"
-                ".glitch::before{text-shadow:2px 0 red;animation:glitchTop 2s infinite linear alternate-reverse}"
-                ".glitch::after{text-shadow:-2px 0 blue;animation:glitchBottom 2s infinite linear alternate-reverse}"
-                "@keyframes glitchTop{0%{clip:rect(0,9999px,0,0)}5%{clip:rect(0,9999px,20px,0);transform:translate(-2px,-2px)}"
-                "10%{clip:rect(0,9999px,10px,0);transform:translate(2px,0)}15%{clip:rect(0,9999px,5px,0);transform:translate(-1px,1px)}"
-                "20%,100%{clip:rect(0,0,0,0);transform:none}}"
-                "@keyframes glitchBottom{0%{clip:rect(0,0,0,0)}5%{clip:rect(20px,9999px,40px,0);transform:translate(1px,1px)}"
-                "10%{clip:rect(10px,9999px,30px,0);transform:translate(-1px,-1px)}15%{clip:rect(5px,9999px,25px,0);transform:translate(1px,-1px)}"
-                "20%,100%{clip:rect(0,0,0,0);transform:none}}"
-                /* Card contenedor */
-                ".container{margin-top:0;background-color:#1e293b;border:1px solid #00f0ff;border-radius:var(--radius);"
-                "padding:var(--pad-lg);width:min(92vw,560px);max-width:560px;box-shadow:0 0 20px rgba(0,240,255,.2);"
-                "animation:fadeInUp .9s ease-out;text-align:center;position:relative;display:flex;flex-direction:column;gap:var(--gap)}"
-                ".card-title{font-size:var(--fs-body);margin:4px 0 6px;color:#00f0ff}"
-                /* Botones apilados SIEMPRE (móvil y desktop) */
-                ".button-group-vertical{display:flex;flex-direction:column;gap:10px;justify-content:center;margin-top:10px}"
-                "a{text-decoration:none}"
-                "button{background-color:#00f0ff;color:#0f172a;border:none;padding:12px 14px;font-size:var(--fs-body);font-weight:bold;"
-                "cursor:pointer;border-radius:10px;transition:background-color .2s ease,transform .15s ease;"
-                "font-family:'Press Start 2P',monospace;min-height:48px;width:100%}"
-                "button:hover{background-color:#00c0dd;transform:translateY(-1px)}"
-                /* En desktop seguimos apilando y estiramos al ancho del card */
-                "@media(min-width:600px){.button-group-vertical{align-items:stretch}button{width:100%}}"
-                /* Footer fijo */
-                "footer{position:fixed;left:0;right:0;bottom:8px;text-align:center;font-size:var(--fs-small);color:#8aa;opacity:.9;"
-                "margin:0;padding:0 12px;padding-bottom:calc(env(safe-area-inset-bottom) + 4px);z-index:10}"
-                "footer p{margin:0}"
-                /* Animaciones */
-                "@keyframes fadeIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}"
-                "@keyframes fadeInUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}"
-                "</style></head><body>";
 
+void handleControl() {
+  String html =
+    "<!DOCTYPE html><html lang='es'><head>"
+    "<meta charset='UTF-8'/>"
+    "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
+    "<title>Control</title>"
+    "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
+    "<style>"
+      /* ===== Tokens responsive ===== */
+      ":root{--radius:16px;--pad:16px;--gap:12px;--pad-lg:24px;"
+      "--fs-body:clamp(16px,3.5vw,18px);--fs-small:clamp(12px,2.6vw,14px);--fs-h1:clamp(22px,6vw,56px)}"
+      "*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
+      "html,body{height:100%}"
+
+      /* ===== Layout base: footer NO fijo ===== */
+      "body{margin:0;padding:0;font-family:'Press Start 2P',monospace;"
+      "background:linear-gradient(to bottom,#0a0f1e,#111927);color:#e0e0e0;"
+      "min-height:100dvh;display:flex;flex-direction:column;align-items:stretch;line-height:1.25}"
+
+      ".main{flex:1;display:flex;flex-direction:column;align-items:center;gap:16px;padding:10px;"
+      "padding-bottom:calc(env(safe-area-inset-bottom) + 12px);position:relative}"
+
+      /* ===== Glow de fondo sutil ===== */
+      ".cloud{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:300px;height:150px;"
+      "background:radial-gradient(ellipse at center,rgba(0,240,255,.2),transparent 70%);border-radius:50%;"
+      "filter:blur(40px);animation:pulse 6s ease-in-out infinite;z-index:-1}"
+      "@keyframes pulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.3}"
+      "50%{transform:translateX(-50%) scale(1.1);opacity:.5}}"
+
+      /* ===== Logo / título (clickeable) ===== */
+      ".logo-container{margin:0 0 4px 0;position:relative;text-align:center;animation:fadeIn 1.2s ease-out;"
+      "display:inline-block;text-decoration:none;color:inherit;cursor:pointer}"
+      ".logo-container:hover .logo-text{filter:brightness(1.1)}"
+      ".logo-text{font-size:var(--fs-h1);font-weight:bold;line-height:1.15;color:#00f0ff;"
+      "text-shadow:0 0 12px #00f0ff,0 0 28px #00f0ff;animation:glow 3s infinite alternate}"
+      "@keyframes glow{from{text-shadow:0 0 8px #00f0ff,0 0 18px #00f0ff}"
+      "to{text-shadow:0 0 18px #00f0ff,0 0 36px #00f0ff}}"
+
+      /* ===== Glitch ===== */
+      ".glitch{position:relative;display:inline-block}"
+      ".glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;overflow:hidden;"
+      "color:#00f0ff;background:transparent;clip:rect(0,0,0,0)}"
+      ".glitch::before{text-shadow:2px 0 red;animation:glitchTop 2s infinite linear alternate-reverse}"
+      ".glitch::after{text-shadow:-2px 0 blue;animation:glitchBottom 2s infinite linear alternate-reverse}"
+      "@keyframes glitchTop{0%{clip:rect(0,9999px,0,0)}5%{clip:rect(0,9999px,20px,0);transform:translate(-2px,-2px)}"
+      "10%{clip:rect(0,9999px,10px,0);transform:translate(2px,0)}15%{clip:rect(0,9999px,5px,0);transform:translate(-1px,1px)}"
+      "20%,100%{clip:rect(0,0,0,0);transform:none}}"
+      "@keyframes glitchBottom{0%{clip:rect(0,0,0,0)}5%{clip:rect(20px,9999px,40px,0);transform:translate(1px,1px)}"
+      "10%{clip:rect(10px,9999px,30px,0);transform:translate(-1px,-1px)}15%{clip:rect(5px,9999px,25px,0);transform:translate(1px,-1px)}"
+      "20%,100%{clip:rect(0,0,0,0);transform:none}}"
+
+      /* ===== Card contenedor ===== */
+      ".container{margin-top:0;background-color:#1e293b;border:1px solid #00f0ff;border-radius:var(--radius);"
+      "padding:var(--pad-lg);width:min(92vw,560px);max-width:560px;box-shadow:0 0 20px rgba(0,240,255,.2);"
+      "animation:fadeInUp .9s ease-out;text-align:center;position:relative;display:flex;flex-direction:column;gap:var(--gap)}"
+      ".card-title{font-size:var(--fs-body);margin:4px 0 6px;color:#00f0ff}"
+
+      /* ===== Botones apilados ===== */
+      ".button-group-vertical{display:flex;flex-direction:column;gap:10px;justify-content:center;margin-top:10px}"
+      "a{text-decoration:none}"
+      "button{background-color:#00f0ff;color:#0f172a;border:none;padding:12px 14px;font-size:var(--fs-body);font-weight:bold;"
+      "cursor:pointer;border-radius:10px;transition:background-color .2s ease,transform .15s ease;"
+      "font-family:'Press Start 2P',monospace;min-height:48px;width:100%}"
+      "button:hover{background-color:#00c0dd;transform:translateY(-1px)}"
+      "@media(min-width:600px){.button-group-vertical{align-items:stretch}button{width:100%}}"
+
+      /* ===== Footer estático (no tapa botones) ===== */
+      "footer{position:static;text-align:center;font-size:var(--fs-small);color:#8aa;opacity:.9;margin:0;"
+      "padding:8px 12px;padding-bottom:calc(env(safe-area-inset-bottom) + 8px)}"
+      "footer p{margin:0}"
+
+      /* ===== Animaciones ===== */
+      "@keyframes fadeIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}"
+      "@keyframes fadeInUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}"
+    "</style></head><body>";
+
+  /* MAIN (crece y separa del footer) */
+  html += "<main class='main'>";
   html += "<div class='cloud'></div>";
-  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1></div>";
+
+  /* Logo: enlace a handleRoot (ruta '/') */
+  html += "<a href='/' class='logo-container' aria-label='Ir a inicio'>";
+  html += "  <h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1>";
+  html += "</a>";
 
   html += "<div class='container'>";
   html += "  <div class='card-title'>Control</div>";
@@ -2777,7 +2812,11 @@ void handleControl() {
   html += "  </div>";
   html += "</div>";
 
-  html += "<footer class='footer-fixed'><p>druidadata@gmail.com<br>DataDruida</p></footer>";
+  html += "</main>";
+
+  /* Footer NO fijo */
+  html += "<footer><p>druidadata@gmail.com<br>DataDruida</p></footer>";
+
   html += "</body></html>";
 
   server.send(200, "text/html", html);
@@ -2792,26 +2831,104 @@ void handleControl() {
 
 
 
-void handleConfirmation(const String& mensaje, const String& redireccion) {
-    String html = "<!DOCTYPE html><html><head>";
-    html += "<meta charset='UTF-8'>";
-    html += "<meta http-equiv='refresh' content='3; url=" + redireccion + "'>";
-    html += "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>";
-    html += "<style>";
-    html += "body { margin: 0; padding: 0; background-color: #0f172a; color: #00f0ff; font-family: 'Press Start 2P', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }";
-    html += ".logo { font-size: 1.2rem; margin-bottom: 40px; animation: glitch 1s infinite; text-shadow: 0 0 5px #00f0ff, 0 0 10px #00f0ff; }";
-    html += "@keyframes glitch { 0% { text-shadow: 2px 2px #ff00ff, -2px -2px #00ffff; } 20% { text-shadow: -2px 2px #ff00ff, 2px -2px #00ffff; } 40% { text-shadow: 2px -2px #ff00ff, -2px 2px #00ffff; } 60% { text-shadow: -2px -2px #ff00ff, 2px 2px #00ffff; } 80% { text-shadow: 2px 2px #ff00ff, -2px -2px #00ffff; } 100% { text-shadow: 0 0 5px #00f0ff; } }";
-    html += ".message-box { background-color: #1e40af; border: 2px solid #00ffcc; border-radius: 12px; padding: 30px; box-shadow: 0 0 15px rgba(0,255,255,0.3); animation: fadeIn 1.5s ease-out; }";
-    html += "h1 { font-size: 1rem; margin: 0; }";
-    html += "@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }";
-    html += "</style></head><body>";
-    html += "<div class='logo'>DATA DRUIDA</div>";
-    html += "<div class='message-box'><h1>" + mensaje + "</h1></div>";
-    html += "<script>setTimeout(function(){ window.location.href='" + redireccion + "'; }, 3000);</script>";
-    html += "</body></html>";
 
-    server.send(200, "text/html", html);
+void handleConfirmation(const String& mensaje, const String& redireccion) {
+  String html =
+  "<!DOCTYPE html><html lang='es'><head>"
+  "<meta charset='UTF-8'/>"
+  "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
+  "<title>Confirmación</title>"
+  "<meta http-equiv='refresh' content='3; url=" + redireccion + "'>"
+  "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
+  "<style>"
+  /* ===== Tokens responsive ===== */
+  ":root{--gap:clamp(12px,2.5vw,20px);--pad:clamp(16px,3vw,24px);--radius:16px;"
+  "--fs-h1:clamp(18px,5vw,36px);--fs-body:clamp(14px,3.5vw,18px);--fs-small:clamp(11px,2.8vw,14px);"
+  "--c-bg:#0f172a;--c-card:#1e40af;--c-ink:#e0e0e0;--c-cyan:#00f0ff;--c-border:#00ffcc}"
+
+  "*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
+  "html,body{height:100%}"
+
+  /* ===== Layout ===== */
+  "body{margin:0;background:var(--c-bg);color:var(--c-ink);font-family:'Press Start 2P',monospace;"
+  "display:flex;flex-direction:column;min-height:100dvh}"
+  "main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--gap);padding:var(--pad)}"
+
+  /* Logo + glitch sutil */
+  ".logo{font-size:var(--fs-h1);margin:0;color:var(--c-cyan);"
+  "text-shadow:0 0 6px var(--c-cyan),0 0 14px var(--c-cyan);animation:glow 3s ease-in-out infinite alternate}"
+  ".glitch{position:relative;display:inline-block}"
+  ".glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;inset:0;clip:rect(0,0,0,0)}"
+  ".glitch::before{color:#ff00ff;text-shadow:1px 0 #ff00ff;animation:gt 2s infinite linear alternate-reverse}"
+  ".glitch::after{color:#00ffff;text-shadow:-1px 0 #00ffff;animation:gb 2s infinite linear alternate-reverse}"
+  "@keyframes glow{from{text-shadow:0 0 4px var(--c-cyan),0 0 10px var(--c-cyan)}to{text-shadow:0 0 10px var(--c-cyan),0 0 22px var(--c-cyan)}}"
+  "@keyframes gt{0%{clip:rect(0,9999px,0,0)}10%{clip:rect(0,9999px,16px,0);transform:translate(-1px,-1px)}20%{clip:rect(0,9999px,8px,0)}100%{clip:rect(0,0,0,0)}}"
+  "@keyframes gb{0%{clip:rect(0,0,0,0)}10%{clip:rect(10px,9999px,24px,0);transform:translate(1px,1px)}20%{clip:rect(4px,9999px,14px,0)}100%{clip:rect(0,0,0,0)}}"
+
+  /* Caja de mensaje */
+  ".box{background:var(--c-card);border:2px solid var(--c-border);border-radius:var(--radius);padding:var(--pad);"
+  "box-shadow:0 0 15px rgba(0,255,255,0.25);max-width:min(92vw,640px);width:100%;text-align:center;animation:fadeIn .9s ease-out}"
+  ".box h1{font-size:var(--fs-body);margin:0;color:var(--c-ink)}"
+
+  /* Progreso continuo con sheen + cambio de color al final */
+  ".progress{height:12px;border:1px solid var(--c-cyan);border-radius:10px;overflow:hidden;"
+  "background:rgba(0,240,255,0.08);margin-top:var(--gap);position:relative}"
+  ".bar{height:100%;width:0%;background:var(--c-cyan);position:relative;"
+  "animation:fill 3s linear forwards, barColor 3s linear forwards}"
+  ".bar::after{content:'';position:absolute;top:0;bottom:0;width:120px;"
+  "background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.6) 50%,rgba(255,255,255,0) 100%);"
+  "filter:blur(1px);transform:translateX(-120%);"
+  "animation:sheen 3s linear forwards}"
+  "@keyframes fill{from{width:0%}to{width:100%}}"
+  /* Mantiene cian la mayor parte y transiciona a blanco en el tramo final */
+  "@keyframes barColor{0%{background:var(--c-cyan)}80%{background:var(--c-cyan)}100%{background:#ffffff}}"
+  "@keyframes sheen{from{transform:translateX(-120%)}to{transform:translateX(100%)}}"
+
+  ".count{font-size:var(--fs-small);opacity:.85;margin-top:8px}"
+
+  /* Botón */
+  ".actions{margin-top:var(--gap);display:flex;flex-direction:column;gap:10px}"
+  "a{text-decoration:none}"
+  "button{background:var(--c-cyan);color:#0b1020;border:none;border-radius:12px;padding:12px 14px;font-size:var(--fs-body);"
+  "cursor:pointer;transition:transform .15s ease,filter .2s ease}"
+  "button:hover{transform:translateY(-1px);filter:brightness(.92)}"
+
+  /* Reduce motion */
+  "@media(prefers-reduced-motion:reduce){"
+  ".logo{animation:none}.glitch::before,.glitch::after{animation:none}"
+  ".bar{animation:fill 3s linear forwards}"
+  ".bar::after{animation:none;display:none}"
+  "}"
+
+  /* Animación entrada */
+  "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}"
+  "</style></head><body>"
+  "<main>"
+  "<h1 class='logo glitch' data-text='DATA DRUIDA'>DATA DRUIDA</h1>"
+  "<div class='box'>"
+  "<h1>" + mensaje + "</h1>"
+  "<div class='progress' aria-hidden='true'><div class='bar'></div></div>"
+  "<div class='count' aria-live='polite'>Redirigiendo en <span id='count'>3</span>…</div>"
+  "<div class='actions'><a href='" + redireccion + "'><button type='button'>IR AHORA</button></a></div>"
+  "</div>"
+  "</main>";
+
+  // JS: solo contador y redirección; la barra se anima por CSS (continuo + sheen + color final).
+  html += "<script>"
+          "let t=3;const c=document.getElementById('count');"
+          "function tick(){t--; if(c) c.textContent=t; if(t<=0){location.replace('" + redireccion + "');} else {setTimeout(tick,1000);}}"
+          "setTimeout(tick,1000);"
+          "</script>";
+
+  html += "</body></html>";
+
+  server.send(200, "text/html", html);
 }
+
+
+
+
+
 
 
 /*void handleControlR2ir() {
@@ -3593,69 +3710,88 @@ void handleResetFlora() {
 
 
 void handleConfig() {
-  String html = "<!DOCTYPE html><html lang='es'><head>"
-                "<meta charset='UTF-8'/>"
-                "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
-                "<title>Configuración Druida BOT</title>"
-                "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
-                "<style>"
-                /* ===== Tokens responsive (mismo set que control) ===== */
-                ":root{--radius:16px;--pad:16px;--gap:12px;--pad-lg:24px;"
-                "--fs-body:clamp(16px,3.5vw,18px);--fs-small:clamp(12px,2.6vw,14px);--fs-h1:clamp(22px,6vw,56px)}"
-                "*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
-                "html,body{height:100%}"
-                /* BODY centrado + fondo */
-                "body{margin:0;padding:10px;font-family:'Press Start 2P',monospace;"
-                "background:linear-gradient(to bottom,#0a0f1e,#111927);color:#e0e0e0;"
-                "min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;"
-                "line-height:1.25;gap:16px;position:relative}"
-                /* Glow */
-                ".cloud{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:300px;height:150px;"
-                "background:radial-gradient(ellipse at center,rgba(0,240,255,.2),transparent 70%);border-radius:50%;"
-                "filter:blur(40px);animation:pulse 6s ease-in-out infinite;z-index:-1}"
-                "@keyframes pulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.3}"
-                "50%{transform:translateX(-50%) scale(1.1);opacity:.5}}"
-                /* Logo */
-                ".logo-container{margin:0 0 4px 0;position:relative;text-align:center;animation:fadeIn 1.2s ease-out}"
-                ".logo-text{font-size:var(--fs-h1);font-weight:bold;line-height:1.15;color:#00f0ff;"
-                "text-shadow:0 0 12px #00f0ff,0 0 28px #00f0ff;animation:glow 3s infinite alternate}"
-                "@keyframes glow{from{text-shadow:0 0 8px #00f0ff,0 0 18px #00f0ff}"
-                "to{text-shadow:0 0 18px #00f0ff,0 0 36px #00f0ff}}"
-                /* Glitch */
-                ".glitch{position:relative;display:inline-block}"
-                ".glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;overflow:hidden;"
-                "color:#00f0ff;background:transparent;clip:rect(0,0,0,0)}"
-                ".glitch::before{text-shadow:2px 0 red;animation:glitchTop 2s infinite linear alternate-reverse}"
-                ".glitch::after{text-shadow:-2px 0 blue;animation:glitchBottom 2s infinite linear alternate-reverse}"
-                "@keyframes glitchTop{0%{clip:rect(0,9999px,0,0)}5%{clip:rect(0,9999px,20px,0);transform:translate(-2px,-2px)}"
-                "10%{clip:rect(0,9999px,10px,0);transform:translate(2px,0)}15%{clip:rect(0,9999px,5px,0);transform:translate(-1px,1px)}"
-                "20%,100%{clip:rect(0,0,0,0);transform:none}}"
-                "@keyframes glitchBottom{0%{clip:rect(0,0,0,0)}5%{clip:rect(20px,9999px,40px,0);transform:translate(1px,1px)}"
-                "10%{clip:rect(10px,9999px,30px,0);transform:translate(-1px,-1px)}15%{clip:rect(5px,9999px,25px,0);transform:translate(1px,-1px)}"
-                "20%,100%{clip:rect(0,0,0,0);transform:none}}"
-                /* Card contenedor */
-                ".container{margin-top:0;background-color:#1e293b;border:1px solid #00f0ff;border-radius:var(--radius);"
-                "padding:var(--pad-lg);width:min(92vw,560px);max-width:560px;box-shadow:0 0 20px rgba(0,240,255,.2);"
-                "animation:fadeInUp .9s ease-out;text-align:center;position:relative;display:flex;flex-direction:column;gap:var(--gap)}"
-                ".card-title{font-size:var(--fs-body);margin:4px 0 6px;color:#00f0ff}"
-                /* Grupo de botones vertical */
-                ".button-group-vertical{display:flex;flex-direction:column;gap:10px;justify-content:center;margin-top:10px}"
-                "a{text-decoration:none}"
-                "button{background-color:#00f0ff;color:#0f172a;border:none;padding:12px 14px;font-size:var(--fs-body);font-weight:bold;"
-                "cursor:pointer;border-radius:10px;transition:background-color .2s ease,transform .15s ease;"
-                "font-family:'Press Start 2P',monospace;min-height:48px;width:100%}"
-                "button:hover{background-color:#00c0dd;transform:translateY(-1px)}"
-                /* Footer fijo como en control (esta vista es corta) */
-                "footer{position:fixed;left:0;right:0;bottom:8px;text-align:center;font-size:var(--fs-small);color:#8aa;opacity:.9;"
-                "margin:0;padding:0 12px;padding-bottom:calc(env(safe-area-inset-bottom) + 4px);z-index:10}"
-                "footer p{margin:0}"
-                /* Animaciones */
-                "@keyframes fadeIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}"
-                "@keyframes fadeInUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}"
-                "</style></head><body>";
+  String html =
+    "<!DOCTYPE html><html lang='es'><head>"
+    "<meta charset='UTF-8'/>"
+    "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
+    "<title>Configuración Druida BOT</title>"
+    "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
+    "<style>"
+      /* ===== Tokens responsive ===== */
+      ":root{--radius:16px;--pad:16px;--gap:12px;--pad-lg:24px;"
+      "--fs-body:clamp(16px,3.5vw,18px);--fs-small:clamp(12px,2.6vw,14px);--fs-h1:clamp(22px,6vw,56px)}"
+      "*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
+      "html,body{height:100%}"
 
+      /* ===== Layout base: footer NO fijo ===== */
+      "body{margin:0;padding:0;font-family:'Press Start 2P',monospace;"
+      "background:linear-gradient(to bottom,#0a0f1e,#111927);color:#e0e0e0;"
+      "min-height:100dvh;display:flex;flex-direction:column;align-items:stretch;line-height:1.25}"
+
+      ".main{flex:1;display:flex;flex-direction:column;align-items:center;gap:16px;padding:10px;"
+      "padding-bottom:calc(env(safe-area-inset-bottom) + 12px);position:relative}"
+
+      /* ===== Glow decorativo ===== */
+      ".cloud{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:300px;height:150px;"
+      "background:radial-gradient(ellipse at center,rgba(0,240,255,.2),transparent 70%);border-radius:50%;"
+      "filter:blur(40px);animation:pulse 6s ease-in-out infinite;z-index:-1}"
+      "@keyframes pulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.3}"
+      "50%{transform:translateX(-50%) scale(1.1);opacity:.5}}"
+
+      /* ===== Logo (clickeable) ===== */
+      ".logo-container{margin:0 0 4px 0;position:relative;text-align:center;animation:fadeIn 1.2s ease-out;"
+      "display:inline-block;text-decoration:none;color:inherit;cursor:pointer}"
+      ".logo-container:hover .logo-text{filter:brightness(1.1)}"
+      ".logo-text{font-size:var(--fs-h1);font-weight:bold;line-height:1.15;color:#00f0ff;"
+      "text-shadow:0 0 12px #00f0ff,0 0 28px #00f0ff;animation:glow 3s infinite alternate}"
+      "@keyframes glow{from{text-shadow:0 0 8px #00f0ff,0 0 18px #00f0ff}"
+      "to{text-shadow:0 0 18px #00f0ff,0 0 36px #00f0ff}}"
+
+      /* ===== Glitch ===== */
+      ".glitch{position:relative;display:inline-block}"
+      ".glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;overflow:hidden;"
+      "color:#00f0ff;background:transparent;clip:rect(0,0,0,0)}"
+      ".glitch::before{text-shadow:2px 0 red;animation:glitchTop 2s infinite linear alternate-reverse}"
+      ".glitch::after{text-shadow:-2px 0 blue;animation:glitchBottom 2s infinite linear alternate-reverse}"
+      "@keyframes glitchTop{0%{clip:rect(0,9999px,0,0)}5%{clip:rect(0,9999px,20px,0);transform:translate(-2px,-2px)}"
+      "10%{clip:rect(0,9999px,10px,0);transform:translate(2px,0)}15%{clip:rect(0,9999px,5px,0);transform:translate(-1px,1px)}"
+      "20%,100%{clip:rect(0,0,0,0);transform:none}}"
+      "@keyframes glitchBottom{0%{clip:rect(0,0,0,0)}5%{clip:rect(20px,9999px,40px,0);transform:translate(1px,1px)}"
+      "10%{clip:rect(10px,9999px,30px,0);transform:translate(-1px,-1px)}15%{clip:rect(5px,9999px,25px,0);transform:translate(1px,-1px)}"
+      "20%,100%{clip:rect(0,0,0,0);transform:none}}"
+
+      /* ===== Card contenedor ===== */
+      ".container{margin-top:0;background-color:#1e293b;border:1px solid #00f0ff;border-radius:var(--radius);"
+      "padding:var(--pad-lg);width:min(92vw,560px);max-width:560px;box-shadow:0 0 20px rgba(0,240,255,.2);"
+      "animation:fadeInUp .9s ease-out;text-align:center;position:relative;display:flex;flex-direction:column;gap:var(--gap)}"
+      ".card-title{font-size:var(--fs-body);margin:4px 0 6px;color:#00f0ff}"
+
+      /* ===== Grupo de botones ===== */
+      ".button-group-vertical{display:flex;flex-direction:column;gap:10px;justify-content:center;margin-top:10px}"
+      "a{text-decoration:none}"
+      "button{background-color:#00f0ff;color:#0f172a;border:none;padding:12px 14px;font-size:var(--fs-body);font-weight:bold;"
+      "cursor:pointer;border-radius:10px;transition:background-color .2s ease,transform .15s ease;"
+      "font-family:'Press Start 2P',monospace;min-height:48px;width:100%}"
+      "button:hover{background-color:#00c0dd;transform:translateY(-1px)}"
+
+      /* ===== Footer estático (no tapa botones) ===== */
+      "footer{position:static;text-align:center;font-size:var(--fs-small);color:#8aa;opacity:.9;margin:0;"
+      "padding:8px 12px;padding-bottom:calc(env(safe-area-inset-bottom) + 8px)}"
+      "footer p{margin:0}"
+
+      /* ===== Animaciones ===== */
+      "@keyframes fadeIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}"
+      "@keyframes fadeInUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}"
+    "</style></head><body>";
+
+  /* MAIN (crece y separa del footer) */
+  html += "<main class='main'>";
   html += "<div class='cloud'></div>";
-  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DATA DRUIDA'>DATA<br>DRUIDA</h1></div>";
+
+  /* Logo: enlace a handleRoot (ruta '/') */
+  html += "<a href='/' class='logo-container' aria-label='Ir a inicio'>";
+  html += "  <h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1>";
+  html += "</a>";
 
   html += "<div class='container'>";
   html += "  <div class='card-title'>Configuración de Druida BOT</div>";
@@ -3665,17 +3801,21 @@ void handleConfig() {
   html += "    <a href='/configR2'><button>" + getRelayName(R2name) + "</button></a>";
   html += "    <a href='/configR3'><button>" + getRelayName(R3name) + "</button></a>";
   html += "    <a href='/configR4'><button>" + getRelayName(R4name) + "</button></a>";
-  // html += "    <a href='/configIR'><button>IR Config</button></a>";
   html += "    <a href='/configWiFi'><button>WiFi</button></a>";
   html += "    <a href='/'><button>VOLVER</button></a>";
   html += "  </div>";
   html += "</div>";
 
-  html += "<footer class='footer-fixed'><p>druidadata@gmail.com<br>DataDruida</p></footer>";
+  html += "</main>";
+
+  /* Footer NO fijo */
+  html += "<footer><p>druidadata@gmail.com<br>DataDruida</p></footer>";
+
   html += "</body></html>";
 
   server.send(200, "text/html", html);
 }
+
 
 
 
@@ -3834,115 +3974,169 @@ void handleEmitIR() {
 }*/
 
 void handleConfigWiFi() {
-  String html = "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'/><meta name='viewport' content='width=device-width, initial-scale=1'>";
-  html += "<title>Configuración WiFi</title>";
-  html += "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>";
-  html += "<style>";
+  String html = "<!DOCTYPE html><html lang='es'><head>"
+                "<meta charset='UTF-8'/>"
+                "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
+                "<title>Configuración WiFi</title>"
+                "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
+                "<style>"
+                /* ===== Tokens responsive ===== */
+                ":root{--radius:16px;--pad:16px;--gap:12px;--pad-lg:24px;"
+                "--fs-body:clamp(16px,3.5vw,18px);--fs-small:clamp(12px,2.6vw,14px);--fs-h1:clamp(22px,6vw,56px)}"
+                "*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
+                "html,body{height:100%}"
+                /* BODY como flex-col (sticky footer) */
+                "body{margin:0;padding:10px;font-family:'Press Start 2P',monospace;"
+                "background:linear-gradient(to bottom,#0a0f1e,#111927);color:#e0e0e0;"
+                "min-height:100dvh;display:flex;flex-direction:column;gap:16px;position:relative}"
+                /* Área principal que ocupa el alto disponible */
+                "main{flex:1;display:flex;flex-direction:column;align-items:center;gap:16px}"
+                /* Glow de fondo sutil */
+                ".cloud{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:300px;height:150px;"
+                "background:radial-gradient(ellipse at center,rgba(0,240,255,.2),transparent 70%);border-radius:50%;"
+                "filter:blur(40px);animation:pulse 6s ease-in-out infinite;z-index:-1}"
+                "@keyframes pulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.3}"
+                "50%{transform:translateX(-50%) scale(1.1);opacity:.5}}"
+                /* Logo / título */
+                ".logo-container{margin:0 0 4px 0;position:relative;text-align:center;animation:fadeIn 1.2s ease-out;"
+                "display:inline-block;text-decoration:none;color:inherit;cursor:pointer}"
+                ".logo-container:hover .logo-text{filter:brightness(1.1)}"
+                ".logo-text{font-size:var(--fs-h1);font-weight:bold;line-height:1.15;color:#00f0ff;"
+                "text-shadow:0 0 12px #00f0ff,0 0 28px #00f0ff;animation:glow 3s infinite alternate}"
+                "@keyframes glow{from{text-shadow:0 0 8px #00f0ff,0 0 18px #00f0ff}"
+                "to{text-shadow:0 0 18px #00f0ff,0 0 36px #00f0ff}}"
+                /* Glitch */
+                ".glitch{position:relative;display:inline-block}"
+                ".glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;overflow:hidden;"
+                "color:#00f0ff;background:transparent;clip:rect(0,0,0,0)}"
+                ".glitch::before{text-shadow:2px 0 red;animation:glitchTop 2s infinite linear alternate-reverse}"
+                ".glitch::after{text-shadow:-2px 0 blue;animation:glitchBottom 2s infinite linear alternate-reverse}"
+                "@keyframes glitchTop{0%{clip:rect(0,9999px,0,0)}5%{clip:rect(0,9999px,20px,0);transform:translate(-2px,-2px)}"
+                "10%{clip:rect(0,9999px,10px,0);transform:translate(2px,0)}15%{clip:rect(0,9999px,5px,0);transform:translate(-1px,1px)}"
+                "20%,100%{clip:rect(0,0,0,0);transform:none}}"
+                "@keyframes glitchBottom{0%{clip:rect(0,0,0,0)}5%{clip:rect(20px,9999px,40px,0);transform:translate(1px,1px)}"
+                "10%{clip:rect(10px,9999px,30px,0);transform:translate(-1px,-1px)}15%{clip:rect(5px,9999px,25px,0);transform:translate(1px,-1px)}"
+                "20%,100%{clip:rect(0,0,0,0);transform:none}}"
+                /* Card contenedor */
+                ".container{margin-top:0;background-color:#1e293b;border:1px solid #00f0ff;border-radius:var(--radius);"
+                "padding:var(--pad-lg);width:min(92vw,560px);max-width:560px;box-shadow:0 0 20px rgba(0,240,255,.2);"
+                "animation:fadeInUp .9s ease-out;text-align:center;display:flex;flex-direction:column;gap:var(--gap)}"
+                ".card-title{font-size:var(--fs-body);margin:4px 0 6px;color:#00f0ff}"
+                /* Form */
+                "form{width:100%;display:flex;flex-direction:column;gap:10px}"
+                "label{font-size:var(--fs-small);text-align:left;color:#e0e0e0;opacity:.9}"
+                "input[type='text'],input[type='password'],input[type='number'],select{"
+                "font-family:'Press Start 2P',monospace;font-size:var(--fs-small);width:100%;padding:10px;border-radius:10px;"
+                "background:#0f172a;color:#e0e0e0;border:2px solid #00f0ff;text-align:center;box-sizing:border-box;min-height:48px}"
+                "select{appearance:none;-webkit-appearance:none;-moz-appearance:none}"
+                /* Botones apilados */
+                ".button-group-vertical{display:flex;flex-direction:column;gap:10px;justify-content:center;margin-top:10px}"
+                "a{text-decoration:none}"
+                "button,.btn,input[type='submit']{background-color:#00f0ff;color:#0f172a;border:none;padding:12px 14px;"
+                "font-size:var(--fs-body);font-weight:bold;cursor:pointer;border-radius:10px;transition:background-color .2s ease,transform .15s ease;"
+                "font-family:'Press Start 2P',monospace;min-height:48px;width:100%}"
+                "button:hover,.btn:hover,input[type='submit']:hover{background-color:#00c0dd;transform:translateY(-1px)}"
+                "@media(min-width:600px){.button-group-vertical{align-items:stretch}button,.btn,input[type='submit']{width:100%}}"
+                /* Footer STICKY (no fixed) */
+                "footer{margin-top:auto;text-align:center;font-size:var(--fs-small);color:#8aa;opacity:.9;"
+                "padding:0 12px 8px}"
+                "footer p{margin:0}"
+                /* Animaciones */
+                "@keyframes fadeIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}"
+                "@keyframes fadeInUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}"
+                "</style></head><body>";
 
-  html += "body { font-family: 'Press Start 2P', monospace; background: linear-gradient(to bottom, #0a0f1e, #111927); color: #e0e0e0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 10px; position: relative; }";
-  html += ".fade-in { animation: fadeIn 1s ease-in-out both; }";
-  html += "@keyframes fadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }";
+  html += "<div class='cloud'></div>";
 
-  html += ".container { background-color: #1e293b; border: 1px solid #00f0ff; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 0 20px rgba(0,240,255,0.2); width: 90vw; max-width: 340px; gap: 12px; }";
-
-  html += "h1 { font-size: 0.7rem; color: #00f0ff; text-align: center; position: relative; text-shadow: 0 0 2px #0ff, 0 0 4px #0ff; }";
-  html += "h1::after { content: attr(data-text); position: absolute; left: 2px; text-shadow: -1px 0 red; animation: glitch 1s infinite; top: 0; }";
-  html += "h1::before { content: attr(data-text); position: absolute; left: -2px; text-shadow: 1px 0 blue; animation: glitch 1s infinite; top: 0; }";
-  html += "@keyframes glitch { 0% {clip: rect(0, 9999px, 0, 0);} 5% {clip: rect(0, 9999px, 5px, 0);} 10% {clip: rect(5px, 9999px, 10px, 0);} 15% {clip: rect(0, 9999px, 0, 0);} 100% {clip: rect(0, 9999px, 0, 0);} }";
-
-  html += "label { font-size: 0.6rem; width: 100%; color: #e0e0e0; text-align: center; display: block; margin-top: 14px; margin-bottom: 6px; }";
-  html += "input[type='text'], input[type='password'], input[type='number'] { font-family: 'Press Start 2P', monospace; font-size: 0.6rem; width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #e0e0e0; border: 2px solid #00f0ff; text-align: center; box-sizing: border-box; }";
-  html += "select { font-family: 'Press Start 2P', monospace; font-size: 0.6rem; width: 100%; padding: 6px; border-radius: 8px; background: #0f172a; color: #e0e0e0; border: 2px solid #00f0ff; text-align: center; box-sizing: border-box; appearance: none; -webkit-appearance: none; -moz-appearance: none; }";
-
-  html += ".button-container { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 12px; }";
-  html += ".btn { font-family: 'Press Start 2P', monospace; font-size: 0.6rem; background-color: #00f0ff; color: #0f172a; border: 2px solid #00c0dd; padding: 10px; cursor: pointer; border-radius: 8px; width: 100%; text-align: center; transition: 0.3s; box-shadow: 0 0 8px rgba(0, 240, 255, 0.5); }";
-  html += ".btn:hover { background-color: #00c0dd; transform: scale(1.05); }";
-
-  html += "footer { position: absolute; bottom: 10px; font-size: 0.4rem; text-align: center; color: #888; }";
-  html += "@media (min-width: 600px) { .button-container { flex-direction: row; } h1 { font-size: 0.8rem; } }";
-
-  html += "</style></head><body class='fade-in'>";
+  html += "<main>";
+  // Logo
+  html += "<a href='/' class='logo-container' aria-label='Ir a inicio'>"
+          "<h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1>"
+          "</a>";
 
   html += "<div class='container'>";
-  html += "<h1 data-text='WiFi CONFIG'>WiFi CONFIG</h1>";
-  html += "<form action='/saveConfigWiFi' method='POST'>";
+  html += "  <div class='card-title'>Configuración WiFi</div>";
 
-  // Campo editable SSID
-  html += "<label>Nombre de red (SSID)</label>";
-  html += "<input type='text' id='ssidInput' name='ssid' value='" + ssid + "' maxlength='32'>";
+  // === Form principal: guardar config ===
+  html += "  <form action='/saveConfigWiFi' method='POST'>";
 
-  // Botón para forzar escaneo
-  html += "<div class='button-container'>";
-  html += "<button class='btn' type='button' onclick=\"location.href='?scan=1'\">BUSCAR REDES</button>";
-  html += "</div>";
+  // SSID editable
+  html += "    <label for='ssidInput'>Nombre de red (SSID)</label>";
+  html += "    <input type='text' id='ssidInput' name='ssid' value='" + ssid + "' maxlength='32'>";
+
+  // Botón BUSCAR REDES
+  html += "    <div class='button-group-vertical'>";
+  html += "      <a href='?scan=1'><button type='button'>BUSCAR REDES</button></a>";
+  html += "    </div>";
 
   // Escaneo de redes solo si el usuario pidió
   int n = 0;
   if (server.hasArg("scan") && server.arg("scan") == "1") {
     n = WiFi.scanNetworks();
-    html += "<label>Redes disponibles</label>";
-    html += "<select id='ssidSelect'>";
+    html += "    <label for='ssidSelect'>Redes disponibles</label>";
+    html += "    <select id='ssidSelect'>";
     if (n == 0) {
-      html += "<option>No se encontraron redes</option>";
+      html += "      <option>No se encontraron redes</option>";
     } else {
       for (int i = 0; i < n; ++i) {
         String ssidFound = WiFi.SSID(i);
-        html += "<option value='" + ssidFound + "'>" + ssidFound + "</option>";
+        html += "      <option value='" + ssidFound + "'>" + ssidFound + "</option>";
       }
     }
-    html += "</select>";
+    html += "    </select>";
   }
 
-  html += "<label>Contraseña WiFi</label>";
-  html += "<input type='password' name='password' placeholder='Contraseña WiFi' value='" + password + "'>";
+  html += "    <label for='pwd'>Contraseña WiFi</label>";
+  html += "    <input id='pwd' type='password' name='password' placeholder='Contraseña WiFi' value='" + password + "'>";
 
-  html += "<label>Chat ID Telegram</label>";
-  html += "<input type='text' name='chat_id' placeholder='Chat ID Telegram' value='" + String(chat_id) + "'>";
+  html += "    <label for='chatid'>Chat ID Telegram</label>";
+  html += "    <input id='chatid' type='text' name='chat_id' placeholder='Chat ID Telegram' value='" + String(chat_id) + "'>";
 
-  html += "<label>GOOGLE (minutos)</label>";
-  html += "<input type='number' name='tiempoGoogle' placeholder='GOOGLE (minutos)' value='" + String(tiempoGoogle) + "'>";
+  html += "    <label for='gmin'>GOOGLE (minutos)</label>";
+  html += "    <input id='gmin' type='number' name='tiempoGoogle' placeholder='GOOGLE (minutos)' value='" + String(tiempoGoogle) + "'>";
 
-  html += "<label>TELEGRAM (minutos)</label>";
-  html += "<input type='number' name='tiempoTelegram' placeholder='TELEGRAM (minutos)' value='" + String(tiempoTelegram) + "'>";
+  html += "    <label for='tmin'>TELEGRAM (minutos)</label>";
+  html += "    <input id='tmin' type='number' name='tiempoTelegram' placeholder='TELEGRAM (minutos)' value='" + String(tiempoTelegram) + "'>";
 
-  html += "<div class='button-container'>";
-  html += "<input class='btn' type='submit' value='GUARDAR'>";
-  html += "<button class='btn' type='button' onclick=\"window.location.href='/'\">VOLVER</button>";
-  html += "</div>";
-  html += "</form>";
+  // Botones GUARDAR / VOLVER
+  html += "    <div class='button-group-vertical'>";
+  html += "      <input type='submit' value='GUARDAR'>";
+  html += "      <a href='/'><button type='button'>VOLVER</button></a>";
+  html += "    </div>";
+  html += "  </form>";
 
-  // Botón CONECTAR WiFi
-  html += "<form action='/connectWiFi' method='POST'>";
-  html += "<div class='button-container'>";
-  html += "<input class='btn' type='submit' value='CONECTAR WiFi'>";
-  html += "</div>";
-  html += "</form>";
+  // === Form CONECTAR WiFi ===
+  html += "  <form action='/connectWiFi' method='POST'>";
+  html += "    <div class='button-group-vertical'>";
+  html += "      <input type='submit' value='CONECTAR WiFi'>";
+  html += "    </div>";
+  html += "  </form>";
 
-  // NUEVO: Botón DESCONECTAR WiFi (manteniendo la misma estructura/estilos)
-  html += "<form action='/disconnectWiFi' method='POST'>";
-  html += "<div class='button-container'>";
-  html += "<input class='btn' type='submit' value='DESCONECTAR WiFi'>";
-  html += "</div>";
-  html += "</form>";
+  // === Form DESCONECTAR WiFi ===
+  html += "  <form action='/disconnectWiFi' method='POST'>";
+  html += "    <div class='button-group-vertical'>";
+  html += "      <input type='submit' value='DESCONECTAR WiFi'>";
+  html += "    </div>";
+  html += "  </form>";
 
-  html += "</div>";
+  html += "</div>"; // .container
+  html += "</main>";
 
-  html += "<footer><p>bmurphy1.618@gmail.com<br>BmuRphY</p></footer>";
+  html += "<footer><p>druidadata@gmail.com<br>DataDruida</p></footer>";
 
-// Sincronizar selector con campo de texto
-  html += "<script>";
-  html += "const sel = document.getElementById('ssidSelect');";
-  html += "if (sel) {";
-  html += "  sel.addEventListener('change', () => {";
-  html += "    document.getElementById('ssidInput').value = sel.value;";
-  html += "  });";
-  html += "}";
-  html += "</script>";
+  // Sincronizar selector con campo de texto (si hubo escaneo)
+  html += "<script>"
+          "const sel=document.getElementById('ssidSelect');"
+          "if(sel){sel.addEventListener('change',()=>{"
+          "document.getElementById('ssidInput').value=sel.value;});}"
+          "</script>";
 
   html += "</body></html>";
 
   server.send(200, "text/html", html);
 }
+
+
 
 
 
@@ -4101,7 +4295,7 @@ void handleConfigR1() {
 
   html += "<body>";
   html += "<div class='cloud'></div>";
-  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DATA DRUIDA'>DATA<br>DRUIDA</h1></div>";
+  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1></div>";
 
   html += "<div class='container'>";
   html += "  <div class='card-title'>Config de " + getRelayName(R1name) + "</div>";
@@ -4509,7 +4703,7 @@ void handleConfigR2() {
 
   html += "<body>";
   html += "<div class='cloud'></div>";
-  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DATA DRUIDA'>DATA<br>DRUIDA</h1></div>";
+  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1></div>";
 
   html += "<div class='container'>";
   html += "  <div class='card-title'>Config de " + getRelayName(R2name) + "</div>";
@@ -4745,7 +4939,7 @@ void handleConfigR3() {
 
   html += "<body>";
   html += "<div class='cloud'></div>";
-  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DATA DRUIDA'>DATA<br>DRUIDA</h1></div>";
+  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1></div>";
 
   html += "<div class='container'>";
   html += "  <div class='card-title'>Config de " + getRelayName(R3name) + "</div>";
@@ -4962,16 +5156,12 @@ void handleConfigR4() {
   int showOffM = (horaOffR4 * 60 + minOffR4) % 1440;
 
   // ------ Vista SUPERCICLO (deriva OFF = ON + horasLuz) ------
-  if (modoR4 == SUPERCICLO) {
-    int Lm = (int)horasLuz;        if (Lm <= 0) Lm = 1;
-    int Om = (int)horasOscuridad;  if (Om <  0) Om = 0;
+  if (modoR4 == SUPERCICLO || modoR4 == SUPERCICLO1313) {
+    int Lm = (modoR4 == SUPERCICLO1313) ? (13 * 60) : (int)horasLuz;
+    if (Lm <= 0) Lm = 1;
 
-    int onAbs  = (horaOnR4  * 60 + minOnR4 ) % 1440;
+    int onAbs  = (horaOnR4 * 60 + minOnR4) % 1440;
     int offAbs = (onAbs + Lm) % 1440;
-
-    DateTime __now = rtc.now();
-    int h = __now.hour() - 3; if (h < 0) h += 24; // si tu RTC ya está en local, quitá el -3
-    (void)h; // silencioso
 
     showOnM  = onAbs;
     showOffM = offAbs;
@@ -4984,7 +5174,6 @@ void handleConfigR4() {
           "<title>Config R4</title>"
           "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
           "<style>"
-          /* ===== Tokens & base (mismo estilo que R5/R1/R2/R3) ===== */
           ":root{--radius:16px;--pad:16px;--gap:12px;--pad-lg:24px;"
           "--fs-body:clamp(16px,3.5vw,18px);--fs-small:clamp(12px,2.6vw,14px);--fs-h1:clamp(22px,6vw,56px)}"
           "*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
@@ -4993,8 +5182,6 @@ void handleConfigR4() {
             "background:linear-gradient(to bottom,#0a0f1e,#111927);color:#e0e0e0;"
             "min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;"
             "line-height:1.25;gap:16px;position:relative}"
-
-          /* Glow + Logo */
           ".cloud{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:300px;height:150px;"
             "background:radial-gradient(ellipse at center,rgba(0,240,255,.2),transparent 70%);border-radius:50%;filter:blur(40px);"
             "animation:pulse 6s ease-in-out infinite;z-index:-1}"
@@ -5016,14 +5203,10 @@ void handleConfigR4() {
           "@keyframes glitchBottom{0%{clip:rect(0,0,0,0)}5%{clip:rect(20px,9999px,40px,0);transform:translate(1px,1px)}"
             "10%{clip:rect(10px,9999px,30px,0);transform:translate(-1px,-1px)}15%{clip:rect(5px,9999px,25px,0);transform:translate(1px,-1px)}"
             "20%,100%{clip:rect(0,0,0,0);transform:none}}"
-
-          /* Card contenedor */
           ".container{margin-top:0;background:#1e293b;border:1px solid #00f0ff;border-radius:var(--radius);padding:var(--pad-lg);"
             "width:min(92vw,560px);max-width:560px;box-shadow:0 0 20px rgba(0,240,255,.2);animation:fadeInUp .9s ease-out;"
             "text-align:center;display:flex;flex-direction:column;gap:var(--gap)}"
           ".card-title{font-size:var(--fs-body);margin:4px 0 6px;color:#00f0ff}"
-
-          /* Formularios centrados */
           "form{display:flex;flex-direction:column;gap:10px}"
           "label{font-size:var(--fs-body);width:100%;color:#e0e0e0;text-align:center;display:block;margin-top:10px;margin-bottom:6px}"
           "select,input[type='time'],input[type='number']{font-family:'Press Start 2P',monospace;font-size:var(--fs-body);"
@@ -5032,25 +5215,19 @@ void handleConfigR4() {
           "select:disabled,input:disabled{opacity:.55}"
           ".muted{opacity:.55}"
           ".hidden{display:none!important}"
-
-          /* Subtítulos */
           ".subt{color:#00f0ff;font-size:var(--fs-body);text-align:center;margin:8px 0 2px}"
-
-          /* Botonera */
           ".button-group-vertical{display:flex;flex-direction:column;gap:10px;justify-content:center;margin-top:10px;width:100%}"
           ".btn,button{background-color:#00f0ff;color:#0f172a;border:none;padding:12px 14px;font-size:var(--fs-body);font-weight:bold;"
             "cursor:pointer;border-radius:10px;transition:background-color .2s ease,transform .15s ease;"
             "font-family:'Press Start 2P',monospace;min-height:48px;width:100%}"
           ".btn:hover,button:hover{background-color:#00c0dd;transform:translateY(-1px)}"
           "@keyframes fadeInUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}"
-
-          /* Footer */
           "footer{margin-top:16px;text-align:center;font-size:var(--fs-small);color:#8aa;opacity:.9;padding:12px}"
           "footer p{margin:0}"
           "</style></head><body>";
 
   html += "<div class='cloud'></div>";
-  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DATA DRUIDA'>DATA<br>DRUIDA</h1></div>";
+  html += "<div class='logo-container'><h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1></div>";
 
   html += "<div class='container'>";
   html += "  <div class='card-title'>Config de " + getRelayName(R4name) + "</div>";
@@ -5070,8 +5247,8 @@ void handleConfigR4() {
             "<label for='horaOnR4' id='lblHoraOn'>HORA ENCENDIDO</label>"
             "<input type='time' id='horaOnR4' name='horaOnR4' value='" + minutesToHHMM(showOnM) + "'>"
             "<label for='horaOffR4' id='lblHoraOff'>HORA APAGADO</label>"
-            "<input type='time' id='horaOffR4' value='" + minutesToHHMM(showOffM) + "'>"           // visible (puede quedar disabled)
-            "<input type='hidden' id='horaOffR4_mirror' name='horaOffR4' value='" + minutesToHHMM(showOffM) + "'>" // aseguramos envío
+            // IMPORTANTE: con name para que se envíe en Automático
+            "<input type='time' id='horaOffR4' name='horaOffR4' value='" + minutesToHHMM(showOffM) + "'>"
           "</div>";
 
   // Amanecer/Atardecer (solo Automático)
@@ -5119,19 +5296,16 @@ void handleConfigR4() {
           "function toHHMM(mins){mins=((mins%1440)+1440)%1440;var h=Math.floor(mins/60),m=mins%60;"
             "return(h<10?'0':'')+h+':'+(m<10?'0':'')+m;}"
 
+          // Recalcula OFF solo en modos superciclo
           "function recalcOff(){"
             "var modo=document.getElementById('modoR4').value;"
             "var onM=parseHHMM(document.getElementById('horaOnR4').value); if(onM<0) return;"
             "var offInput=document.getElementById('horaOffR4');"
-            "var offMirror=document.getElementById('horaOffR4_mirror');"
             "if(modo==='4'){"
               "var luzM=parseHHMM(document.getElementById('horasLuz').value);"
-              "if(luzM>=0){var off=toHHMM(onM+luzM); offInput.value=off; offMirror.value=off;}"
-              "return;"
+              "if(luzM>=0){offInput.value=toHHMM(onM+luzM);} return;"
             "}"
-            "if(modo==='13'){"
-              "var off=toHHMM(onM+780); offInput.value=off; offMirror.value=off; return;"
-            "}"
+            "if(modo==='13'){offInput.value=toHHMM(onM+780); return;}"
           "}"
 
           "function applyModeUI(){"
@@ -5143,16 +5317,15 @@ void handleConfigR4() {
             "var mainButtons=document.getElementById('mainButtons');"
             "var offInput=document.getElementById('horaOffR4');"
             "var offLabel=document.getElementById('lblHoraOff');"
-            "var offMirror=document.getElementById('horaOffR4_mirror');"
             "var luz=document.getElementById('horasLuz'); var lblLuz=document.getElementById('lblHorasLuz');"
             "var oscur=document.getElementById('horasOscuridad'); var lblOsc=document.getElementById('lblHorasOsc');"
             "var aman=document.getElementById('horaAmanecer'); var atar=document.getElementById('horaAtardecer');"
             "var lblAman=document.getElementById('lblAmanecer'); var lblAtar=document.getElementById('lblAtardecer');"
 
-            // reset
+            // reset visible/estados
             "secOnOff.classList.add('hidden'); secDawnDusk.classList.add('hidden'); secSuper.classList.add('hidden');"
             "secManual.classList.add('hidden'); mainButtons.classList.remove('hidden');"
-            "offInput.disabled=false; offInput.classList.remove('muted'); offLabel.classList.remove('muted'); offMirror.disabled=true;"
+            "offInput.disabled=false; offInput.classList.remove('muted'); offLabel.classList.remove('muted');"
             "if(luz){luz.disabled=false; luz.classList.remove('muted');} if(lblLuz){lblLuz.classList.remove('muted');}"
             "if(oscur){oscur.disabled=false; oscur.classList.remove('muted');} if(lblOsc){lblOsc.classList.remove('muted');}"
             "if(aman){aman.readOnly=false; aman.classList.remove('muted');} if(atar){atar.readOnly=false; atar.classList.remove('muted');}"
@@ -5160,21 +5333,36 @@ void handleConfigR4() {
 
             // modos
             "if(modo==='1'){secManual.classList.remove('hidden'); mainButtons.classList.add('hidden'); return;}"
-            "if(modo==='2'){secOnOff.classList.remove('hidden'); secDawnDusk.classList.remove('hidden');"
-              "if(aman){aman.readOnly=true; aman.classList.add('muted');} if(atar){atar.readOnly=true; atar.classList.add('muted');}"
-              "if(lblAman){lblAman.classList.add('muted');} if(lblAtar){lblAtar.classList.add('muted');} return;}"
-            "if(modo==='4'){secOnOff.classList.remove('hidden'); secSuper.classList.remove('hidden');"
-              "offInput.disabled=true; offInput.classList.add('muted'); offLabel.classList.add('muted'); offMirror.disabled=false; recalcOff(); return;}"
-            "if(modo==='13'){secOnOff.classList.remove('hidden'); secSuper.classList.remove('hidden');"
-              "offInput.disabled=true; offInput.classList.add('muted'); offLabel.classList.add('muted'); offMirror.disabled=false;"
-              "if(luz){luz.disabled=true; luz.classList.add('muted');} if(lblLuz){lblLuz.classList.add('muted');}"
-              "if(oscur){oscur.disabled=true; oscur.classList.add('muted');} if(lblOsc){lblOsc.classList.add('muted');}"
-              "recalcOff(); return;}"
+            "if(modo==='2'){"
+              "secOnOff.classList.remove('hidden');"
+              "secDawnDusk.classList.remove('hidden');"
+              // En Automático el OFF lo define el usuario
+              "offInput.disabled=false; offInput.classList.remove('muted'); offLabel.classList.remove('muted');"
+              "return;"
+            "}"
+            "if(modo==='4'){"
+              "secOnOff.classList.remove('hidden');"
+              "secSuper.classList.remove('hidden');"
+              // OFF calculado, bloquear edición
+              "offInput.disabled=true; offInput.classList.add('muted'); offLabel.classList.add('muted');"
+              "recalcOff(); return;"
+            "}"
+            "if(modo==='13'){"
+              "secOnOff.classList.remove('hidden');"
+              "secSuper.classList.remove('hidden');"
+              // fijar 13:00 y bloquear edición de duraciones
+              "if(luz){luz.value='13:00'; luz.disabled=true; luz.classList.add('muted');}"
+              "if(oscur){oscur.value='13:00'; oscur.disabled=true; oscur.classList.add('muted');}"
+              "if(lblLuz){lblLuz.classList.add('muted');} if(lblOsc){lblOsc.classList.add('muted');}"
+              // OFF calculado, bloquear edición
+              "offInput.disabled=true; offInput.classList.add('muted'); offLabel.classList.add('muted');"
+              "recalcOff(); return;"
+            "}"
           "}"
 
           "document.getElementById('modoR4').addEventListener('change',applyModeUI);"
           "document.getElementById('horaOnR4').addEventListener('change',recalcOff);"
-          "var luzEl=document.getElementById('horasLuz'); if(luzEl){luzEl.addEventListener('change',recalcOff);} "
+          "var luzEl=document.getElementById('horasLuz'); if(luzEl){luzEl.addEventListener('change',recalcOff);}"
           "window.onload=function(){applyModeUI();};"
           "</script>";
 
@@ -5182,7 +5370,6 @@ void handleConfigR4() {
 
   server.send(200, "text/html", html);
 }
-
 
 
 
