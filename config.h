@@ -30,6 +30,7 @@
 #include <ESP32Servo.h>
 #include "esp_task_wdt.h"
 #include "math.h"
+#include <esp_wifi.h>
 
 
 
@@ -100,7 +101,7 @@ Servo dimmerServo; // Objeto del servomotor
 //ACA VAN LOS TOKENS
 
 
-const String botToken = "8296049013:AAHz4rHxmmY1yiqyil3sahGzNWk41ARqFE8"; //DRUIDA 18
+const String botToken = ""; //DRUIDA 10
 
 
 
@@ -108,15 +109,14 @@ const String botToken = "8296049013:AAHz4rHxmmY1yiqyil3sahGzNWk41ARqFE8"; //DRUI
 //ACA VAN LOS TOKENS
 
 
-const char* ssid_AP = "DruidaBot (02)"; // 
+const char* ssid_AP = "DruidaBot (10)"; // 
 
 
 const char* password_AP = "12345678";          // Contraseña de la red AP
 
 // ID: 1308350088 
 
-//String scriptId = "AKfycbwUlj-gk1NNDHwxxebIqH7vS0N8qbu9LZydo4QeyAwmULEQ8JcSGNt8RRxRLdoIRRTA"; //Druida 01 (SHASTIN)
-String scriptId = "AKfycbwUlj-gk1NNDHwxxebIqH7vS0N8qbu9LZydo4QeyAwmULEQ8JcSGNt8RRxRLdoIRRTA";  //Druida 02 (Matheu)
+String scriptId = "";  //Druida 10
 
 
 const unsigned long BOT_MTBS = 1000;
@@ -273,7 +273,7 @@ int currentPosition = 0; // Posición inicial del servo
 int previousSecondRiego = 0; // Inicialización con 0
 int previousSeconds = 0; 
 
-String relayNames[] = {"Humidificacion", "Extraccion", "Irrigacion", "Iluminacion", "Aire Acondicionado", "Calefaccion", "Deshumidificacion", "Intraccion"};
+String relayNames[] = {"Humidificacion", "Extraccion", "Irrigacion", "Iluminacion", "A/C", "Calefaccion", "Deshumidificacion", "Intraccion", "Ventilacion", "Intraccion"};
 String relayAssignedNames[6] = {"R1", "R5", "R2", "R3", "R4", "R2ir"}; // Nombres actuales para cada relé
 
 int R1name = 0;   // (Humidificacion)
