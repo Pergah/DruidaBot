@@ -10,6 +10,10 @@
 int realDaysSince(uint32_t startEpoch, int tzOffsetSec = -3 * 3600);
 int virtualDaysSince(uint32_t startEpoch, int horasLuz, int horasOscuridad, int tzOffsetSec = -3 * 3600);
 
+inline void setRelayActiveLow(uint8_t pin, bool on) {
+  digitalWrite(pin, on ? LOW : HIGH);
+}
+
 // ================== RELÉ 5 (igual que lo tenías) ==================
 inline void setRelay5(bool on) {
   uint8_t level = on ? (R5_ACTIVO_EN_HIGH ? HIGH : LOW)
@@ -2439,12 +2443,121 @@ void startWebServer() {
 
     server.on("/connectWiFi", connectWiFi);
     server.on("/disconnectWiFi", HTTP_POST, []() {
+      // --- Lógica original ---
       modoWiFi = 0;
       Guardado_General();
       WiFi.disconnect(true);   // corta y borra configuración actual de conexión
       Serial.println("WiFi desconectado. modoWiFi = 0");
-      server.sendHeader("Location", "/", true);
-      server.send(302, "text/plain", "");
+
+      // --- UI: misma estética que connectWiFi, pero “Desconectando WiFi…” ---
+      String mensaje     = "Desconectando WiFi…";
+      String redireccion = "/";
+
+      String html =
+      "<!DOCTYPE html><html lang='es'><head>"
+      "<meta charset='UTF-8'/>"
+      "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
+      "<title>Desconectando WiFi</title>"
+      "<meta http-equiv='refresh' content='3; url=" + redireccion + "'>"
+      "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
+      "<style>"
+      /* ===== Tokens responsive ===== */
+      ":root{--gap:clamp(12px,2.5vw,20px);--pad:clamp(16px,3vw,24px);--radius:16px;"
+      "--fs-h1:clamp(18px,5vw,36px);--fs-body:clamp(14px,3.5vw,18px);--fs-small:clamp(11px,2.8vw,14px);"
+      "--c-bg:#0f172a;--c-card:#1e40af;--c-ink:#e0e0e0;--c-cyan:#00f0ff;--c-border:#00ffcc}"
+
+      "*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
+      "html,body{height:100%}"
+
+      /* ===== Layout ===== */
+      "body{margin:0;background:var(--c-bg);color:var(--c-ink);font-family:'Press Start 2P',monospace;"
+      "display:flex;flex-direction:column;min-height:100dvh}"
+      "main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--gap);padding:var(--pad)}"
+
+      /* Logo + glitch sutil */
+      ".logo{font-size:var(--fs-h1);margin:0;color:var(--c-cyan);"
+      "text-shadow:0 0 6px var(--c-cyan),0 0 14px var(--c-cyan);animation:glow 3s ease-in-out infinite alternate}"
+      ".glitch{position:relative;display:inline-block}"
+      ".glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;inset:0;clip:rect(0,0,0,0)}"
+      ".glitch::before{color:#ff00ff;text-shadow:1px 0 #ff00ff;animation:gt 2s infinite linear alternate-reverse}"
+      ".glitch::after{color:#00ffff;text-shadow:-1px 0 #00ffff;animation:gb 2s infinite linear alternate-reverse}"
+      "@keyframes glow{from{text-shadow:0 0 4px var(--c-cyan),0 0 10px var(--c-cyan)}to{text-shadow:0 0 10px var(--c-cyan),0 0 22px var(--c-cyan)}}"
+      "@keyframes gt{0%{clip:rect(0,9999px,0,0)}10%{clip:rect(0,9999px,16px,0);transform:translate(-1px,-1px)}20%{clip:rect(0,9999px,8px,0)}100%{clip:rect(0,0,0,0)}}"
+      "@keyframes gb{0%{clip:rect(0,0,0,0)}10%{clip:rect(10px,9999px,24px,0);transform:translate(1px,1px)}20%{clip:rect(4px,9999px,14px,0)}100%{clip:rect(0,0,0,0)}}"
+
+      /* Caja de mensaje */
+      ".box{background:var(--c-card);border:2px solid var(--c-border);border-radius:var(--radius);padding:var(--pad);"
+      "box-shadow:0 0 15px rgba(0,255,255,0.25);max-width:min(92vw,640px);width:100%;text-align:center;animation:fadeIn .9s ease-out}"
+      ".box h1{font-size:var(--fs-body);margin:0;color:var(--c-ink)}"
+
+      /* Progreso continuo con sheen + cambio de color al final */
+      ".progress{height:12px;border:1px solid var(--c-cyan);border-radius:10px;overflow:hidden;"
+      "background:rgba(0,240,255,0.08);margin-top:var(--gap);position:relative}"
+      ".bar{height:100%;width:0%;background:var(--c-cyan);position:relative;"
+      "animation:fill 3s linear forwards, barColor 3s linear forwards}"
+      ".bar::after{content:'';position:absolute;top:0;bottom:0;width:120px;"
+      "background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.6) 50%,rgba(255,255,255,0) 100%);"
+      "filter:blur(1px);transform:translateX(-120%);animation:sheen 3s linear forwards}"
+      "@keyframes fill{from{width:0%}to{width:100%}}"
+      "@keyframes barColor{0%{background:var(--c-cyan)}80%{background:var(--c-cyan)}100%{background:#ffffff}}"
+      "@keyframes sheen{from{transform:translateX(-120%)}to{transform:translateX(100%)}}"
+
+      ".count{font-size:var(--fs-small);opacity:.85;margin-top:8px}"
+
+      /* Botón */
+      ".actions{margin-top:var(--gap);display:flex;flex-direction:column;gap:10px}"
+      "a{text-decoration:none}"
+      "button{background:var(--c-cyan);color:#0b1020;border:none;border-radius:12px;padding:12px 14px;font-size:var(--fs-body);"
+      "cursor:pointer;transition:transform .15s ease,filter .2s ease}"
+      "button:hover{transform:translateY(-1px);filter:brightness(.92)}"
+
+      /* Reduce motion */
+      "@media(prefers-reduced-motion:reduce){"
+      ".logo{animation:none}.glitch::before,.glitch::after{animation:none}"
+      ".bar{animation:fill 3s linear forwards}"
+      ".bar::after{animation:none;display:none}"
+      "}"
+
+      /* Animación entrada */
+      "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}"
+      "</style></head><body>"
+      "<main>"
+      "<h1 class='logo glitch' data-text='DATA DRUIDA'>DATA DRUIDA</h1>"
+      "<div class='box'>"
+      "<h1>" + mensaje + "</h1>"
+      "<div class='progress' aria-hidden='true'><div class='bar'></div></div>"
+      "<div class='count' aria-live='polite'>Redirigiendo en <span id='count'>3</span>…</div>"
+      "<div class='actions'><a href='" + redireccion + "'><button type='button'>IR AHORA</button></a></div>"
+      "</div>"
+      "</main>";
+
+      html += "<script>"
+              "let t=3;const c=document.getElementById('count');"
+              "function tick(){t--; if(c) c.textContent=t; if(t<=0){location.replace('" + redireccion + "');} else {setTimeout(tick,1000);} }"
+              "setTimeout(tick,1000);"
+              "</script>";
+
+      html += "</body></html>";
+
+      server.send(200, "text/html", html);
+
+      // Pequeña espera para que el cliente reciba la respuesta y se vea la animación,
+      // y luego reinicio del ESP32.
+      delay(2000);
+      ESP.restart();
+    });
+
+    // ===== Endpoints masivos con confirmación =====
+    server.on("/allOn", HTTP_POST, []() {
+      setAllRelays(true);
+      Serial.println("[ALL] ENCENDER TODO");
+      handleConfirmation("Encendiendo todo...", "/control");
+    });
+
+    server.on("/allOff", HTTP_POST, []() {
+      setAllRelays(false);
+      Serial.println("[ALL] APAGAR TODO");
+      handleConfirmation("Apagando todo...", "/control");
     });
 
     server.on("/setFloraDay", HTTP_POST, handleSetFloraDay);
@@ -2781,7 +2894,14 @@ void handleControl() {
       "button:hover{background-color:#00c0dd;transform:translateY(-1px)}"
       "@media(min-width:600px){.button-group-vertical{align-items:stretch}button{width:100%}}"
 
-      /* ===== Footer estático (no tapa botones) ===== */
+      /* ===== Botonera masiva (debajo de Iluminación) ===== */
+      ".bulk-actions{display:flex;flex-direction:column;gap:10px;margin-top:6px}"
+      ".btn-on,.btn-off{background:#00f0ff;color:#0b1220;border:1px solid #00f0ff}"
+      ".btn-on:hover,.btn-off:hover{background:#00c0dd}"
+      ".hint{font-size:var(--fs-small);opacity:.8;margin-top:-2px}"
+
+
+      /* ===== Footer estático ===== */
       "footer{position:static;text-align:center;font-size:var(--fs-small);color:#8aa;opacity:.9;margin:0;"
       "padding:8px 12px;padding-bottom:calc(env(safe-area-inset-bottom) + 8px)}"
       "footer p{margin:0}"
@@ -2791,36 +2911,50 @@ void handleControl() {
       "@keyframes fadeInUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}"
     "</style></head><body>";
 
-  /* MAIN (crece y separa del footer) */
+  /* MAIN */
   html += "<main class='main'>";
   html += "<div class='cloud'></div>";
 
-  /* Logo: enlace a handleRoot (ruta '/') */
-  html += "<a href='/' class='logo-container' aria-label='Ir a inicio'>";
-  html += "  <h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1>";
-  html += "</a>";
+  /* Logo: enlace a handleRoot ('/') */
+  html += "<a href='/' class='logo-container' aria-label='Ir a inicio'>"
+          "<h1 class='logo-text glitch' data-text='DRUIDA BOT'>DRUIDA<br>BOT</h1>"
+          "</a>";
 
+  /* Card de control */
   html += "<div class='container'>";
   html += "  <div class='card-title'>Control</div>";
   html += "  <div class='button-group-vertical'>";
+
+  /* Botones individuales */
   html += "    <a href='/controlR5'><button>" + getRelayName(R5name) + "</button></a>";
   html += "    <a href='/controlR1'><button>" + getRelayName(R1name) + "</button></a>";
   html += "    <a href='/controlR2'><button>" + getRelayName(R2name) + "</button></a>";
   html += "    <a href='/controlR3'><button>" + getRelayName(R3name) + "</button></a>";
   html += "    <a href='/controlR4'><button>" + getRelayName(R4name) + "</button></a>";
+
+  /* —— NUEVO: Acciones masivas debajo de Iluminación —— */
+  html += "    <div class='bulk-actions'>";
+  html += "      <form action='/allOn' method='POST'><button class='btn-on' type='submit'>ENCENDER TODO</button></form>";
+  html += "      <form action='/allOff' method='POST'><button class='btn-off' type='submit'>APAGAR TODO</button></form>";
+  //html += "      <div class='hint'>R1–R4 ON=LOW · R5 ON=HIGH</div>";
+  html += "    </div>";
+
+  /* Volver */
   html += "    <a href='/'><button>VOLVER</button></a>";
-  html += "  </div>";
-  html += "</div>";
+
+  html += "  </div>"; // .button-group-vertical
+  html += "</div>";   // .container
 
   html += "</main>";
 
-  /* Footer NO fijo */
+  /* Footer */
   html += "<footer><p>druidadata@gmail.com<br>DataDruida</p></footer>";
 
   html += "</body></html>";
 
   server.send(200, "text/html", html);
 }
+
 
 
 
@@ -3075,12 +3209,12 @@ void handleControlR1() {
 
 
 
-void handleControlR1On() {
-    estadoR1 = 1; // Cambiar el estado a encendido
-    modoR1 = 1; // Modo manual
-    Guardado_General();
-    handleConfirmation(getRelayName(R1name) + " encendida", "/controlR1"); // Mostrar confirmación y redirigir
-}
+  void handleControlR1On() {
+      estadoR1 = 1; // Cambiar el estado a encendido
+      modoR1 = 1; // Modo manual
+      Guardado_General();
+      handleConfirmation(getRelayName(R1name) + " encendida", "/controlR1"); // Mostrar confirmación y redirigir
+  }
 
 void handleControlR1Off() {
     estadoR1 = 0; // Cambiar el estado a apagado
@@ -4145,33 +4279,104 @@ void handleConfigWiFi() {
 
 
 void connectWiFi() {
-    // Cambiar las variables al presionar "Conectar WiFi"
-    modoWiFi = 1;
-    reset = 1;
-    Guardado_General();
+  // Lógica original
+  modoWiFi = 1;
+  reset    = 1;
+  Guardado_General();
 
-    // Mostrar mensaje con la misma estética
-    String mensaje = "Conectando a WiFi...";
-    String redireccion = "/config"; // Cambiar a la ruta deseada después de 3 segundos
-    String html = "<html><head><style>";
-    html += "body { background-color: #00264d; color: white; font-family: Arial, sans-serif; text-align: center; padding-top: 20%; margin: 0; }";
-    html += "h1 { font-size: 800%; margin: 0 auto; line-height: 1.2; animation: fadeIn 2s ease-in-out; }";
-    html += "div { background-color: #004080; border: 2px solid #00bfff; border-radius: 10px; padding: 20px; display: inline-block; text-align: center; }";
-    html += "@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }";
-    html += "</style>";
-    html += "<meta http-equiv=\"refresh\" content=\"3; url=" + redireccion + "\">"; // Redirección automática después de 3 segundos
-    html += "</head><body>";
+  String mensaje     = "Conectando a WiFi…";
+  String redireccion = "/config";
 
-    html += "<div><h1><span>" + mensaje + "</span></h1></div>";
+  String html =
+  "<!DOCTYPE html><html lang='es'><head>"
+  "<meta charset='UTF-8'/>"
+  "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
+  "<title>Conectando WiFi</title>"
+  "<meta http-equiv='refresh' content='3; url=" + redireccion + "'>"
+  "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
+  "<style>"
+  /* ===== Tokens responsive ===== */
+  ":root{--gap:clamp(12px,2.5vw,20px);--pad:clamp(16px,3vw,24px);--radius:16px;"
+  "--fs-h1:clamp(18px,5vw,36px);--fs-body:clamp(14px,3.5vw,18px);--fs-small:clamp(11px,2.8vw,14px);"
+  "--c-bg:#0f172a;--c-card:#1e40af;--c-ink:#e0e0e0;--c-cyan:#00f0ff;--c-border:#00ffcc}"
 
-    html += "<script>setTimeout(function(){ window.location.href='" + redireccion + "'; }, 3000);</script>";
+  "*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}"
+  "html,body{height:100%}"
 
-    html += "</body></html>";
+  /* ===== Layout ===== */
+  "body{margin:0;background:var(--c-bg);color:var(--c-ink);font-family:'Press Start 2P',monospace;"
+  "display:flex;flex-direction:column;min-height:100dvh}"
+  "main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--gap);padding:var(--pad)}"
 
-    server.send(200, "text/html", html);
+  /* Logo + glitch sutil */
+  ".logo{font-size:var(--fs-h1);margin:0;color:var(--c-cyan);"
+  "text-shadow:0 0 6px var(--c-cyan),0 0 14px var(--c-cyan);animation:glow 3s ease-in-out infinite alternate}"
+  ".glitch{position:relative;display:inline-block}"
+  ".glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;inset:0;clip:rect(0,0,0,0)}"
+  ".glitch::before{color:#ff00ff;text-shadow:1px 0 #ff00ff;animation:gt 2s infinite linear alternate-reverse}"
+  ".glitch::after{color:#00ffff;text-shadow:-1px 0 #00ffff;animation:gb 2s infinite linear alternate-reverse}"
+  "@keyframes glow{from{text-shadow:0 0 4px var(--c-cyan),0 0 10px var(--c-cyan)}to{text-shadow:0 0 10px var(--c-cyan),0 0 22px var(--c-cyan)}}"
+  "@keyframes gt{0%{clip:rect(0,9999px,0,0)}10%{clip:rect(0,9999px,16px,0);transform:translate(-1px,-1px)}20%{clip:rect(0,9999px,8px,0)}100%{clip:rect(0,0,0,0)}}"
+  "@keyframes gb{0%{clip:rect(0,0,0,0)}10%{clip:rect(10px,9999px,24px,0);transform:translate(1px,1px)}20%{clip:rect(4px,9999px,14px,0)}100%{clip:rect(0,0,0,0)}}"
 
+  /* Caja de mensaje */
+  ".box{background:var(--c-card);border:2px solid var(--c-border);border-radius:var(--radius);padding:var(--pad);"
+  "box-shadow:0 0 15px rgba(0,255,255,0.25);max-width:min(92vw,640px);width:100%;text-align:center;animation:fadeIn .9s ease-out}"
+  ".box h1{font-size:var(--fs-body);margin:0;color:var(--c-ink)}"
 
+  /* Progreso continuo con sheen + cambio de color al final */
+  ".progress{height:12px;border:1px solid var(--c-cyan);border-radius:10px;overflow:hidden;"
+  "background:rgba(0,240,255,0.08);margin-top:var(--gap);position:relative}"
+  ".bar{height:100%;width:0%;background:var(--c-cyan);position:relative;"
+  "animation:fill 3s linear forwards, barColor 3s linear forwards}"
+  ".bar::after{content:'';position:absolute;top:0;bottom:0;width:120px;"
+  "background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.6) 50%,rgba(255,255,255,0) 100%);"
+  "filter:blur(1px);transform:translateX(-120%);animation:sheen 3s linear forwards}"
+  "@keyframes fill{from{width:0%}to{width:100%}}"
+  "@keyframes barColor{0%{background:var(--c-cyan)}80%{background:var(--c-cyan)}100%{background:#ffffff}}"
+  "@keyframes sheen{from{transform:translateX(-120%)}to{transform:translateX(100%)}}"
+
+  ".count{font-size:var(--fs-small);opacity:.85;margin-top:8px}"
+
+  /* Botón */
+  ".actions{margin-top:var(--gap);display:flex;flex-direction:column;gap:10px}"
+  "a{text-decoration:none}"
+  "button{background:var(--c-cyan);color:#0b1020;border:none;border-radius:12px;padding:12px 14px;font-size:var(--fs-body);"
+  "cursor:pointer;transition:transform .15s ease,filter .2s ease}"
+  "button:hover{transform:translateY(-1px);filter:brightness(.92)}"
+
+  /* Reduce motion */
+  "@media(prefers-reduced-motion:reduce){"
+  ".logo{animation:none}.glitch::before,.glitch::after{animation:none}"
+  ".bar{animation:fill 3s linear forwards}"
+  ".bar::after{animation:none;display:none}"
+  "}"
+
+  /* Animación entrada */
+  "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}"
+  "</style></head><body>"
+  "<main>"
+  "<h1 class='logo glitch' data-text='DATA DRUIDA'>DATA DRUIDA</h1>"
+  "<div class='box'>"
+  "<h1>" + mensaje + "</h1>"
+  "<div class='progress' aria-hidden='true'><div class='bar'></div></div>"
+  "<div class='count' aria-live='polite'>Redirigiendo en <span id='count'>3</span>…</div>"
+  "<div class='actions'><a href='" + redireccion + "'><button type='button'>IR AHORA</button></a></div>"
+  "</div>"
+  "</main>";
+
+  // JS: contador + redirección; la barra se anima por CSS.
+  html += "<script>"
+          "let t=3;const c=document.getElementById('count');"
+          "function tick(){t--; if(c) c.textContent=t; if(t<=0){location.replace('" + redireccion + "');} else {setTimeout(tick,1000);} }"
+          "setTimeout(tick,1000);"
+          "</script>";
+
+  html += "</body></html>";
+
+  server.send(200, "text/html", html);
 }
+
 
 
 
@@ -5803,7 +6008,7 @@ void moveServoSlowly(int targetPosition) {
 }
 
 String getRelayName(int relayIndex) {
-    if (relayIndex >= 0 && relayIndex < 8) {
+    if (relayIndex >= 0 && relayIndex < 10) {
         return relayNames[relayIndex];
     }
     return "Desconocido";
@@ -6247,4 +6452,33 @@ void supercycleSetDurations(uint16_t Lmin, uint16_t Dmin) {
   horasLuz = Lmin; horasOscuridad = Dmin;
   Guardado_General();
   // El loop, con el mismo superAnchorEpochR4, recalculará todo coherente.
+}
+
+void setAllRelays(bool turnOn) {
+  // R1
+  estadoR1 = turnOn ? 1 : 0;
+  modoR1   = MANUAL;               // si en tu código MANUAL = 1, queda alineado
+  setRelayActiveLow(RELAY1, turnOn);
+
+  // R2
+  estadoR2 = turnOn ? 1 : 0;
+  modoR2   = MANUAL;
+  setRelayActiveLow(RELAY2, turnOn);
+
+  // R3
+  estadoR3 = turnOn ? 1 : 0;
+  modoR3   = MANUAL;
+  setRelayActiveLow(RELAY3, turnOn);
+
+  // R4
+  estadoR4 = turnOn ? 1 : 0;
+  modoR4   = MANUAL;
+  setRelayActiveLow(RELAY4, turnOn);
+
+  // R5 (lógica inversa, ya tenés helper propio)
+  estadoR5 = turnOn ? 1 : 0;
+  modoR5   = MANUAL;
+  setRelay5(turnOn);               // ON = HIGH (cierra), OFF = LOW (abre)
+
+  Guardado_General();              // persistimos TODO junto
 }
