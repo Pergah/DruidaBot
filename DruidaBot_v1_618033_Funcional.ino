@@ -98,8 +98,8 @@ bool waitForI2CBusFree(uint8_t sdaPin, uint8_t sclPin, unsigned long timeout = 1
 
 
 void setup() {
-  // ----- Ventana segura anti-brownout (habilita persistencia luego en loop) -----
-  bootMs = millis();   // canPersist se habilita en loop() tras ~15 s
+
+  bootMs = millis();   
 
   // ----- Buses / periféricos base -----
   waitForI2CBusFree(SDA_NANO, SCL_NANO);
@@ -114,6 +114,14 @@ void setup() {
 
   rtc.begin();
   aht.begin(&Wire);        // en vez de aht.begin();
+
+  WiFi.persistent(false);
+  WiFi.setAutoConnect(false);   // importante: manejamos nosotros los intentos
+  WiFi.setAutoReconnect(true);
+  WiFi.setSleep(false);         // más estable para IoT continuo
+  WiFi.mode(WIFI_STA);
+
+  registerWiFiEvents();
 
 
   // Watchdog
@@ -152,7 +160,8 @@ void setup() {
       delay(500);
       if (retriesDisplayInit > 5) {
         Serial.println(F("No se pudo inicializar la OLED, reiniciando..."));
-        ESP.restart();
+        //ESP.restart();
+        break;
       }
       yield();
     }
@@ -166,6 +175,17 @@ void setup() {
 
   // ----- UI local -----
   mostrarMensajeBienvenida();
+
+
+
+  // --- Pequeña espera post-boot para que el router levante tras un corte ---
+  const uint32_t BOOT_GRACE_MS = 10000UL;  // 20s (ajustable)
+  uint32_t tStart = millis();
+  while (millis() - tStart < BOOT_GRACE_MS) {
+    // no hagas intentos aquí; dejá que el router levante
+    delay(50);
+    yield();
+  }
 
   // ===========================
   //   Conectividad de Red
@@ -294,11 +314,27 @@ void loop() {
   unsigned long intervaloGoogle = tiempoGoogle * 60UL * 1000UL;
   unsigned long intervaloTelegram = tiempoTelegram * 60UL * 1000UL;
 
-  // Verifica la conexión WiFi a intervalos regulares
-  if (currentMillis - previousMillis >= wifiCheckInterval && modoWiFi == 1) {
-    previousMillis = currentMillis;
+  // Asegurate de que estos sean unsigned de 32 bits en tus globals:
+  extern unsigned long lastWiFiCheck;            // o uint32_t
+  extern const unsigned long wifiCheckInterval;  // o const uint32_t
+
+  unsigned long nowWiFi = millis();
+
+
+  static unsigned long lastBeat = 0;
+  if ((unsigned long)(nowWiFi - lastBeat) >= 1000UL) {
+    lastBeat = nowWiFi;
+    /*Serial.printf("[BEAT] now=%lu modoWiFi=%d lastWiFiCheck=%lu\n",
+                  nowWiFi, (int)modoWiFi, lastWiFiCheck);*/
+  }
+
+  // --- Llamada segura y visible a checkWiFiConnection() (overflow-safe) ---
+  if (modoWiFi == 1 && (unsigned long)(nowWiFi - lastWiFiCheck) >= (unsigned long)wifiCheckInterval) {
+    lastWiFiCheck = nowWiFi;
+    Serial.println("[DBG] Calling checkWiFiConnection()");
     checkWiFiConnection();
   }
+
 
     // Si han pasado 20 segundos, enviamos el mensaje
   if (currentMillis - previousMillisWD >= interval) {
@@ -593,79 +629,85 @@ if (modoR5 == MANUAL) {
 
 if (modoR1 == AUTO) {
 
+  // ---------- HUMEDAD ----------
   if (paramR1 == H) {
     if (direccionR1 == 0) {
-      // SUBIR humedad: se apaga si está bajo, se enciende si está alto
-      if (humedad < minR1 && R1estado == HIGH) {
-        digitalWrite(RELAY1, LOW);
+      // SUBIR humedad (humidificador)
+      if (humedad <= minR1 && R1estado != LOW) {
+        digitalWrite(RELAY1, LOW);   // ENCENDER
         R1estado = LOW;
-      }
-      if (humedad > maxR1 && R1estado == LOW) {
-        digitalWrite(RELAY1, HIGH);
+      } 
+      else if (humedad >= maxR1 && R1estado != HIGH) {
+        digitalWrite(RELAY1, HIGH);  // APAGAR
         R1estado = HIGH;
       }
     } else {
-      // BAJAR humedad: se enciende si está alto, se apaga si está bajo
-      if (humedad > maxR1 && R1estado == LOW) {
-        digitalWrite(RELAY1, HIGH);
-        R1estado = HIGH;
-      }
-      if (humedad < minR1 && R1estado == HIGH) {
-        digitalWrite(RELAY1, LOW);
+      // BAJAR humedad (deshumidificador)
+      if (humedad >= maxR1 && R1estado != LOW) {
+        digitalWrite(RELAY1, LOW);   // ENCENDER
         R1estado = LOW;
+      } 
+      else if (humedad <= minR1 && R1estado != HIGH) {
+        digitalWrite(RELAY1, HIGH);  // APAGAR
+        R1estado = HIGH;
       }
     }
   }
 
+  // ---------- TEMPERATURA ----------
   if (paramR1 == T) {
     if (direccionR1 == 0) {
-      // SUBIR temperatura
-      if (temperature < minR1 && R1estado == HIGH) {
+      // SUBIR temperatura (calefactor)
+      if (temperature <= minR1 && R1estado != LOW) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
-      }
-      if (temperature > maxR1 && R1estado == LOW) {
+      } 
+      else if (temperature >= maxR1 && R1estado != HIGH) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
       }
     } else {
-      // BAJAR temperatura
-      if (temperature > maxR1 && R1estado == LOW) {
-        digitalWrite(RELAY1, HIGH);
-        R1estado = HIGH;
-      }
-      if (temperature < minR1 && R1estado == HIGH) {
+      // BAJAR temperatura (refrigeración)
+      if (temperature >= maxR1 && R1estado != LOW) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
+      } 
+      else if (temperature <= minR1 && R1estado != HIGH) {
+        digitalWrite(RELAY1, HIGH);
+        R1estado = HIGH;
       }
     }
   }
 
+  // ---------- DPV ----------
   if (paramR1 == D) {
     if (direccionR1 == 0) {
       // SUBIR DPV
-      if (DPV < minR1 && R1estado == HIGH) {
+      if (DPV <= minR1 && R1estado != LOW) {
         digitalWrite(RELAY1, LOW);
         R1estado = LOW;
-      }
-      if (DPV > maxR1 && R1estado == LOW) {
+      } 
+      else if (DPV >= maxR1 && R1estado != HIGH) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
       }
     } else {
       // BAJAR DPV
-      if (DPV > maxR1 && R1estado == LOW) {
+      if (DPV >= maxR1 && R1estado != LOW) {
+        digitalWrite(RELAY1, LOW);
+        R1estado = LOW;
+      } 
+      else if (DPV <= minR1 && R1estado != HIGH) {
         digitalWrite(RELAY1, HIGH);
         R1estado = HIGH;
       }
-      if (DPV < minR1 && R1estado == HIGH) {
-        digitalWrite(RELAY1, LOW);
-        R1estado = LOW;
-      }
     }
   }
-
 }
+
+
+  //Serial.print("Direccion R1: ");
+  //Serial.println(direccionR1);
 
 if (modoR5 == AUTO) {
   bool fisicoOn = r5FisicamenteOn();
@@ -673,28 +715,18 @@ if (modoR5 == AUTO) {
   // === HUMEDAD ===
   if (paramR5 == 'H') {
     if (direccionR5 == 0) {
-      // SUBIR humedad: encender si < min, apagar si > max
-      if (!fisicoOn && humedad < minR5) {
-        setRelay5(true);
-        estadoR5 = 1;
-        fisicoOn = true;
-      }
-      if (fisicoOn && humedad > maxR5) {
-        setRelay5(false);
-        estadoR5 = 0;
-        fisicoOn = false;
+      // SUBIR humedad: ON si < min, OFF si > max
+      if (!fisicoOn && humedad <= minR5) {
+        setRelay5(true);   estadoR5 = 1;  fisicoOn = true;
+      } else if (fisicoOn && humedad >= maxR5) {
+        setRelay5(false);  estadoR5 = 0;  fisicoOn = false;
       }
     } else {
-      // BAJAR humedad: encender si > max, apagar si < min
-      if (!fisicoOn && humedad > maxR5) {
-        setRelay5(true);
-        estadoR5 = 1;
-        fisicoOn = true;
-      }
-      if (fisicoOn && humedad < minR5) {
-        setRelay5(false);
-        estadoR5 = 0;
-        fisicoOn = false;
+      // BAJAR humedad: ON si > max, OFF si < min
+      if (!fisicoOn && humedad >= maxR5) {
+        setRelay5(true);   estadoR5 = 1;  fisicoOn = true;
+      } else if (fisicoOn && humedad <= minR5) {
+        setRelay5(false);  estadoR5 = 0;  fisicoOn = false;
       }
     }
   }
@@ -702,28 +734,18 @@ if (modoR5 == AUTO) {
   // === TEMPERATURA ===
   if (paramR5 == 'T') {
     if (direccionR5 == 0) {
-      // SUBIR temperatura
-      if (!fisicoOn && temperature < minR5) {
-        setRelay5(true);
-        estadoR5 = 1;
-        fisicoOn = true;
-      }
-      if (fisicoOn && temperature > maxR5) {
-        setRelay5(false);
-        estadoR5 = 0;
-        fisicoOn = false;
+      // SUBIR temperatura: ON si < min, OFF si > max
+      if (!fisicoOn && temperature <= minR5) {
+        setRelay5(true);   estadoR5 = 1;  fisicoOn = true;
+      } else if (fisicoOn && temperature >= maxR5) {
+        setRelay5(false);  estadoR5 = 0;  fisicoOn = false;
       }
     } else {
-      // BAJAR temperatura
-      if (!fisicoOn && temperature > maxR5) {
-        setRelay5(true);
-        estadoR5 = 1;
-        fisicoOn = true;
-      }
-      if (fisicoOn && temperature < minR5) {
-        setRelay5(false);
-        estadoR5 = 0;
-        fisicoOn = false;
+      // BAJAR temperatura: ON si > max, OFF si < min
+      if (!fisicoOn && temperature >= maxR5) {
+        setRelay5(true);   estadoR5 = 1;  fisicoOn = true;
+      } else if (fisicoOn && temperature <= minR5) {
+        setRelay5(false);  estadoR5 = 0;  fisicoOn = false;
       }
     }
   }
@@ -731,32 +753,26 @@ if (modoR5 == AUTO) {
   // === DPV (VPD) ===
   if (paramR5 == 'D') {
     if (direccionR5 == 0) {
-      // SUBIR DPV
-      if (!fisicoOn && DPV < minR5) {
-        setRelay5(true);
-        estadoR5 = 1;
-        fisicoOn = true;
-      }
-      if (fisicoOn && DPV > maxR5) {
-        setRelay5(false);
-        estadoR5 = 0;
-        fisicoOn = false;
+      // SUBIR DPV: ON si < min, OFF si > max
+      if (!fisicoOn && DPV <= minR5) {
+        setRelay5(true);   estadoR5 = 1;  fisicoOn = true;
+      } else if (fisicoOn && DPV >= maxR5) {
+        setRelay5(false);  estadoR5 = 0;  fisicoOn = false;
       }
     } else {
-      // BAJAR DPV
-      if (!fisicoOn && DPV > maxR5) {
-        setRelay5(true);
-        estadoR5 = 1;
-        fisicoOn = true;
-      }
-      if (fisicoOn && DPV < minR5) {
-        setRelay5(false);
-        estadoR5 = 0;
-        fisicoOn = false;
+      // BAJAR DPV: ON si > max, OFF si < min
+      if (!fisicoOn && DPV >= maxR5) {
+        setRelay5(true);   estadoR5 = 1;  fisicoOn = true;
+      } else if (fisicoOn && DPV <= minR5) {
+        setRelay5(false);  estadoR5 = 0;  fisicoOn = false;
       }
     }
   }
 }
+
+
+//Serial.print("Direccion R5: ");
+//Serial.println(direccionR5);
 
 
 
@@ -1492,7 +1508,7 @@ String hora = formatoHora(hour, now.minute());
 mostrarEnPantallaOLED(temperature, humedad, DPV, hora);
 
 esp_task_wdt_reset();
-//ProteccionLoop(); 
+
 
   delay(2000);
 
@@ -1975,91 +1991,41 @@ void connectToWiFi(const char* ssid, const char* password) {
   Serial.print(F("Conectando a WiFi: "));
   Serial.println(ssid && ssid[0] ? ssid : "(SSID vacío)");
 
-  // Saneamiento previo
-  WiFi.persistent(false);       // no grabar credenciales en flash
-  WiFi.setAutoReconnect(true);  // que el stack retente solo
-  WiFi.setSleep(false);         // más estable para IoT continuo
-
-  // Modo STA limpio
-  WiFi.disconnect(true, true);  // corta y limpia
+  // Saneamiento previo: rápido y consistente
+  WiFi.persistent(false);
+  WiFi.setAutoReconnect(true);
+  WiFi.setSleep(false);
   WiFi.mode(WIFI_STA);
-  delay(50);
 
-  // Hostname (si aplica)
+  // Hostname (si aplica, siempre antes de begin)
   #ifdef ARDUINO_ESP32_RELEASE
   WiFi.setHostname("DruidaBot");
   #endif
 
-  // Inicio de conexión
-  if (conPW == 1 && password && password[0]) {
-    WiFi.begin(ssid, password);
-  } else {
-    WiFi.begin(ssid);
-  }
+  // Reset de estado + begin real
+  WiFi.disconnect(true, true);   // corta y limpia
+  delay(80);
+  if (conPW == 1 && password && password[0]) WiFi.begin(ssid, password);
+  else                                       WiFi.begin(ssid);
 
-  // Timings (ligeros)
-  const uint32_t TIMEOUT_INITIAL_MS   = 7000UL;   // espera inicial breve
-  const uint32_t TIMEOUT_RETRY_MS_BASE= 5000UL;   // 5s,10s,20s
-  const int      MAX_RETRIES          = 3;
-
-  // Espera inicial breve
+  // Espera breve; el resto lo maneja checkWiFiConnection()
+  const uint32_t TIMEOUT_INITIAL_MS = 15000UL;  // spin corto para no bloquear
   uint32_t t0 = millis();
   while ((millis() - t0) < TIMEOUT_INITIAL_MS) {
-    if (WiFi.status() == WL_CONNECTED) break;
-    delay(200);
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.printf("\n✅ WiFi conectado. IP: %s  RSSI: %ld dBm\n",
+                    WiFi.localIP().toString().c_str(), WiFi.RSSI());
+      return;
+    }
+    delay(120);
     Serial.print('.');
     yield();
   }
 
-  // Reintentos con backoff corto
-  int retry = 0;
-  while (WiFi.status() != WL_CONNECTED && retry < MAX_RETRIES) {
-    ++retry;
-    uint32_t thisTimeout = TIMEOUT_RETRY_MS_BASE << (retry - 1); // 5s,10s,20s
-    Serial.printf("\n↻ Reintento WiFi #%d (timeout %lus)\n", retry, thisTimeout / 1000UL);
-
-    WiFi.disconnect(true, true);
-    delay(120);
-
-    if (conPW == 1 && password && password[0]) WiFi.begin(ssid, password);
-    else                                       WiFi.begin(ssid);
-
-    uint32_t tr = millis();
-    while ((millis() - tr) < thisTimeout) {
-      if (WiFi.status() == WL_CONNECTED) break;
-      delay(250);
-      Serial.print('.');
-      yield();
-    }
-  }
-
-  // Resultado
-  if (WiFi.status() == WL_CONNECTED) {
-    IPAddress ip = WiFi.localIP();
-    long rssi = WiFi.RSSI();
-    Serial.println(F("\n✅ WiFi conectado."));
-    Serial.print(F("IP: "));   Serial.println(ip);
-    Serial.print(F("RSSI: ")); Serial.print(rssi); Serial.println(F(" dBm"));
-
-    // OLED (igual que tenías)
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(SH110X_WHITE);
-    display.setCursor(16, 20);
-    display.println(F("WiFi conectado"));
-    display.setCursor(8, 34);
-    display.print(F("IP: "));
-    display.println(ip);
-    display.display();
-    delay(200);
-    return;
-  }
-
-  // ❌ FALLÓ: NO abrir AP acá (lo hace checkWiFiConnection)
-  Serial.println(F("\n❌ No se pudo conectar a WiFi (STA)."));
-  // Si querés, podés mostrar algo en OLED aquí indicando "Sin WiFi".
-  // El AP se activa sólo desde checkWiFiConnection() cuando corresponde.
+  Serial.println(F("\n❌ No se conectó en el intento breve de connectToWiFi()."));
 }
+
+
 
 
 
@@ -2137,62 +2103,71 @@ void sendDataToGoogleSheets() {
 // unsigned long lastRetryTime = 0;
 
 void checkWiFiConnection() {
-  // --- Parámetros de estrategia (mismos valores que usabas) ---
-  const uint32_t CONNECT_SPIN_MS        = 3000UL;    // espera corta al intentar conectar
-  const uint32_t BACKOFF_BASE_MS        = 60000UL;   // 1 min (base)
-  const uint32_t BACKOFF_MAX_MS         = 5UL * 60UL * 1000UL; // 5 min (tope)
-  const uint32_t AP_RETRY_MIN_MS        = 60000UL;   // mínimo 1 min entre intentos en AP
-  const uint32_t INTERNET_CHECK_PERIOD  = 15000UL;   // chequeo internet cada 15 s conectado
+  // --- Estrategia y tiempos (tuyos) ---
+  const uint32_t CONNECT_SPIN_MS        = 3000UL;     // espera corta al intentar conectar
+  const uint32_t BACKOFF_BASE_MS        = 60000UL;    // 1 min
+  const uint32_t BACKOFF_MAX_MS         = 5UL * 60UL * 1000UL; // 5 min tope
+  const uint32_t AP_RETRY_MIN_MS        = 60000UL;    // 1 min min en AP
+  const uint32_t INTERNET_CHECK_PERIOD  = 15000UL;    // check DNS cada 15 s
+  const uint32_t BOOT_GRACE_MS          = 20000UL;    // esperar al modem tras corte 
 
-  // Estado interno persistente a nivel de función (sin nuevas globales)
+  // Estado interno local persistente (sin nuevas globales)
   static uint32_t nextRetryDelayMs = BACKOFF_BASE_MS;
   static uint32_t lastInternetCheck = 0;
   static bool     webServerUp = false;
+  static uint32_t firstCallMillis = 0;
+  if (firstCallMillis == 0) firstCallMillis = millis();
 
   auto ensureWebServer = [&]() {
-    if (!webServerUp) {
-      startWebServer();
-      webServerUp = true;
-    }
+    if (!webServerUp) { startWebServer(); webServerUp = true; }
   };
   auto stopWebServerFlag = [&]() {
-    // si tenés stopWebServer(), llamalo acá
+    // si tenés stopWebServer(), llamalo aquí
     webServerUp = false;
   };
 
-  // Helper: prueba de internet real por DNS
+  // Prueba de internet real por DNS
   auto internetOK = []() -> bool {
     IPAddress ip;
-    bool ok = WiFi.hostByName("time.google.com", ip) == 1;  // 1 = éxito
+    bool ok = (WiFi.hostByName("time.google.com", ip) == 1);
     return ok && (ip != IPAddress((uint32_t)0));
   };
 
   // Si el WiFi está deshabilitado por UI/config, no hacer nada
   if (modoWiFi != 1) return;
 
+  // Grace post-boot: no spamear intentos mientras el módem aún levanta
+  if (!apMode && (millis() - firstCallMillis < BOOT_GRACE_MS)) {
+    return;
+  }
+
   // ===========================
-  //     CASO CONECTADO
+  //        CONECTADO
   // ===========================
   if (WiFi.status() == WL_CONNECTED) {
-    // Si veníamos en AP, cerrarlo
     if (apMode) {
       Serial.println(F("Conexión STA restablecida. Cerrando AP..."));
       WiFi.softAPdisconnect(true);
       WiFi.mode(WIFI_STA);
       delay(100);
       apMode = false;
-      stopWebServerFlag(); // reiniciar limpio
+      stopWebServerFlag();
     }
 
-    // Asegurar server en STA
     ensureWebServer();
 
-    // Chequeo de internet real cada cierto tiempo
+    // Salud de Internet y/o reconexión fuerte si un evento previo lo pidió
     if (millis() - lastInternetCheck > INTERNET_CHECK_PERIOD) {
       lastInternetCheck = millis();
-      if (!internetOK()) {
-        Serial.println(F("⚠️  Sin salida a internet (DNS falló). WiFi.reconnect() suave..."));
-        WiFi.reconnect();
+
+      if (g_needHardReconnect || !internetOK()) {
+        Serial.println(F("⚠️  Conectado pero sin salida o evento de desconexión previo. Reintento fuerte..."));
+        // Reconexión fuerte: disconnect + begin corto
+        connectToWiFi(ssid.c_str(), password.c_str());
+        if (WiFi.status() == WL_CONNECTED) {
+          nextRetryDelayMs = BACKOFF_BASE_MS;
+          g_needHardReconnect = false;
+        }
       } else {
         nextRetryDelayMs = BACKOFF_BASE_MS; // reset backoff
       }
@@ -2201,28 +2176,28 @@ void checkWiFiConnection() {
   }
 
   // ===========================
-  //  CASO DESCONECTADO (STA)
+  //  DESCONECTADO (STA activo)
   // ===========================
   if (!apMode) {
-    Serial.println(F("WiFi desconectado. Intentando conexión (STA)..."));
+    Serial.println(F("WiFi desconectado. Reintento fuerte (disconnect+begin)..."));
 
-    // Intento de conexión principal (NO abre AP si falla)
-    connectToWiFi(ssid.c_str(), password.c_str());
+    connectToWiFi(ssid.c_str(), password.c_str());  // ya hace disconnect(true,true) + begin + spin corto
 
-    // Pequeña espera para ver si quedó conectado
+    // Ventana breve extra para confirmar
     uint32_t t0 = millis();
     while ((millis() - t0) < CONNECT_SPIN_MS) {
       if (WiFi.status() == WL_CONNECTED) {
         Serial.println(F("¡Conectado!"));
         ensureWebServer();
         nextRetryDelayMs = BACKOFF_BASE_MS;
+        g_needHardReconnect = false;
         return;
       }
       delay(150);
       yield();
     }
 
-    // Falló conexión rápida → activar AP aquí (único lugar)
+    // No conectó rápido → activar AP para control local
     Serial.println(F("No se pudo conectar. Activando modo AP..."));
     stopWebServerFlag();
     WiFi.softAPdisconnect(true);
@@ -2231,27 +2206,26 @@ void checkWiFiConnection() {
     startWebServer();
     webServerUp = true;
     apMode = true;
-    lastRetryTime = millis();   // (reutiliza tu variable global existente)
+    lastRetryTime = millis(); // tu global existente
     return;
   }
 
   // ===========================
-  //     CASO AP ACTIVO
+  //         AP ACTIVO
   // ===========================
-  // Reintentar salir de AP con backoff + jitter
+  // Reintentos con backoff para salir del AP a STA
   uint32_t elapsed = millis() - lastRetryTime;
   if (elapsed >= nextRetryDelayMs && nextRetryDelayMs >= AP_RETRY_MIN_MS) {
     Serial.printf("Reintentando conexión desde AP... (backoff %lus)\n", nextRetryDelayMs / 1000UL);
     lastRetryTime = millis();
 
-    // Cerrar AP temporalmente para intentar STA
+    // Cerrar AP temporalmente y probar STA "limpio" (vía connectToWiFi)
     WiFi.softAPdisconnect(true);
     delay(150);
-    WiFi.mode(WIFI_STA);
 
     connectToWiFi(ssid.c_str(), password.c_str());
 
-    // Espera corta para confirmar
+    // Ventana corta para confirmar
     uint32_t t0 = millis();
     while ((millis() - t0) < CONNECT_SPIN_MS) {
       if (WiFi.status() == WL_CONNECTED) {
@@ -2260,13 +2234,14 @@ void checkWiFiConnection() {
         stopWebServerFlag();
         ensureWebServer();
         nextRetryDelayMs = BACKOFF_BASE_MS;
+        g_needHardReconnect = false;
         return;
       }
       delay(150);
       yield();
     }
 
-    // Si aún no conecta, volver a AP y aumentar backoff con jitter (±10%)
+    // Sigue sin conectar → volver a AP y aumentar backoff con jitter (±10%)
     Serial.println(F("Sigue sin conexión. Volviendo a AP y aumentando backoff."));
     WiFi.mode(WIFI_AP);
     startAccessPoint();
@@ -2281,10 +2256,12 @@ void checkWiFiConnection() {
     nextRetryDelayMs = doubled - (jitter / 2U) + rnd;
     if (nextRetryDelayMs < AP_RETRY_MIN_MS) nextRetryDelayMs = AP_RETRY_MIN_MS;
   } else {
-    // Aún no toca reintentar, asegurar server en AP
+    // Aún no toca reintentar → asegurar server en AP
     ensureWebServer();
   }
 }
+
+
 
 
 
@@ -2390,7 +2367,6 @@ void startWebServer() {
     server.on("/controlR1Off", handleControlR1Off);
     server.on("/controlR1Auto", handleControlR1Auto);
 
-    // R2
     server.on("/controlR2", handleControlR2);
     server.on("/controlR2On", handleControlR2On);
     server.on("/controlR2Off", handleControlR2Off);
@@ -2714,7 +2690,7 @@ void handleRoot() {
   String html =
     "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'/>"
     "<meta name='viewport' content='width=device-width, initial-scale=1'/>"
-    "<title>Estado General</title>"
+    "<title>Druida BOT</title>"
     "<link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>"
     "<style>"
       ":root{--radius:16px;--pad:16px;--gap:12px;--pad-lg:24px;"
@@ -5653,7 +5629,7 @@ if (modoR4 == SUPERCICLO) {
   nextOnR4Abs  = onAbs;
   nextOffR4Abs = offAbs;
 
-  // Nota: no tocamos relé ni “seed” acá. El loop de SUPERCICLO
+
   // recalcula y persiste en cada encendido/apagado.
 }
 
@@ -6277,7 +6253,7 @@ int parseHHMMToMinutesSafe(const String& hhmm) {
   return h*60 + m;
 }
 
-// Usa el mismo criterio que tu loop: DS3231 -> hora/minuto y -3 horas.
+
 // Requiere: RTC_DS3231 rtc; (o equivalente) ya inicializado en setup().
 inline int nowMinutesLocal() {
   DateTime now = rtc.now();
@@ -6285,7 +6261,7 @@ inline int nowMinutesLocal() {
   int h = now.hour();   // 0..23 (hora del RTC)
   int m = now.minute(); // 0..59
 
-  // Aplicar mismo ajuste que en tu loop:
+
   h -= 3;
   if (h < 0) h += 24;   // wrap a rango 0..23
 
@@ -6305,7 +6281,7 @@ uint32_t localDateKey(const DateTime& now) {
   return (uint32_t)(loc.year()) * 10000UL + (uint32_t)(loc.month()) * 100UL + (uint32_t)(loc.day());
 }
 
-// Llamar en setup() tras cargar memoria y también en loop() periódicamente
+
 void tickDaily() {
   DateTime now = rtc.now();
   uint32_t todayKey = localDateKey(now);
@@ -6430,29 +6406,9 @@ void handleSetVegeDay() {
   handleConfirmation("VEGETATIVO ajustado · Día " + String(day), "/controlR4");
 }
 
-// Arrancar LUZ "ahora"
-void supercycleStartLightNow() {
-  int32_t now_epoch = rtc.now().unixtime();       // ajustá si tu RTC está en UTC
-  superAnchorEpochR4 = now_epoch;                 // ancla al inicio de la luz actual
-  Guardado_General();                             // persiste el ANCLA y duraciones
-  // Forzar reseed en el loop:
-  // (podés poner variables estáticas nextOnEpoch/nextOffEpoch a -1 desde aquí si las haces globales)
-}
 
-// Arrancar OSCURIDAD "ahora"
-void supercycleStartDarkNow() {
-  int32_t now_epoch = rtc.now().unixtime();
-  superAnchorEpochR4 = now_epoch - (int32_t)horasLuz * 60; // estamos L min después del ancla
-  Guardado_General();
-  // idem reseed
-}
 
-// Cambia duraciones manteniendo fase del ciclo
-void supercycleSetDurations(uint16_t Lmin, uint16_t Dmin) {
-  horasLuz = Lmin; horasOscuridad = Dmin;
-  Guardado_General();
-  // El loop, con el mismo superAnchorEpochR4, recalculará todo coherente.
-}
+
 
 void setAllRelays(bool turnOn) {
   // R1
@@ -6482,3 +6438,19 @@ void setAllRelays(bool turnOn) {
 
   Guardado_General();              // persistimos TODO junto
 }
+
+
+void registerWiFiEvents() {
+  WiFi.onEvent([](WiFiEvent_t, WiFiEventInfo_t info) {
+    Serial.print(F("✅ GOT IP: "));
+    Serial.println(IPAddress(info.got_ip.ip_info.ip.addr));
+    g_needHardReconnect = false; // ya estamos bien
+  }, ARDUINO_EVENT_WIFI_STA_GOT_IP);
+
+  WiFi.onEvent([](WiFiEvent_t, WiFiEventInfo_t info) {
+    // Razones típicas: 201 NO_AP_FOUND, 202 AUTH_FAIL, 205 ASSOC_LEAVE, etc.
+    Serial.printf("⚠️  STA DISCONNECTED. reason=%d\n", info.wifi_sta_disconnected.reason);
+    g_needHardReconnect = true;  // pedir reconexión fuerte
+  }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+}
+
