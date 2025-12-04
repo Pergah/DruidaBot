@@ -101,7 +101,7 @@ Servo dimmerServo; // Objeto del servomotor
 //ACA VAN LOS TOKENS
 
 
-const String botToken = ""; //DRUIDA 10
+const String botToken = "**************"; //DRUIDA 11
 
 
 
@@ -109,14 +109,14 @@ const String botToken = ""; //DRUIDA 10
 //ACA VAN LOS TOKENS
 
 
-const char* ssid_AP = "DruidaBot (10)"; // 
+const char* ssid_AP = "DruidaBot (11)"; // 
 
 
 const char* password_AP = "12345678";          // Contraseña de la red AP
 
 // ID: 1308350088 
 
-String scriptId = "";  //Druida 10
+String scriptId = "*******************************";  //Druida 11
 
 
 const unsigned long BOT_MTBS = 1000;
@@ -403,3 +403,7 @@ static int32_t nextOffEpoch_R4 = -1;
 int32_t supercycleStartEpochR4 = 0;  // se guarda la fecha/hora de inicio en epoch
 
 const int SUPERCYCLE_13H = 13 * 60; // 780 min
+
+static volatile bool g_needHardReconnect = false;
+
+static unsigned long lastWiFiCheck = 0;
