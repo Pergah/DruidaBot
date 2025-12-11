@@ -1,0 +1,35 @@
+function doGet(e) {
+  Logger.log(JSON.stringify(e));  // Registra los parámetros recibidos
+
+  var result = 'Ok';  // Supongamos que todo está bien por defecto
+  
+  if (!e || !e.parameter) {
+    result = 'No Parameters';
+  } else {
+    var sheetId = '*****************************************************';  // ID de tu hoja de cálculo
+    var sheet = SpreadsheetApp.openById(sheetId).getActiveSheet();  // Abre la hoja activa
+    var newRow = sheet.getLastRow() + 1;  // Encuentra la última fila vacía
+
+    // Leemos el ciclo de luz: "LUZ" o "OSCURIDAD"
+    var cicloLuz = e.parameter.cicloLuz || "";  
+
+    // Construye un array con los datos a registrar
+    var rowData = [
+      new Date(),                          // Fecha y hora actual
+      e.parameter.maxHumidity    || "",    // Humedad máxima
+      e.parameter.minHumidity    || "",    // Humedad mínima
+      e.parameter.maxTemperature || "",    // Temperatura máxima
+      e.parameter.minTemperature || "",    // Temperatura mínima
+      e.parameter.maxVPD         || "",    // VPD máximo
+      e.parameter.minVPD         || "",    // VPD mínimo
+      cicloLuz                           // 👈 NUEVA COLUMNA: "LUZ" / "OSCURIDAD"
+    ];
+
+    // Escribe los datos en la hoja de cálculo
+    sheet.getRange(newRow, 1, 1, rowData.length).setValues([rowData]);
+
+    result = 'Datos escritos en la hoja de cálculo';
+  }
+
+  return ContentService.createTextOutput(result);  // Devuelve un mensaje de estado
+}
