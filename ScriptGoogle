@@ -1,31 +1,72 @@
 function doGet(e) {
-  Logger.log(JSON.stringify(e));  // Registra los parámetros recibidos
+  Logger.log(JSON.stringify(e));
 
-  var result = 'Ok';  // Supongamos que todo está bien por defecto
-  
+  const sheetId = '1hCBouE-LxNpzkJbGI-ngq2cECctbfBe3WadpduYn1Ko';
+  const sheet   = SpreadsheetApp.openById(sheetId).getActiveSheet();
+
+  // ====== MODO READ (devuelve JSON) ======
+  // Llamada ejemplo:
+  // .../exec?mode=read&limit=200
+  if (e && e.parameter && (e.parameter.mode || "").toLowerCase() === "read") {
+    const limit = Math.min(parseInt(e.parameter.limit || "200", 10), 2000); // límite de seguridad
+    const lastRow = sheet.getLastRow();
+    const startRow = Math.max(1, lastRow - limit + 1);
+
+    // Columnas: A..H (8 cols) = Fecha, maxHum, minHum, maxTemp, minTemp, maxVPD, minVPD, cicloLuz
+    const numCols = 8;
+    const numRows = Math.max(0, lastRow - startRow + 1);
+
+    const values = (numRows > 0)
+      ? sheet.getRange(startRow, 1, numRows, numCols).getValues()
+      : [];
+
+    // Convertimos a objetos
+    const rows = values.map(r => ({
+      fecha: r[0],         // Date
+      maxHum: r[1],
+      minHum: r[2],
+      maxTemp: r[3],
+      minTemp: r[4],
+      maxVpd: r[5],
+      minVpd: r[6],
+      cicloLuz: r[7]       // "LUZ"/"OSCURIDAD"
+    }));
+
+    const payload = {
+      ok: true,
+      count: rows.length,
+      last: rows.length ? rows[rows.length - 1] : null,
+      rows
+    };
+
+    return ContentService
+      .createTextOutput(JSON.stringify(payload))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ====== MODO WRITE (tu lógica actual) ======
+  let result = 'Ok';
+
   if (!e || !e.parameter) {
     result = 'No Parameters';
   } else {
-    var sheetId = 'ACA VA EL ID DE TU HOJA DE CALCULO';  // ID de tu hoja de cálculo
-    var sheet = SpreadsheetApp.openById(sheetId).getActiveSheet();  // Abre la hoja activa
-    var newRow = sheet.getLastRow() + 1;  // Encuentra la última fila vacía
+    const newRow = sheet.getLastRow() + 1;
+    const cicloLuz = e.parameter.cicloLuz || "";
 
-    // Construye un array con los datos a registrar
-    var rowData = [
-      new Date(),  // Fecha y hora actual
-      e.parameter.maxHumidity,  // Valor de humedad máxima
-      e.parameter.minHumidity,  // Valor de humedad mínima
-      e.parameter.maxTemperature,  // Valor de temperatura máxima
-      e.parameter.minTemperature  // Valor de temperatura mínima
+    const rowData = [
+      new Date(),
+      e.parameter.maxHumidity    || "",
+      e.parameter.minHumidity    || "",
+      e.parameter.maxTemperature || "",
+      e.parameter.minTemperature || "",
+      e.parameter.maxVPD         || "",
+      e.parameter.minVPD         || "",
+      cicloLuz
     ];
 
-    // Escribe los datos en la hoja de cálculo
-    sheet.appendRow(rowData);
-
+    sheet.getRange(newRow, 1, 1, rowData.length).setValues([rowData]);
     result = 'Datos escritos en la hoja de cálculo';
   }
 
-  return ContentService.createTextOutput(result);  // Devuelve un mensaje de estado
+  return ContentService.createTextOutput(result);
 }
-
-
